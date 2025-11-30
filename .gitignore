@@ -58,3 +58,6 @@ logs
 # pnpm-lock.yaml
 /src/generated/prisma
 
+# Next.js build output
+src/apps/web/.next/
+

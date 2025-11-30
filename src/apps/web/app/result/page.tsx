@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-
+import Sidebar from "@/components/dashboard/Sidebar";
+import Topbar from "@/components/dashboard/Topbar";
 // ---------- Mock data for all taken tests ----------
 // IMPORTANT: Tests are ordered from newest → oldest.
 // The FIRST element is what user sees by default.
@@ -128,99 +129,11 @@ export default function ResultsPage() {
   const progressDeg = (selectedTest.percent / 100) * 360;
 
   return (
-    <div className="app-root">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar__logo">
-          <Image
-            src="/assets/logos/logo.png"
-            alt="BAI-LEARN logo"
-            width={40}
-            height={40}
-          />
-          <span className="sidebar__logo-text">BAI-LEARN</span>
-        </div>
-
-        <nav className="sidebar__nav">
-          <Link href="/" className="sidebar__nav-item">
-            Tổng quan
-          </Link>
-          <button className="sidebar__nav-item">Vào thi</button>
-          <Link
-            href="/ket-qua"
-            className="sidebar__nav-item sidebar__nav-item--active"
-          >
-            Kết quả
-          </Link>
-          <button className="sidebar__nav-item">Bảng xếp hạng</button>
-          <button className="sidebar__nav-item">Giáo viên</button>
-          <button className="sidebar__nav-item">Hướng dẫn thi</button>
-          <button className="sidebar__nav-item">Câu hỏi thường gặp</button>
-          <button className="sidebar__nav-item">Tin tức mới nhất</button>
-          <button className="sidebar__nav-item">Cài đặt</button>
-        </nav>
-
-        <div className="sidebar__support-card">
-          <div className="sidebar__support-illustration">
-            <Image
-              src="/assets/logos/support.png"
-              alt="Liên hệ hỗ trợ"
-              width={80}
-              height={80}
-            />
-          </div>
-          <div className="sidebar__support-text">
-            <h3>Liên hệ hỗ trợ</h3>
-            <p>Chúng mình sẽ hỗ trợ nhanh nhất có thể</p>
-          </div>
-          <button className="btn btn--secondary">Nhắn tin</button>
-        </div>
-      </aside>
-
+    <div className="flex flex-row">
       {/* Main content */}
+      <Sidebar></Sidebar>
       <div className="main">
-        {/* Top bar */}
-        <header className="topbar">
-          <div className="topbar__search">
-            <input
-              type="text"
-              placeholder="Tìm kiếm từ khóa/chức năng"
-              className="topbar__search-input"
-            />
-            <button className="topbar__search-button">
-              <Image
-                src="/assets/logos/search.png"
-                alt="Tìm kiếm"
-                width={18}
-                height={18}
-              />
-            </button>
-          </div>
-
-          <div className="topbar__profile">
-            <button className="topbar__notif">
-              <Image
-                src="/assets/logos/bell.png"
-                alt="Thông báo"
-                width={18}
-                height={18}
-              />
-            </button>
-            <div className="topbar__avatar">
-              <Image
-                src="/assets/logos/avatar.png"
-                alt="Quang Thanh"
-                width={36}
-                height={36}
-              />
-            </div>
-            <div className="topbar__profile-info">
-              <span className="topbar__profile-name">Quang Thanh</span>
-              <span className="topbar__profile-id">ID: 012345</span>
-            </div>
-          </div>
-        </header>
-
+        <Topbar></Topbar>
         {/* Results content */}
         <main className="content">
           {/* Title */}
