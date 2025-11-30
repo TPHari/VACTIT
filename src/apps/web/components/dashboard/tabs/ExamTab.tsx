@@ -4,14 +4,16 @@ import React, { useState } from 'react';
 // Import dữ liệu từ file cùng thư mục (sibling)
 import Link from 'next/link';
 import { MOCK_EXAMS } from '../../../mockData/mockExam';
+import Sidebar from '../Sidebar';
+import Topbar from '../Topbar';
 
 export default function ExamTab() {
   const [examSubTab, setExamSubTab] = useState('chua-lam');
   const [selectedExam, setSelectedExam] = useState<any | null>(null);
 
   return (
-    <div className="exam-container fade-in flex flex-col h-[calc(100vh-140px)] relative">
       
+    <div className="exam-container fade-in flex flex-col h-[calc(100vh-140px)] relative">
       {/* 1. Header Banner */}
       <div className="w-full bg-white p-6 rounded-2xl shadow-sm mb-4 relative overflow-hidden flex-shrink-0 border border-gray-100">
         <div className="relative z-10 max-w-2xl">

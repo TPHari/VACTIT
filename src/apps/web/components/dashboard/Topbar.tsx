@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 export default function Topbar() {
   return (
@@ -19,6 +20,14 @@ export default function Topbar() {
         </button>
       </div>
       <div className="topbar__profile">
+            <button className="topbar__notif"> 
+              <Image
+                src="/assets/logos/bell.png"
+                alt="Thông báo"
+                width={18}
+                height={18}
+              />
+            </button>
         <div className="topbar__avatar">
           <img
             src="/assets/logos/avatar.png"

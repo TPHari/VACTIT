@@ -1,8 +1,12 @@
 import React from 'react';
-
+import Sidebar from '@/components/dashboard/Sidebar'
+import Topbar from '../Topbar';
 export default function OverviewTab() {
   return (
-    <>
+    <div className="flex flex-row">
+      <Sidebar />
+      <div className="flex flex-col flex-1 p-6 overflow-auto">
+        <Topbar />
       <h1 className="page-title mb-6">Tổng quan</h1>
       <section className="card card--hero mb-6">
         <div className="card--hero__left">
@@ -61,8 +65,11 @@ export default function OverviewTab() {
           </div>
         </article>
       </section>
-      
+      <div/>
+      <div/>
       {/* Bạn có thể move phần Leaderboard/Stats vào đây hoặc tách ra component riêng nữa nếu muốn */}
-    </>
+    <div/>
+    </div>
+    </div>
   );
 }
