@@ -5,9 +5,9 @@ services:
     region: singapore
     plan: free
     branch: dev
-    rootDir: src/services/api
-    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run build
-    startCommand: npm start
+    # Build from monorepo root so workspaces + devDeps are installed
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run -w src/services/api build
+    startCommand: npm run -w src/services/api start
     envVars:
       - key: DATABASE_URL
         sync: false
