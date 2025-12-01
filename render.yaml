@@ -6,7 +6,7 @@ services:
     plan: free
     branch: dev
     rootDir: src/services/api
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: NODE_ENV=development npm install && npm run build
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
