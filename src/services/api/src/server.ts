@@ -90,7 +90,7 @@ server.get<{ Params: { id: string } }>('/api/users/:id', async (request, reply) 
 server.post<{ Body: any }>('/api/users', async (request, reply) => {
   try {
     const user = await prisma.user.create({
-      data: request.body
+      data: request.body as any
     });
     reply.status(201);
     return { data: user };
@@ -149,7 +149,7 @@ server.get<{ Params: { id: string } }>('/api/tests/:id', async (request, reply) 
 server.post<{ Body: any }>('/api/tests', async (request, reply) => {
   try {
     const test = await prisma.test.create({
-      data: request.body
+      data: request.body as any
     });
     reply.status(201);
     return { data: test };
@@ -216,7 +216,7 @@ server.get<{ Params: { id: string } }>('/api/trials/:id', async (request, reply)
 server.post<{ Body: any }>('/api/trials', async (request, reply) => {
   try {
     const trial = await prisma.trial.create({
-      data: request.body
+      data: request.body as any
     });
     reply.status(201);
     return { data: trial };
@@ -250,7 +250,7 @@ server.get('/api/responses', async (request, reply) => {
 server.post<{ Body: any }>('/api/responses', async (request, reply) => {
   try {
     const response = await prisma.response.create({
-      data: request.body
+      data: request.body as any
     });
     reply.status(201);
     return { data: response };

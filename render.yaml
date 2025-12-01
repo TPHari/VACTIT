@@ -4,6 +4,7 @@ services:
     runtime: node
     region: singapore
     plan: free
+    branch: dev
     rootDir: src/services/api
     buildCommand: npm install && npm run build
     startCommand: npm start
