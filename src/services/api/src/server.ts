@@ -11,6 +11,24 @@ server.register(require('@fastify/cors'), {
   origin: true, // Allow all origins in development
 });
 
+// Root endpoint (useful for Render health checks and quick info)
+server.get('/', async (request, reply) => {
+  return {
+    name: 'VACTIT API',
+    status: 'ok',
+    message: 'See /health for status or /api for endpoints',
+    links: {
+      health: '/health',
+      api: '/api'
+    }
+  };
+});
+
+// Optional: avoid noisy 404s for browsers requesting favicon
+server.get('/favicon.ico', async (request, reply) => {
+  reply.status(204).send();
+});
+
 // Health check endpoint
 server.get('/health', async (request, reply) => {
   try {
