@@ -7,7 +7,7 @@ export default function Controls({
   setPageNumber,
   totalPages,
   startAt,
-  durationSeconds,
+  testData,
   onExpire,
 }: {
   zoom: number;
@@ -16,15 +16,16 @@ export default function Controls({
   setPageNumber: (n: number | ((p:number)=>number)) => void;
   totalPages: number;
   startAt: string | number;
-  // exam duration in seconds
-  durationSeconds: number;
-  // callback when timer expires
+  testData: {
+    title: string;
+    durationSeconds: number;
+    testId: string;}
   onExpire?: () => void;
 }) {
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-4">
-         <Timer startAt={startAt} durationSeconds={durationSeconds} onExpire={onExpire} />
+         <Timer startAt={startAt} durationSeconds={testData.durationSeconds}  testId={testData.testId} onExpire={onExpire} />
         <h3 className="text-lg font-semibold">Tên đề thi / thông tin bài thi</h3>
       </div>
 

@@ -6,56 +6,69 @@ export default function Timer({
   startAt,
   durationSeconds,
   onExpire,
+  testId,
 }: {
-  // startAt: ISO string or epoch milliseconds when the exam started
   startAt: string | number;
-  // total duration of exam in seconds
   durationSeconds: number;
-  // callback invoked once when timer reaches zero
   onExpire?: () => void;
+  testId: string; 
 }) {
   const startMs = typeof startAt === 'number' ? startAt : Date.parse(startAt);
-  const [remaining, setRemaining] = useState<number>(() => {
-    const now = Date.now();
-    const elapsed = Math.floor(Math.max(0, now - startMs) / 1000);
-    return Math.max(0, durationSeconds - elapsed);
-  });
+  const storageKey = `exam_${testId}_endtime`;
+
+  const [endTime, setEndTime] = useState<number>(0);
+  const [remaining, setRemaining] = useState<number>(durationSeconds);
   const expiredRef = useRef(false);
 
   useEffect(() => {
-    // recompute immediately in case startAt changed
-    const now = Date.now();
-    const elapsed = Math.floor(Math.max(0, now - startMs) / 1000);
-    const initial = Math.max(0, durationSeconds - elapsed);
-    setRemaining(initial);
-    if (initial === 0 && !expiredRef.current) {
-      expiredRef.current = true;
-      onExpire?.();
+    const savedEndTime = localStorage.getItem(storageKey);
+
+    if (savedEndTime) {
+      setEndTime(Number(savedEndTime));
+    } else {
+      const newEndTime = startMs + durationSeconds * 1000;
+      localStorage.setItem(storageKey, String(newEndTime));
+      setEndTime(newEndTime);
     }
-    // tick
-    const id = setInterval(() => {
+  }, [storageKey, startMs, durationSeconds]);
+
+  useEffect(() => {
+    if (!endTime) return;
+
+    function tick() {
       const now = Date.now();
-      const elapsed = Math.floor(Math.max(0, now - startMs) / 1000);
-      const next = Math.max(0, durationSeconds - elapsed);
+      const next = Math.max(0, Math.floor((endTime - now) / 1000));
       setRemaining(next);
+
       if (next === 0 && !expiredRef.current) {
         expiredRef.current = true;
+        localStorage.removeItem(storageKey); 
         onExpire?.();
       }
-    }, 1000);
+    }
+
+    tick(); 
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [startAt, durationSeconds, onExpire, startMs]);
+  }, [endTime, onExpire, storageKey]);
 
   function formatTime(sec: number) {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
-    if (h > 0) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    if (h > 0)
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   }
 
   return (
-    <div role="timer" aria-live="polite" className={`px-3 py-1 rounded font-medium ${remaining <= 60 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-800'}`}>
+    <div
+      role="timer"
+      aria-live="polite"
+      className={`px-3 py-1 rounded font-medium ${
+        remaining <= 60 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-800'
+      }`}
+    >
       {formatTime(remaining)}
     </div>
   );

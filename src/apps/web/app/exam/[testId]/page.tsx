@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Topbar from '@/components/dashboard/Topbar';
-import Sidebar from '@/components/dashboard/Sidebar';
 import ViewerPane from '@/components/exam/ViewerPane';
 import Controls from '@/components/exam/Controls';
 import AnswerPanel from '@/components/exam/AnswerPanel';
@@ -27,6 +25,13 @@ export default function ExamPage(props: {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [activeTab, setActiveTab] = useState<string>('exam'); // added for Sidebar
 
+  const testData = {
+    title: 'Đề thi thử môn ABC',
+    durationSeconds: 3600, 
+    testId: testId,
+  }
+
+
   useEffect(() => {
     setQuestions(
       Array.from({ length: 120 }).map((_, i) => ({
@@ -49,11 +54,24 @@ export default function ExamPage(props: {
      });
   }, [testId]);
 
+  useEffect(() => {
+    const savedAnswers = localStorage.getItem(`exam_${testId}_answers`);
+    if (savedAnswers) {
+      setAnswers(JSON.parse(savedAnswers));
+    }
+  }, [testId]);
+
   function handleSelect(qid: number, value: string) {
-    setAnswers((s) => ({ ...s, [qid]: value }));
+    setAnswers((answers) => {
+      const updatedAnswers = { ...answers, [qid]: value };
+      localStorage.setItem(`exam_${testId}_answers`, JSON.stringify(updatedAnswers));
+      return updatedAnswers;
+    }
+    );
   }
 
   async function submitAnswers() {
+  localStorage.removeItem(`exam_${testId}_answers`);
   try {
     const res = await fetch('/api/exam/submit', {
       method: 'POST',
@@ -74,6 +92,11 @@ export default function ExamPage(props: {
   }
 }
 
+  function handleExpire() {
+    alert('Time is up! Submitting your exam.');
+    submitAnswers();
+  }
+
 
   return (
     <div className="min-h-screen flex">
@@ -86,8 +109,8 @@ export default function ExamPage(props: {
               setPageNumber={setPageNumber}
               totalPages={pages.length}
               startAt={Date.now()} // replace with actual start time
-              durationSeconds={3600} // replace with actual duration in seconds
-              onExpire={() => { alert('Time is up! Submitting your exam.'); submitAnswers(); }}
+              testData={testData}
+              onExpire={() => { handleExpire(); }}
             />
 
             <div className="flex gap-6 mt-4">
