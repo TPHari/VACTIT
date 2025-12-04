@@ -65,11 +65,12 @@ export default function Timer({
     <div
       role="timer"
       aria-live="polite"
-      className={`px-3 py-1 rounded font-medium ${
+      className={`inline-flex items-center gap-2 px-3 rounded font-medium text-xl ${
         remaining <= 60 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-800'
       }`}
     >
-      {formatTime(remaining)}
+      <img src="/assets/icons/clock.svg" alt="Timer" className="w-6 h-6" />
+      <span>{formatTime(remaining)}</span>
     </div>
   );
 }

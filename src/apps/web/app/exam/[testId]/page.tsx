@@ -22,8 +22,8 @@ export default function ExamPage(props: {
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [flags, setFlags] = useState<Record<number, boolean>>({});
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('exam'); // added for Sidebar
 
   const testData = {
     title: 'Đề thi thử môn ABC',
@@ -56,8 +56,12 @@ export default function ExamPage(props: {
 
   useEffect(() => {
     const savedAnswers = localStorage.getItem(`exam_${testId}_answers`);
+    const savedFlags = localStorage.getItem(`exam_${testId}_flags`);
     if (savedAnswers) {
       setAnswers(JSON.parse(savedAnswers));
+    }
+    if (savedFlags) {
+      setFlags(JSON.parse(savedFlags));
     }
   }, [testId]);
 
@@ -72,6 +76,7 @@ export default function ExamPage(props: {
 
   async function submitAnswers() {
   localStorage.removeItem(`exam_${testId}_answers`);
+  localStorage.removeItem(`exam_${testId}_flags`);
   try {
     const res = await fetch('/api/exam/submit', {
       method: 'POST',
@@ -97,33 +102,33 @@ export default function ExamPage(props: {
     submitAnswers();
   }
 
-
+  function handleToggleFlag(qid: number) {
+    const newFlags = { ...flags, [qid]: !flags[qid] };
+    setFlags(newFlags);
+    localStorage.setItem(`exam_${testId}_flags`, JSON.stringify(newFlags));
+  }
   return (
     <div className="min-h-screen flex">
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="bg-white rounded-lg shadow p-6">
+        <main className="flex-1 overflow-auto">
+          <div className="bg-white rounded-lg shadow px-4">
             <Controls
-              zoom={zoom}
-              setZoom={setZoom}
-              pageNumber={pageNumber}
-              setPageNumber={setPageNumber}
-              totalPages={pages.length}
               startAt={Date.now()} // replace with actual start time
               testData={testData}
               onExpire={() => { handleExpire(); }}
             />
 
-            <div className="flex gap-6 mt-4">
-              <div className="flex-1">
-                <ViewerPane src={pages[pageNumber - 1] ?? null} zoom={zoom} />
-              </div>
-
+            <div className="flex flex-row gap-6 mt-2">
+              <ViewerPane pages={pages} zoom={zoom} />
               <AnswerPanel
                 questions={questions}
                 answers={answers}
                 onSelect={handleSelect}
                 onSubmit={() => { submitAnswers(); }}
                 onClear={() => setAnswers({})}
+                flags={flags}
+                onToggleFlag={(qid) => {
+                  handleToggleFlag(qid);
+                }}
               />
             </div>
           </div>
