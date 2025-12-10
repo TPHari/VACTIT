@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api-client';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -19,25 +20,17 @@ export default function SignupPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: `${firstName} ${lastName}`.trim(),
-          email: username,
-          password,
-        }),
+      // Use API client to call Fastify backend
+      await api.auth.signup({
+        name: `${firstName} ${lastName}`.trim(),
+        email: username,
+        password,
       });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json?.error || 'Signup failed');
-        setLoading(false);
-        return;
-      }
+      
       // Redirect to login after successful signup
       router.push('/auth/login');
-    } catch (err) {
-      setError('Network error');
+    } catch (err: any) {
+      setError(err.message || 'Signup failed');
       setLoading(false);
     }
   }
