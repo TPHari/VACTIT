@@ -3,12 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import {MOCK_USER as USER} from "@/lib/mock-user";
 
-const USER = {
-  name: "Quang Thanh",
-  id: "012345",
-  email: "quang.thanh@example.com",
-};
 
 export default function Topbar() {
   const router = useRouter();
@@ -43,7 +39,7 @@ export default function Topbar() {
       localStorage.removeItem("user");
     }
 
-    router.push("/login");
+    router.push("/auth/login");
   };
 
   return (
@@ -124,14 +120,14 @@ export default function Topbar() {
               onClick={handleMyProfile}
               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-brand-text hover:bg-slate-50"
             >
-              <span>My Profile</span>
+              <span>Trang cá nhân</span>
             </button>
             <button
               type="button"
               onClick={handleLogout}
               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-50"
             >
-              <span>Log out</span>
+              <span>Đăng xuất</span>
             </button>
           </div>
         )}

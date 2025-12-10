@@ -1,120 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
-
-// ---------- Mock data ----------
-const TESTS = [
-  {
-    id: "test-4",
-    name: "Đề thi nền tảng số 4",
-    score: 800,
-    targetScore: 1100,
-    percent: 75,
-    duration: "60:00",
-    date: "12.04.2025",
-    analysis:
-      "Bạn đã đạt mức điểm khá, đặc biệt là ở phần Tư duy khoa học. Vẫn còn một số câu sai ở phần Ngôn ngữ, chủ yếu liên quan đến từ vựng học thuật và suy luận ngữ cảnh.",
-    subjects: [
-      { id: "vietnamese", title: "Tiếng Việt", correct: 30, total: 30 },
-      { id: "english", title: "Tiếng Anh", correct: 30, total: 30 },
-      { id: "math", title: "Toán", correct: 30, total: 30 },
-      { id: "logic", title: "Tư duy khoa học", correct: 30, total: 30 },
-    ],
-    answers: [
-      { number: 1, answer: "A", correct: true },
-      { number: 2, answer: "C", correct: true },
-      { number: 3, answer: "E", correct: false },
-      { number: 4, answer: "B", correct: true },
-      { number: 5, answer: "A", correct: true },
-      { number: 6, answer: "C", correct: true },
-      { number: 7, answer: "D", correct: false },
-    ],
-  },
-  {
-    id: "test-3",
-    name: "Đề thi nền tảng số 3",
-    score: 750,
-    targetScore: 1100,
-    percent: 68,
-    duration: "120:00",
-    date: "03.03.2025",
-    analysis:
-      "Kết quả cho thấy phần Toán còn khá nhiều câu sai ở dạng bài đọc biểu đồ và bài toán suy luận. Ngôn ngữ và Tư duy khoa học ở mức ổn định.",
-    subjects: [
-      { id: "vietnamese", title: "Tiếng Việt", correct: 28, total: 30 },
-      { id: "english", title: "Tiếng Anh", correct: 27, total: 30 },
-      { id: "math", title: "Toán", correct: 25, total: 30 },
-      { id: "logic", title: "Tư duy khoa học", correct: 26, total: 30 },
-    ],
-    answers: [
-      { number: 1, answer: "B", correct: false },
-      { number: 2, answer: "C", correct: true },
-      { number: 3, answer: "D", correct: true },
-      { number: 4, answer: "A", correct: true },
-      { number: 5, answer: "E", correct: false },
-      { number: 6, answer: "B", correct: true },
-      { number: 7, answer: "C", correct: true },
-    ],
-  },
-  {
-    id: "test-2",
-    name: "Đề thi nền tảng số 2",
-    score: 900,
-    targetScore: 1100,
-    percent: 82,
-    duration: "90:00",
-    date: "20.02.2025",
-    analysis:
-      "Đây là một trong những bài có kết quả tốt nhất, đặc biệt là phần Ngôn ngữ. Tuy nhiên vẫn còn một số câu khó ở Tư duy khoa học.",
-    subjects: [
-      { id: "vietnamese", title: "Tiếng Việt", correct: 29, total: 30 },
-      { id: "english", title: "Tiếng Anh", correct: 30, total: 30 },
-      { id: "math", title: "Toán", correct: 29, total: 30 },
-      { id: "logic", title: "Tư duy khoa học", correct: 28, total: 30 },
-    ],
-    answers: [
-      { number: 1, answer: "A", correct: true },
-      { number: 2, answer: "B", correct: true },
-      { number: 3, answer: "C", correct: true },
-      { number: 4, answer: "D", correct: true },
-      { number: 5, answer: "E", correct: true },
-      { number: 6, answer: "A", correct: true },
-      { number: 7, answer: "B", correct: false },
-    ],
-  },
-  {
-    id: "test-1",
-    name: "Đề thi nền tảng số 1",
-    score: 850,
-    targetScore: 1100,
-    percent: 77,
-    duration: "120:00",
-    date: "01.02.2025",
-    analysis:
-      "Bài thi đầu tiên cho thấy nền tảng tương đối tốt. Các sai sót chủ yếu đến từ việc quản lý thời gian và đọc chưa kỹ đề.",
-    subjects: [
-      { id: "vietnamese", title: "Tiếng Việt", correct: 27, total: 30 },
-      { id: "english", title: "Tiếng Anh", correct: 28, total: 30 },
-      { id: "math", title: "Toán", correct: 27, total: 30 },
-      { id: "logic", title: "Tư duy khoa học", correct: 26, total: 30 },
-    ],
-    answers: [
-      { number: 1, answer: "C", correct: true },
-      { number: 2, answer: "D", correct: true },
-      { number: 3, answer: "E", correct: true },
-      { number: 4, answer: "B", correct: false },
-      { number: 5, answer: "A", correct: true },
-      { number: 6, answer: "C", correct: true },
-      { number: 7, answer: "D", correct: true },
-    ],
-  },
-];
-
-const TOTAL_QUESTIONS = 120;
+import { TESTS, TOTAL_QUESTIONS } from "@/lib/mock-tests";
 
 export default function ResultsPage() {
+  const router = useRouter();
   const [selectedTestId, setSelectedTestId] = useState(TESTS[0].id);
   const selectedTest = TESTS.find((t) => t.id === selectedTestId)!;
 
@@ -231,46 +124,57 @@ export default function ResultsPage() {
               {/* Lịch sử thi – max 4 rows visible, then scroll */}
               <section className="rounded-card bg-white p-4 shadow-card">
                 <header className="mb-2 flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-brand-text">
+                  <h2 className="text-sm-center font-semibold text-brand-text">
                     Lịch sử thi
                   </h2>
                 </header>
 
-                <div className="mt-1 max-h-[220px] overflow-y-auto pr-1 text-xs">
-                  <div className="grid grid-cols-[2fr_0.7fr_1fr_1fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted">
-                    <div>Tên đề thi</div>
+                <div className="mt-1 max-h-40 overflow-y-auto pr-1 text-xs">
+                  <div className="grid grid-cols-[2fr_0.5fr_0.7fr_1fr_1.2fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted">
+                    <div className="text-center">Tên đề thi</div>
                     <div className="text-center">Điểm</div>
                     <div className="text-center">Thời gian</div>
                     <div className="text-center">Ngày thi</div>
+                    <div className="text-center"></div>
                   </div>
 
                   {TESTS.map((test) => {
                     const isActive = test.id === selectedTestId;
+
                     return (
-                      <button
+                      <div
                         key={test.id}
-                        type="button"
                         onClick={() => setSelectedTestId(test.id)}
-                        className={`grid w-full grid-cols-[2fr_0.7fr_1fr_1fr] border-b border-slate-100 py-2 text-left transition ${
-                          isActive
-                            ? "rounded-md bg-[#eef4ff] font-semibold"
-                            : "bg-transparent"
+                        className={`grid w-full grid-cols-[2fr_0.5fr_0.7fr_1fr_1.2fr] border-b border-slate-100 py-2 text-left transition cursor-pointer ${
+                          isActive ? "rounded-md bg-[#eef4ff] font-semibold" : "bg-transparent"
                         }`}
                       >
-                        <div>{test.name}</div>
+                        <div className="text-center">{test.name}</div>
                         <div className="text-center">{test.score}</div>
                         <div className="text-center">{test.duration}</div>
                         <div className="text-center">{test.date}</div>
-                      </button>
+                        <div className="text-center">
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation(); // don't override row selection
+                              router.push(`/review/${test.id}`);
+                            }}
+                            className="text-xs font-semibold text-blue-600 hover:underline"
+                          >
+                            Xem chi tiết
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
+
                 </div>
               </section>
             </div>
           </div>
 
           {/* ========== RIGHT COLUMN: Đáp án 120 câu ========== */}
-          <div className="ml-6 flex w-[320px] flex-col">
+          <div className="ml-6 flex w-[320px] flex-col border-b border-slate-200">
             <header className="border-b border-slate-200 pb-3">
               <h2 className="text-base font-semibold text-brand-text">
                 Đáp án 120 câu
@@ -283,7 +187,7 @@ export default function ResultsPage() {
 
             {/* Own scroll, but height is capped so it fits nicely in view */}
             <div className="mt-3 max-h-[460px] overflow-y-auto pr-1">
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-2 gap-2 text-xs ">
                 {allAnswers.map((item) => (
                   <div
                     key={item.number}
@@ -295,10 +199,10 @@ export default function ResultsPage() {
                     <span
                       className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold  ${
                         item.answer === "-"
-                          ? "bg-slate-100 text-slate-400"
+                          ? "bg-red-500 text-white"
                           : item.correct
-                          ? "bg-brand-primary text-white"
-                          : "bg-brand-danger text-white"
+                          ? "bg-red-500 text-white"
+                          : "bg-green-500 text-white"
                       }`}
                     >
                       {item.answer}
