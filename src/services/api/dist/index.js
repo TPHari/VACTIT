@@ -9,8 +9,8 @@ const HOST = process.env.HOST || '0.0.0.0';
 const start = async () => {
     try {
         await server_1.default.listen({ port: PORT, host: HOST });
-        console.log(`🚀 API server running on http://${HOST}:${PORT}`);
-        console.log(`📊 Health check: http://${HOST}:${PORT}/health`);
+        console.log(`API server running on http://${HOST}:${PORT}`);
+        console.log(`Health check: http://${HOST}:${PORT}/health`);
     }
     catch (err) {
         server_1.default.log.error(err);
