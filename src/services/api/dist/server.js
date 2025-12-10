@@ -1,263 +1,261 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const fastify_1 = require("fastify");
 const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const bullmq_1 = require("bullmq");
+const ioredis_1 = __importDefault(require("ioredis"));
+const auth_routes_1 = require("./routes/auth.routes");
+const user_routes_1 = require("./routes/user.routes");
+const test_routes_1 = require("./routes/test.routes");
+const trial_routes_1 = require("./routes/trial.routes");
+const response_routes_1 = require("./routes/response.routes");
+// Initialize Prisma
+const prisma = new client_1.PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+});
+// Initialize Fastify server
 const server = (0, fastify_1.fastify)({
     logger: true
 });
+// Decorate server with prisma for use in routes
+server.decorate('prisma', prisma);
+// Setup Redis connection (optional)
+const redisConnection = process.env.REDIS_URL
+    ? new ioredis_1.default(process.env.REDIS_URL, {
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+        retryStrategy: (times) => Math.min(times * 50, 2000),
+    })
+    : undefined;
+// Setup queues (optional - only if Redis is available)
+const scoringQueue = redisConnection
+    ? new bullmq_1.Queue('scoring-queue', { connection: redisConnection })
+    : null;
+// Log Redis connection status
+if (redisConnection) {
+    redisConnection.on('connect', () => {
+        console.log('✅ Redis connected');
+    });
+    redisConnection.on('error', (err) => {
+        console.error('❌ Redis connection error:', err.message);
+    });
+}
+else {
+    console.warn('⚠️  Redis not configured - queue features disabled');
+}
+// ============ Plugins ============
 // CORS for frontend access
 server.register(require('@fastify/cors'), {
-    origin: true, // Allow all origins in development
+    origin: process.env.NODE_ENV === 'production'
+        ? process.env.FRONTEND_URL
+        : true, // Allow all origins in development
+    credentials: true,
+});
+// ============ Request Logging ============
+server.addHook('onRequest', async (request) => {
+    console.log(`[${new Date().toISOString()}] ${request.method} ${request.url}`);
+});
+server.addHook('onResponse', async (request, reply) => {
+    const responseTime = reply.elapsedTime || 0;
+    console.log(`[${new Date().toISOString()}] ${request.method} ${request.url} - ${reply.statusCode} (${responseTime.toFixed(2)}ms)`);
+});
+// ============ Root & Health Endpoints ============
+server.get('/', async () => {
+    return {
+        name: 'VACTIT API',
+        status: 'ok',
+        message: 'API is running',
+        version: '1.0.0',
+        links: {
+            health: '/health',
+            api: '/api',
+            docs: '/api/docs'
+        }
+    };
+});
+server.get('/favicon.ico', async (request, reply) => {
+    reply.status(204).send();
 });
 // Health check endpoint
 server.get('/health', async (request, reply) => {
+    const health = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        database: 'disconnected',
+        redis: 'not configured',
+        uptime: process.uptime(),
+    };
+    // Test database
     try {
         await prisma.$queryRaw `SELECT 1`;
-        return {
-            status: 'ok',
-            timestamp: new Date().toISOString(),
-            database: 'connected'
-        };
+        health.database = 'connected';
     }
     catch (error) {
-        reply.status(503);
-        return {
-            status: 'error',
-            timestamp: new Date().toISOString(),
-            database: 'disconnected',
-            error: error instanceof Error ? error.message : 'Unknown error'
-        };
+        health.status = 'degraded';
+        health.database = 'disconnected';
+        health.databaseError = error.message;
+    }
+    // Test Redis (if available)
+    if (redisConnection) {
+        try {
+            await redisConnection.ping();
+            health.redis = 'connected';
+        }
+        catch (error) {
+            health.redis = 'disconnected';
+        }
+    }
+    return reply.code(health.status === 'ok' ? 200 : 503).send(health);
+});
+// Queue health check
+server.get('/health/queue', async (request, reply) => {
+    if (!scoringQueue) {
+        return reply.code(503).send({
+            error: 'Queue not configured',
+            redis: 'disconnected'
+        });
+    }
+    try {
+        const jobCounts = await scoringQueue.getJobCounts();
+        return reply.send({
+            status: 'ok',
+            queue: 'scoring-queue',
+            jobs: jobCounts,
+        });
+    }
+    catch (error) {
+        return reply.code(500).send({
+            error: 'Failed to get queue status',
+            message: error.message
+        });
     }
 });
 // API Info endpoint
-server.get('/api', async (request, reply) => {
+server.get('/api', async () => {
     return {
         name: 'VACTIT API',
         version: '1.0.0',
         endpoints: {
-            health: '/health',
-            users: '/api/users',
-            tests: '/api/tests',
-            trials: '/api/trials'
+            auth: {
+                signup: 'POST /api/auth/signup',
+                login: 'POST /api/auth/login',
+            },
+            users: {
+                list: 'GET /api/users',
+                get: 'GET /api/users/:id',
+                create: 'POST /api/users',
+            },
+            tests: {
+                list: 'GET /api/tests',
+                get: 'GET /api/tests/:id',
+                create: 'POST /api/tests',
+            },
+            trials: {
+                list: 'GET /api/trials',
+                get: 'GET /api/trials/:id',
+                create: 'POST /api/trials',
+            },
+            responses: {
+                list: 'GET /api/responses',
+                create: 'POST /api/responses',
+            },
+            jobs: {
+                scoreTest: 'POST /api/jobs/score-test',
+                status: 'GET /api/jobs/status/:jobId',
+            }
         }
     };
 });
-// ===== USER ROUTES =====
-server.get('/api/users', async (request, reply) => {
-    try {
-        const users = await prisma.user.findMany({
-            select: {
-                user_id: true,
-                name: true,
-                email: true,
-                role: true,
-                membership: true,
-                created_at: true
-            }
+// ============ Register Routes ============
+server.register(auth_routes_1.authRoutes);
+server.register(user_routes_1.userRoutes);
+server.register(test_routes_1.testRoutes);
+server.register(trial_routes_1.trialRoutes);
+server.register(response_routes_1.responseRoutes);
+// ============ Job Queue Endpoints ============
+// Submit scoring job
+server.post('/api/jobs/score-test', async (request, reply) => {
+    if (!scoringQueue) {
+        return reply.code(503).send({
+            error: 'Queue service unavailable',
+            message: 'Redis connection not configured'
         });
-        return { data: users, count: users.length };
+    }
+    const { trialId, userId } = request.body;
+    if (!trialId || !userId) {
+        return reply.code(400).send({
+            error: 'Missing required fields',
+            message: 'trialId and userId are required'
+        });
+    }
+    try {
+        const job = await scoringQueue.add('score-trial', {
+            trialId,
+            userId,
+            timestamp: new Date().toISOString(),
+        });
+        return reply.code(202).send({
+            message: 'Job queued for processing',
+            jobId: job.id,
+            data: job.data,
+        });
     }
     catch (error) {
-        reply.status(500);
-        return { error: error instanceof Error ? error.message : 'Failed to fetch users' };
+        return reply.code(500).send({
+            error: 'Failed to queue job',
+            message: error.message
+        });
     }
 });
-server.get('/api/users/:id', async (request, reply) => {
+// Get job status
+server.get('/api/jobs/status/:jobId', async (request, reply) => {
+    if (!scoringQueue) {
+        return reply.code(503).send({ error: 'Queue service unavailable' });
+    }
+    const { jobId } = request.params;
     try {
-        const user = await prisma.user.findUnique({
-            where: { user_id: request.params.id },
-            include: {
-                authoredTests: true,
-                trials: true
-            }
-        });
-        if (!user) {
-            reply.status(404);
-            return { error: 'User not found' };
+        const job = await scoringQueue.getJob(jobId);
+        if (!job) {
+            return reply.code(404).send({ error: 'Job not found' });
         }
-        return { data: user };
-    }
-    catch (error) {
-        reply.status(500);
-        return { error: error instanceof Error ? error.message : 'Failed to fetch user' };
-    }
-});
-server.post('/api/users', async (request, reply) => {
-    try {
-        const user = await prisma.user.create({
-            data: request.body
+        const state = await job.getState();
+        return reply.send({
+            jobId: job.id,
+            state,
+            progress: job.progress,
+            data: job.data,
+            returnvalue: job.returnvalue,
+            failedReason: job.failedReason,
         });
-        reply.status(201);
-        return { data: user };
     }
     catch (error) {
-        reply.status(400);
-        return { error: error instanceof Error ? error.message : 'Failed to create user' };
-    }
-});
-// ===== TEST ROUTES =====
-server.get('/api/tests', async (request, reply) => {
-    try {
-        const tests = await prisma.test.findMany({
-            include: {
-                author: {
-                    select: {
-                        user_id: true,
-                        name: true,
-                        email: true
-                    }
-                },
-                _count: {
-                    select: { trials: true }
-                }
-            }
+        return reply.code(500).send({
+            error: 'Failed to get job status',
+            message: error.message
         });
-        return { data: tests, count: tests.length };
-    }
-    catch (error) {
-        reply.status(500);
-        return { error: error instanceof Error ? error.message : 'Failed to fetch tests' };
     }
 });
-server.get('/api/tests/:id', async (request, reply) => {
-    try {
-        const test = await prisma.test.findUnique({
-            where: { test_id: request.params.id },
-            include: {
-                author: true,
-                trials: true
-            }
-        });
-        if (!test) {
-            reply.status(404);
-            return { error: 'Test not found' };
-        }
-        return { data: test };
-    }
-    catch (error) {
-        reply.status(500);
-        return { error: error instanceof Error ? error.message : 'Failed to fetch test' };
-    }
-});
-server.post('/api/tests', async (request, reply) => {
-    try {
-        const test = await prisma.test.create({
-            data: request.body
-        });
-        reply.status(201);
-        return { data: test };
-    }
-    catch (error) {
-        reply.status(400);
-        return { error: error instanceof Error ? error.message : 'Failed to create test' };
-    }
-});
-// ===== TRIAL ROUTES =====
-server.get('/api/trials', async (request, reply) => {
-    try {
-        const trials = await prisma.trial.findMany({
-            include: {
-                student: {
-                    select: {
-                        user_id: true,
-                        name: true,
-                        email: true
-                    }
-                },
-                test: {
-                    select: {
-                        test_id: true,
-                        title: true,
-                        type: true
-                    }
-                },
-                _count: {
-                    select: { responses: true }
-                }
-            }
-        });
-        return { data: trials, count: trials.length };
-    }
-    catch (error) {
-        reply.status(500);
-        return { error: error instanceof Error ? error.message : 'Failed to fetch trials' };
-    }
-});
-server.get('/api/trials/:id', async (request, reply) => {
-    try {
-        const trial = await prisma.trial.findUnique({
-            where: { trial_id: request.params.id },
-            include: {
-                student: true,
-                test: true,
-                responses: true
-            }
-        });
-        if (!trial) {
-            reply.status(404);
-            return { error: 'Trial not found' };
-        }
-        return { data: trial };
-    }
-    catch (error) {
-        reply.status(500);
-        return { error: error instanceof Error ? error.message : 'Failed to fetch trial' };
-    }
-});
-server.post('/api/trials', async (request, reply) => {
-    try {
-        const trial = await prisma.trial.create({
-            data: request.body
-        });
-        reply.status(201);
-        return { data: trial };
-    }
-    catch (error) {
-        reply.status(400);
-        return { error: error instanceof Error ? error.message : 'Failed to create trial' };
-    }
-});
-// ===== RESPONSE ROUTES =====
-server.get('/api/responses', async (request, reply) => {
-    try {
-        const responses = await prisma.response.findMany({
-            include: {
-                trial: {
-                    select: {
-                        trial_id: true,
-                        student_id: true,
-                        test_id: true
-                    }
-                }
-            }
-        });
-        return { data: responses, count: responses.length };
-    }
-    catch (error) {
-        reply.status(500);
-        return { error: error instanceof Error ? error.message : 'Failed to fetch responses' };
-    }
-});
-server.post('/api/responses', async (request, reply) => {
-    try {
-        const response = await prisma.response.create({
-            data: request.body
-        });
-        reply.status(201);
-        return { data: response };
-    }
-    catch (error) {
-        reply.status(400);
-        return { error: error instanceof Error ? error.message : 'Failed to create response' };
-    }
-});
-// Graceful shutdown
+// ============ Graceful Shutdown ============
 const closeGracefully = async (signal) => {
-    console.log(`Received signal ${signal}, closing server gracefully...`);
-    await server.close();
-    await prisma.$disconnect();
-    process.exit(0);
+    console.log(`\n🛑 Received signal ${signal}, closing server gracefully...`);
+    try {
+        await server.close();
+        console.log('✅ Server closed');
+        await prisma.$disconnect();
+        console.log('✅ Database disconnected');
+        if (redisConnection) {
+            await redisConnection.quit();
+            console.log('✅ Redis disconnected');
+        }
+        process.exit(0);
+    }
+    catch (error) {
+        console.error('❌ Error during shutdown:', error);
+        process.exit(1);
+    }
 };
 process.on('SIGINT', () => closeGracefully('SIGINT'));
 process.on('SIGTERM', () => closeGracefully('SIGTERM'));

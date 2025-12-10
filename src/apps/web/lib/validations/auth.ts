@@ -1,11 +1,8 @@
 import type {  NextAuthOptions } from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import { prisma } from '@/lib/validations/prisma';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { verifyPassword } from './passwordhelpers';
+import { api } from '@/lib/api-client';
 
 export const authOptions: NextAuthOptions= {
-  adapter: PrismaAdapter(prisma),
   session: {
     strategy: 'jwt',
   },
@@ -20,20 +17,29 @@ export const authOptions: NextAuthOptions= {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-    try {
-      if (!credentials?.email || !credentials?.password) return null;
-      const email = String(credentials.email);
-      const password = String(credentials.password);
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user || typeof user.password !== 'string') return null;
-      const ok = await verifyPassword(password, user.password);
-      if (!ok) return null;
-      return { id: user.id, name: user.name ?? undefined, email: user.email };
-    } catch (err) {
-      console.error('authorize error:', err); // log to dev terminal
-      throw err; // let NextAuth handle/re-throw for visibility
-    }
-  },
+        try {
+          if (!credentials?.email || !credentials?.password) return null;
+          
+          // Call Fastify API for authentication
+          const response = await api.auth.login({
+            email: credentials.email,
+            password: credentials.password,
+          });
+
+          if (response?.data?.user) {
+            return {
+              id: response.data.user.user_id,
+              name: response.data.user.name ?? undefined,
+              email: response.data.user.email,
+            };
+          }
+
+          return null;
+        } catch (err) {
+          console.error('authorize error:', err);
+          return null;
+        }
+      },
     }),
   ],
   callbacks: {
@@ -52,4 +58,3 @@ export const authOptions: NextAuthOptions= {
   },
 };
 
-// export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
