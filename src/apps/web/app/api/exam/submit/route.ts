@@ -17,8 +17,8 @@ export async function POST(req: Request) {
 
     // TODO: handle saving the answers
     // Example: save to a database
-    console.log("Submitted answers for exam:", body.testId);
-    console.log("Answers:", body.answers);
+    console.log('Response: ', body);
+
 
     return Response.json({ message: "Submitted successfully" }, { status: 200 });
   } catch (err) {
