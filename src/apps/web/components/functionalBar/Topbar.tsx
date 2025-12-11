@@ -1,54 +1,142 @@
-import React from 'react';
-import Image from 'next/image';
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { MOCK_USER as USER } from "@/lib/mock-user";
 
 export default function Topbar() {
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleMyProfile = () => {
+    setIsOpen(false);
+    router.push("/profile");
+  };
+
+  const handleLogout = () => {
+    setIsOpen(false);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+    }
+    router.push("/auth/login");
+  };
+
   return (
-    // THAY ĐỔI:
-    // 1. left-[18rem]: 18rem = 288px (để né sidebar ra)
-    // 2. top-4 right-4: Cách đều cạnh trên và phải
-    // 3. rounded-2xl: Bo góc
-    <header className="fixed top-4 right-4 left-[18rem] h-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between px-6 z-40 transition-all duration-300">
+    // ✨ ĐÃ SỬA: Thêm các class định vị để Topbar 'né' Sidebar và nổi lên trên
+    <header className="fixed top-4 right-4 left-[18rem] z-40 flex h-16 items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-6 shadow-sm transition-all duration-300">
       
-      {/* Search Bar */}
-      <div className="flex items-center bg-gray-50 rounded-xl px-4 py-2 w-full max-w-md border border-gray-100 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-        <input
-          type="text"
-          placeholder="Tìm kiếm bài thi, tài liệu..."
-          className="bg-transparent border-none outline-none text-sm text-gray-700 w-full placeholder-gray-400 font-medium"
-        />
-        <button className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-          </svg>
-        </button>
+      {/* Left: title or search */}
+      <div className="flex flex-1 items-center gap-3">
+        <div className="relative max-w-md flex-1">
+          <input
+            type="text"
+            placeholder="Tìm kiếm đề thi, báo cáo..."
+            className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-brand-text shadow-sm outline-none placeholder:text-slate-400 focus:border-brand-primary"
+          />
+        </div>
       </div>
 
-      {/* Profile Section */}
-      <div className="flex items-center gap-4">
-        <button className="relative p-2.5 bg-gray-50 hover:bg-blue-50 rounded-xl transition-colors group">
+      {/* Right: notifications + profile */}
+      <div className="relative flex items-center gap-3" ref={menuRef}>
+        {/* Bell */}
+        <button
+          type="button"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm hover:bg-slate-50 border border-slate-100"
+        >
           <Image
-             src="/assets/logos/bell.png"
-             alt="Notify"
-             width={20}
-             height={20}
-             className="opacity-60 group-hover:opacity-100 transition-opacity"
+            src="/assets/logos/bell.png"
+            alt="Thông báo"
+            width={18}
+            height={18}
           />
-          <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
         </button>
 
-        <div className="flex items-center gap-3 pl-4 border-l border-gray-100">
-          <div className="text-right hidden sm:block">
-            <div className="text-sm font-bold text-gray-800">Quang Thanh</div>
-            <div className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-md inline-block">ID: 012345</div>
-          </div>
-          <div className="relative w-10 h-10 ring-2 ring-gray-100 rounded-full overflow-hidden">
-            <img 
+        {/* Profile + dropdown trigger */}
+        <button
+          type="button"
+          onClick={() => setIsOpen((o) => !o)}
+          className="flex items-center gap-2 rounded-full bg-white pl-1 pr-2 py-1 shadow-sm transition hover:bg-slate-50 border border-slate-100"
+        >
+          <div className="h-8 w-8 overflow-hidden rounded-full border border-slate-200">
+            <Image
               src="/assets/logos/avatar.png"
-              alt="User"
-              className="w-full h-full object-cover"
+              alt={USER.name}
+              width={32}
+              height={32}
             />
           </div>
-        </div>
+          <div className="hidden flex-col text-left text-xs sm:flex">
+            <span className="font-semibold text-brand-text leading-tight">{USER.name}</span>
+            <span className="text-[10px] text-brand-muted leading-tight">
+              ID: {USER.id}
+            </span>
+          </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-4 w-4 text-slate-400 transition ${
+              isOpen ? "rotate-180" : ""
+            }`}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+
+        {/* Dropdown menu */}
+        {isOpen && (
+          <div className="absolute right-0 top-[120%] z-50 w-56 rounded-xl bg-white p-1 shadow-xl ring-1 ring-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="px-3 py-3 text-xs text-slate-500 bg-slate-50 rounded-t-lg mb-1">
+              <p className="font-bold text-brand-text text-sm mb-0.5">{USER.name}</p>
+              <p className="truncate text-[11px] font-medium">{USER.email}</p>
+            </div>
+            
+            <button
+              type="button"
+              onClick={handleMyProfile}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-brand-text hover:bg-slate-50 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-slate-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              <span>Trang cá nhân</span>
+            </button>
+            
+            <div className="my-1 h-px bg-slate-100 mx-2" />
+            
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+            >
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-red-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
+              <span>Đăng xuất</span>
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

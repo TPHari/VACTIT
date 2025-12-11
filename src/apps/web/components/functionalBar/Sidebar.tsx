@@ -14,7 +14,6 @@ const MENU_ITEMS = [
   { id: 'guide', label: 'Hướng dẫn thi', path: '/guide' },
   { id: 'faq', label: 'Câu hỏi thường gặp', path: '/faq' },
   { id: 'news', label: 'Tin tức mới nhất', path: '/news' },
-  { id: 'settings', label: 'Cài đặt', path: '/settings' },
 ];
 
 export default function Sidebar() {
@@ -26,7 +25,6 @@ export default function Sidebar() {
   };
 
   return (
-    // THAY ĐỔI: 
     // 1. top-4 left-4 bottom-4: Cách đều các cạnh 16px (1rem)
     // 2. rounded-3xl: Bo góc mạnh
     // 3. shadow-xl: Đổ bóng sâu để tạo cảm giác nổi
