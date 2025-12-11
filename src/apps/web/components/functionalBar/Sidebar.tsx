@@ -65,19 +65,20 @@ export default function Sidebar() {
       </nav>
 
       {/* Support Card (Compact) */}
-      <div className="p-4 bg-gray-50/50">
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm text-center">
-             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 text-blue-600">
-                {/* Icon support */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                  <path fillRule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.741c0-1.946 1.37-3.68 3.348-3.97z" clipRule="evenodd" />
-                </svg>
-             </div>
-            <p className="text-xs font-medium text-gray-500 mb-3">Bạn gặp khó khăn?</p>
-            <button className="text-xs bg-gray-900 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-600 transition-colors w-full">
-                Nhắn tin
-            </button>
+      <div className="sidebar__support-card">
+        <div className="sidebar__support-illustration">
+          <img
+            src="/assets/logos/support.png"
+            alt="Support"
+            width={80}
+            height={80}
+          />
         </div>
+        <div className="sidebar__support-text">
+          <h3>Liên hệ hỗ trợ</h3>
+          <p>Chúng mình sẽ hỗ trợ nhanh nhất có thể</p>
+        </div>
+        <button className="btn btn--secondary">Nhắn tin</button>
       </div>
     </aside>
   );
