@@ -1,303 +1,218 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
-// ---------- Mock data for all taken tests ----------
-// IMPORTANT: Tests are ordered from newest → oldest.
-// The FIRST element is what user sees by default.
-const TESTS = [
-  {
-    id: "test-4",
-    name: "Đề thi nền tảng số 4",
-    score: 800,
-    targetScore: 1100,
-    percent: 75,
-    duration: "60:00",
-    date: "12.04.2025",
-    analysis:
-      "Bạn đã đạt mức điểm khá, đặc biệt là ở phần Tư duy khoa học. Vẫn còn một số câu sai ở phần Ngôn ngữ, chủ yếu liên quan đến từ vựng học thuật và suy luận ngữ cảnh.",
-    subjects: [
-      { id: "math", title: "Toán", correct: 55, total: 60 },
-      { id: "verbal", title: "Ngôn ngữ", correct: 52, total: 60 },
-      { id: "logic", title: "Tư duy khoa học", correct: 55, total: 60 },
-    ],
-    // chỉ demo vài câu – sau này bạn có thể thay bằng đủ 60 câu
-    answers: [
-      { number: 1, answer: "A", correct: true },
-      { number: 2, answer: "C", correct: true },
-      { number: 3, answer: "E", correct: false },
-      { number: 4, answer: "B", correct: true },
-      { number: 5, answer: "A", correct: true },
-      { number: 6, answer: "C", correct: true },
-      { number: 7, answer: "D", correct: false },
-    ],
-  },
-  {
-    id: "test-3",
-    name: "Đề thi nền tảng số 3",
-    score: 750,
-    targetScore: 1100,
-    percent: 68,
-    duration: "120:00",
-    date: "03.03.2025",
-    analysis:
-      "Kết quả cho thấy phần Toán còn khá nhiều câu sai ở dạng bài đọc biểu đồ và bài toán suy luận. Ngôn ngữ và Tư duy khoa học ở mức ổn định.",
-    subjects: [
-      { id: "math", title: "Toán", correct: 48, total: 60 },
-      { id: "verbal", title: "Ngôn ngữ", correct: 50, total: 60 },
-      { id: "logic", title: "Tư duy khoa học", correct: 52, total: 60 },
-    ],
-    answers: [
-      { number: 1, answer: "B", correct: false },
-      { number: 2, answer: "C", correct: true },
-      { number: 3, answer: "D", correct: true },
-      { number: 4, answer: "A", correct: true },
-      { number: 5, answer: "E", correct: false },
-      { number: 6, answer: "B", correct: true },
-      { number: 7, answer: "C", correct: true },
-    ],
-  },
-  {
-    id: "test-2",
-    name: "Đề thi nền tảng số 2",
-    score: 900,
-    targetScore: 1100,
-    percent: 82,
-    duration: "90:00",
-    date: "20.02.2025",
-    analysis:
-      "Đây là một trong những bài có kết quả tốt nhất, đặc biệt là phần Ngôn ngữ. Tuy nhiên vẫn còn một số câu khó ở Tư duy khoa học.",
-    subjects: [
-      { id: "math", title: "Toán", correct: 57, total: 60 },
-      { id: "verbal", title: "Ngôn ngữ", correct: 58, total: 60 },
-      { id: "logic", title: "Tư duy khoa học", correct: 54, total: 60 },
-    ],
-    answers: [
-      { number: 1, answer: "A", correct: true },
-      { number: 2, answer: "B", correct: true },
-      { number: 3, answer: "C", correct: true },
-      { number: 4, answer: "D", correct: true },
-      { number: 5, answer: "E", correct: true },
-      { number: 6, answer: "A", correct: true },
-      { number: 7, answer: "B", correct: false },
-    ],
-  },
-  {
-    id: "test-1",
-    name: "Đề thi nền tảng số 1",
-    score: 850,
-    targetScore: 1100,
-    percent: 77,
-    duration: "120:00",
-    date: "01.02.2025",
-    analysis:
-      "Bài thi đầu tiên cho thấy nền tảng tương đối tốt. Các sai sót chủ yếu đến từ việc quản lý thời gian và đọc chưa kỹ đề.",
-    subjects: [
-      { id: "math", title: "Toán", correct: 53, total: 60 },
-      { id: "verbal", title: "Ngôn ngữ", correct: 55, total: 60 },
-      { id: "logic", title: "Tư duy khoa học", correct: 52, total: 60 },
-    ],
-    answers: [
-      { number: 1, answer: "C", correct: true },
-      { number: 2, answer: "D", correct: true },
-      { number: 3, answer: "E", correct: true },
-      { number: 4, answer: "B", correct: false },
-      { number: 5, answer: "A", correct: true },
-      { number: 6, answer: "C", correct: true },
-      { number: 7, answer: "D", correct: true },
-    ],
-  },
-];
-
-// Map subject id → color (class CSS)
-const SUBJECT_CLASS_MAP: Record<string, string> = {
-  math: "results-subject-card--math",
-  verbal: "results-subject-card--verbal",
-  logic: "results-subject-card--logic",
-};
+import { TESTS, TOTAL_QUESTIONS } from "@/lib/mock-tests";
 
 export default function ResultsPage() {
-  // Default = newest test → TESTS[0]
+  const router = useRouter();
   const [selectedTestId, setSelectedTestId] = useState(TESTS[0].id);
-
   const selectedTest = TESTS.find((t) => t.id === selectedTestId)!;
 
-  // Convert percentage to degrees for the conic gradient
-  const progressDeg = (selectedTest.percent / 100) * 360;
+  // build 120 answers
+  const allAnswers = Array.from({ length: TOTAL_QUESTIONS }, (_v, idx) => {
+    const number = idx + 1;
+    const found = selectedTest.answers.find((a) => a.number === number);
+    return (
+      found ?? {
+        number,
+        answer: "-",
+        correct: false,
+      }
+    );
+  });
+
+  const totalCorrect = allAnswers.filter(
+    (a) => a.answer !== "-" && a.correct
+  ).length;
 
   return (
-    <div className="flex flex-row">
-      {/* Main content */}
-      <Sidebar></Sidebar>
-      <div className="main">
-        <Topbar></Topbar>
-        {/* Results content */}
-        <main className="content">
-          {/* Title */}
-          <section className="page-section">
-            <h1 className="page-title">Kết quả bài thi</h1>
-          </section>
+    // PAGE: normal document scroll, sidebar + content share height naturally
+    <div className="flex min-h-screen bg-brand-bg">
+      {/* Sidebar – not scroll-isolated anymore */}
+      <Sidebar />
 
-          {/* Top row: score + subjects */}
-          <section className="grid results-grid-top">
-            {/* Score card */}
-            <article className="card results-score-card">
-              <div className="results-score-card__header">
-                <div>
-                  <p className="results-score-label">Điểm tổng</p>
-                  <p className="results-score-value">{selectedTest.score}</p>
-                </div>
-                <div className="results-score-target">
-                  <p className="results-score-target-label">Điểm mục tiêu</p>
-                  <p className="results-score-target-value">
-                    {selectedTest.targetScore}
-                  </p>
-                </div>
-              </div>
+      {/* Right side */}
+      <div className="flex flex-1 flex-col">
+        {/* Topbar */}
+        <div className="px-6 pt-4 lg:px-8">
+          <Topbar />
+        </div>
 
-              <div className="results-score-card__body">
-                {/* Triangle “chart” – purely visual */}
-                <div className="results-score-chart">
-                  <div className="results-score-triangle results-score-triangle--large" />
-                  <div className="results-score-triangle results-score-triangle--medium" />
-                  <div className="results-score-triangle results-score-triangle--small" />
-                </div>
-
-                {/* Donut progress */}
-                <div className="stats__progress">
-                  <div
-                    className="progress-ring"
-                    style={{
-                      background: `conic-gradient(#ffc83a 0 ${progressDeg}deg, #e6ebff ${progressDeg}deg 360deg)`,
-                    }}
-                  >
-                    <div className="progress-ring__inner">
-                      <span className="progress-ring__value">
-                        {selectedTest.percent}%
+        {/* Main 2-column layout */}
+        <div className="flex px-6 pb-8 pt-4 lg:px-8">
+          {/* ========== MIDDLE COLUMN ========== */}
+          <div className="flex flex-1 flex-col border-r border-slate-200 pr-6">
+            {/* Subjects + Tổng điểm */}
+            <div className="flex gap-6 pb-4">
+              {/* Subjects */}
+              <div className="w-1/2">
+                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-muted">
+                  Môn thi
+                </h2>
+                <ul className="space-y-2 text-sm">
+                  {selectedTest.subjects.map((subject) => (
+                    <li
+                      key={subject.id}
+                      className="flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm"
+                    >
+                      <span className="font-medium text-brand-text">
+                        {subject.title}
                       </span>
-                    </div>
-                  </div>
-                </div>
+                      <span className="text-xs text-brand-muted">
+                        {subject.correct}/{subject.total} câu đúng
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </article>
 
-            {/* Subject summary cards */}
-            <aside className="results-subjects">
-              {selectedTest.subjects.map((subject) => (
-                <article
-                  key={subject.id}
-                  className={
-                    "results-subject-card " +
-                    (SUBJECT_CLASS_MAP[subject.id] ?? "")
-                  }
-                >
-                  <h3 className="results-subject-card__title">
-                    {subject.title}
-                  </h3>
-                  <p className="results-subject-card__stat">
-                    <span className="results-subject-card__number">
-                      {subject.correct}
-                    </span>
-                    <span className="results-subject-card__text">
-                      Câu đúng
-                      <br />
-                      Trên tổng {subject.total} câu
+              {/* Tổng điểm */}
+              <div className="flex flex-1 flex-col justify-between rounded-card bg-white p-4 shadow-card">
+                <div>
+                  <p className="text-xs font-medium text-brand-muted">
+                    Tổng điểm
+                  </p>
+                  <p className="mt-1 text-3xl font-bold text-brand-text">
+                    {selectedTest.score}
+                  </p>
+                  <p className="mt-1 text-xs text-brand-muted">
+                    Mục tiêu:{" "}
+                    <span className="font-semibold text-brand-primary">
+                      {selectedTest.targetScore}
                     </span>
                   </p>
-                  <button className="btn btn--white">Phân tích</button>
-                </article>
-              ))}
-            </aside>
-          </section>
+                  <p className="mt-1 text-xs text-brand-muted">
+                    Tỉ lệ đúng:{" "}
+                    <span className="font-semibold text-brand-text">
+                      {selectedTest.percent}%
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs text-brand-muted">
+                    Số câu đúng:{" "}
+                    <span className="font-semibold text-brand-text">
+                      {totalCorrect}/{TOTAL_QUESTIONS}
+                    </span>
+                  </p>
+                </div>
+                <div className="mt-3 text-xs text-brand-muted">
+                  <p>Thời gian làm bài: {selectedTest.duration}</p>
+                  <p>Ngày thi: {selectedTest.date}</p>
+                </div>
+              </div>
+            </div>
 
-          {/* Middle row: analysis + answers */}
-          <section className="grid results-grid-middle">
-            {/* Analysis */}
-            <article className="card results-analysis-card">
-              <header className="results-analysis-card__header">
-                <div className="results-analysis-card__icon">★</div>
-                <h2 className="section-title">Phân tích bài làm</h2>
-              </header>
-              <p className="results-analysis-card__text">
-                {selectedTest.analysis}
-              </p>
-            </article>
-
-            {/* Answer sheet */}
-            <article className="card results-answers-card">
-              <header className="results-answers-card__header">
-                <h2 className="section-title">Đáp án chi tiết</h2>
-                <p className="results-answers-card__legend">
-                  <span className="results-answers-badge results-answers-badge--correct">
-                    Đúng
-                  </span>
-                  <span className="results-answers-badge results-answers-badge--wrong">
-                    Sai
-                  </span>
+            {/* Phân tích + Lịch sử thi */}
+            <div className="mt-4 space-y-4">
+              {/* Phân tích */}
+              <section className="rounded-card bg-white p-4 shadow-card">
+                <header className="mb-2 flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff4d6] text-sm">
+                    ★
+                  </div>
+                  <h2 className="text-sm font-semibold text-brand-text">
+                    Phân tích bài làm
+                  </h2>
+                </header>
+                <p className="text-sm leading-relaxed text-brand-muted">
+                  {selectedTest.analysis}
                 </p>
-              </header>
+              </section>
 
-              <div className="results-answers-grid">
-                {selectedTest.answers.map((item) => (
-                  <div key={item.number} className="results-answers-item">
-                    <span className="results-answers-number">
-                      {item.number}
+              {/* Lịch sử thi – max 4 rows visible, then scroll */}
+              <section className="rounded-card bg-white p-4 shadow-card">
+                <header className="mb-2 flex items-center justify-between">
+                  <h2 className="text-sm-center font-semibold text-brand-text">
+                    Lịch sử thi
+                  </h2>
+                </header>
+
+                <div className="mt-1 max-h-40 overflow-y-auto pr-1 text-xs">
+                  <div className="grid grid-cols-[2fr_0.5fr_0.7fr_1fr_1.2fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted">
+                    <div className="text-center">Tên đề thi</div>
+                    <div className="text-center">Điểm</div>
+                    <div className="text-center">Thời gian</div>
+                    <div className="text-center">Ngày thi</div>
+                    <div className="text-center"></div>
+                  </div>
+
+                  {TESTS.map((test) => {
+                    const isActive = test.id === selectedTestId;
+
+                    return (
+                      <div
+                        key={test.id}
+                        onClick={() => setSelectedTestId(test.id)}
+                        className={`grid w-full grid-cols-[2fr_0.5fr_0.7fr_1fr_1.2fr] border-b border-slate-100 py-2 text-left transition cursor-pointer ${
+                          isActive ? "rounded-md bg-[#eef4ff] font-semibold" : "bg-transparent"
+                        }`}
+                      >
+                        <div className="text-center">{test.name}</div>
+                        <div className="text-center">{test.score}</div>
+                        <div className="text-center">{test.duration}</div>
+                        <div className="text-center">{test.date}</div>
+                        <div className="text-center">
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation(); // don't override row selection
+                              router.push(`/review/${test.id}`);
+                            }}
+                            className="text-xs font-semibold text-blue-600 hover:underline"
+                          >
+                            Xem chi tiết
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                </div>
+              </section>
+            </div>
+          </div>
+
+          {/* ========== RIGHT COLUMN: Đáp án 120 câu ========== */}
+          <div className="ml-6 flex w-[320px] flex-col border-b border-slate-200">
+            <header className="border-b border-slate-200 pb-3">
+              <h2 className="text-base font-semibold text-brand-text">
+                Đáp án 120 câu
+              </h2>
+              <p className="mt-1 text-xs text-brand-muted">
+                Mỗi ô thể hiện một câu hỏi. Màu xanh: đúng, màu đỏ: sai, dấu
+                &quot;-&quot; là chưa có đáp án.
+              </p>
+            </header>
+
+            {/* Own scroll, but height is capped so it fits nicely in view */}
+            <div className="mt-3 max-h-[460px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-2 text-xs ">
+                {allAnswers.map((item) => (
+                  <div
+                    key={item.number}
+                    className="flex items-center justify-between rounded-full border border-slate-200 bg-white px-3 py-1.5"
+                  >
+                    <span className="text-[11px] text-brand-muted">
+                      Câu {item.number}
                     </span>
                     <span
-                      className={
-                        "results-answers-bubble " +
-                        (item.correct
-                          ? "results-answers-bubble--correct"
-                          : "results-answers-bubble--wrong")
-                      }
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold  ${
+                        item.answer === "-"
+                          ? "bg-red-500 text-white"
+                          : item.correct
+                          ? "bg-red-500 text-white"
+                          : "bg-green-500 text-white"
+                      }`}
                     >
                       {item.answer}
                     </span>
                   </div>
                 ))}
               </div>
-            </article>
-          </section>
-
-          {/* History */}
-          <section className="card results-history-card">
-            <header className="results-history-card__header">
-              <h2 className="section-title">Lịch sử thi</h2>
-            </header>
-
-            <div className="results-history-table">
-              <div className="results-history-row results-history-row--header">
-                <div className="results-history-cell">Tên đề thi</div>
-                <div className="results-history-cell">Điểm thi</div>
-                <div className="results-history-cell">Thời gian làm bài</div>
-                <div className="results-history-cell">Ngày thi</div>
-              </div>
-
-              {TESTS.map((test) => {
-                const isActive = test.id === selectedTestId;
-                return (
-                  <button
-                    key={test.id}
-                    type="button"
-                    className={
-                      "results-history-row results-history-row--clickable " +
-                      (isActive ? "results-history-row--active" : "")
-                    }
-                    onClick={() => setSelectedTestId(test.id)}
-                  >
-                    <div className="results-history-cell">{test.name}</div>
-                    <div className="results-history-cell">{test.score}</div>
-                    <div className="results-history-cell">{test.duration}</div>
-                    <div className="results-history-cell">{test.date}</div>
-                  </button>
-                );
-              })}
             </div>
-          </section>
-        </main>
+          </div>
+        </div>
       </div>
     </div>
   );

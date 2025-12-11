@@ -49,7 +49,7 @@ export default function AnswerPanel({
              key={q.id}
              className={`px-1 py-3 flex items-center gap-4 ${((idx + 1) % 5 === 0 ? divider : '')}`}
            >
-             <div className="flex-shrink-0 text-sm text-gray-600 font-medium lg:pr-4 pr-2 text-right">
+             <div className="shrink-0 text-sm text-gray-600 font-medium lg:pr-4 pr-2 text-right">
                {q.id}
              </div>
              <div className="flex-1">
@@ -76,7 +76,7 @@ export default function AnswerPanel({
               </div>
 
               {/* flag toggle column */}
-              <div className="w-8 flex-shrink-0">
+              <div className="w-8 shrink-0">
                 <button
                   onClick={() => onToggleFlag?.(q.id)}
                   aria-pressed={!!flags?.[q.id]}
