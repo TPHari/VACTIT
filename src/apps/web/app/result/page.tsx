@@ -3,8 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
+import DashboardLayout from '@/components/layout/DashboardLayout';
 // ---------- Mock data for all taken tests ----------
 // IMPORTANT: Tests are ordered from newest → oldest.
 // The FIRST element is what user sees by default.
@@ -129,176 +128,176 @@ export default function ResultsPage() {
   const progressDeg = (selectedTest.percent / 100) * 360;
 
   return (
-    <div className="flex flex-row">
-      {/* Main content */}
-      <Sidebar></Sidebar>
-      <div className="main">
-        <Topbar></Topbar>
-        {/* Results content */}
-        <main className="content">
-          {/* Title */}
-          <section className="page-section">
-            <h1 className="page-title">Kết quả bài thi</h1>
-          </section>
+    <DashboardLayout>
+      <div className="flex flex-row">
+        {/* Main content */}
+        <div className="main">
+          {/* Results content */}
+          <main className="content">
+            {/* Title */}
+            <section className="page-section">
+              <h1 className="page-title">Kết quả bài thi</h1>
+            </section>
 
-          {/* Top row: score + subjects */}
-          <section className="grid results-grid-top">
-            {/* Score card */}
-            <article className="card results-score-card">
-              <div className="results-score-card__header">
-                <div>
-                  <p className="results-score-label">Điểm tổng</p>
-                  <p className="results-score-value">{selectedTest.score}</p>
-                </div>
-                <div className="results-score-target">
-                  <p className="results-score-target-label">Điểm mục tiêu</p>
-                  <p className="results-score-target-value">
-                    {selectedTest.targetScore}
-                  </p>
-                </div>
-              </div>
-
-              <div className="results-score-card__body">
-                {/* Triangle “chart” – purely visual */}
-                <div className="results-score-chart">
-                  <div className="results-score-triangle results-score-triangle--large" />
-                  <div className="results-score-triangle results-score-triangle--medium" />
-                  <div className="results-score-triangle results-score-triangle--small" />
+            {/* Top row: score + subjects */}
+            <section className="grid results-grid-top">
+              {/* Score card */}
+              <article className="card results-score-card">
+                <div className="results-score-card__header">
+                  <div>
+                    <p className="results-score-label">Điểm tổng</p>
+                    <p className="results-score-value">{selectedTest.score}</p>
+                  </div>
+                  <div className="results-score-target">
+                    <p className="results-score-target-label">Điểm mục tiêu</p>
+                    <p className="results-score-target-value">
+                      {selectedTest.targetScore}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Donut progress */}
-                <div className="stats__progress">
-                  <div
-                    className="progress-ring"
-                    style={{
-                      background: `conic-gradient(#ffc83a 0 ${progressDeg}deg, #e6ebff ${progressDeg}deg 360deg)`,
-                    }}
-                  >
-                    <div className="progress-ring__inner">
-                      <span className="progress-ring__value">
-                        {selectedTest.percent}%
-                      </span>
+                <div className="results-score-card__body">
+                  {/* Triangle “chart” – purely visual */}
+                  <div className="results-score-chart">
+                    <div className="results-score-triangle results-score-triangle--large" />
+                    <div className="results-score-triangle results-score-triangle--medium" />
+                    <div className="results-score-triangle results-score-triangle--small" />
+                  </div>
+
+                  {/* Donut progress */}
+                  <div className="stats__progress">
+                    <div
+                      className="progress-ring"
+                      style={{
+                        background: `conic-gradient(#ffc83a 0 ${progressDeg}deg, #e6ebff ${progressDeg}deg 360deg)`,
+                      }}
+                    >
+                      <div className="progress-ring__inner">
+                        <span className="progress-ring__value">
+                          {selectedTest.percent}%
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </article>
+              </article>
 
-            {/* Subject summary cards */}
-            <aside className="results-subjects">
-              {selectedTest.subjects.map((subject) => (
-                <article
-                  key={subject.id}
-                  className={
-                    "results-subject-card " +
-                    (SUBJECT_CLASS_MAP[subject.id] ?? "")
-                  }
-                >
-                  <h3 className="results-subject-card__title">
-                    {subject.title}
-                  </h3>
-                  <p className="results-subject-card__stat">
-                    <span className="results-subject-card__number">
-                      {subject.correct}
+              {/* Subject summary cards */}
+              <aside className="results-subjects">
+                {selectedTest.subjects.map((subject) => (
+                  <article
+                    key={subject.id}
+                    className={
+                      "results-subject-card " +
+                      (SUBJECT_CLASS_MAP[subject.id] ?? "")
+                    }
+                  >
+                    <h3 className="results-subject-card__title">
+                      {subject.title}
+                    </h3>
+                    <p className="results-subject-card__stat">
+                      <span className="results-subject-card__number">
+                        {subject.correct}
+                      </span>
+                      <span className="results-subject-card__text">
+                        Câu đúng
+                        <br />
+                        Trên tổng {subject.total} câu
+                      </span>
+                    </p>
+                    <button className="btn btn--white">Phân tích</button>
+                  </article>
+                ))}
+              </aside>
+            </section>
+
+            {/* Middle row: analysis + answers */}
+            <section className="grid results-grid-middle">
+              {/* Analysis */}
+              <article className="card results-analysis-card">
+                <header className="results-analysis-card__header">
+                  <div className="results-analysis-card__icon">★</div>
+                  <h2 className="section-title">Phân tích bài làm</h2>
+                </header>
+                <p className="results-analysis-card__text">
+                  {selectedTest.analysis}
+                </p>
+              </article>
+
+              {/* Answer sheet */}
+              <article className="card results-answers-card">
+                <header className="results-answers-card__header">
+                  <h2 className="section-title">Đáp án chi tiết</h2>
+                  <p className="results-answers-card__legend">
+                    <span className="results-answers-badge results-answers-badge--correct">
+                      Đúng
                     </span>
-                    <span className="results-subject-card__text">
-                      Câu đúng
-                      <br />
-                      Trên tổng {subject.total} câu
+                    <span className="results-answers-badge results-answers-badge--wrong">
+                      Sai
                     </span>
                   </p>
-                  <button className="btn btn--white">Phân tích</button>
-                </article>
-              ))}
-            </aside>
-          </section>
+                </header>
 
-          {/* Middle row: analysis + answers */}
-          <section className="grid results-grid-middle">
-            {/* Analysis */}
-            <article className="card results-analysis-card">
-              <header className="results-analysis-card__header">
-                <div className="results-analysis-card__icon">★</div>
-                <h2 className="section-title">Phân tích bài làm</h2>
-              </header>
-              <p className="results-analysis-card__text">
-                {selectedTest.analysis}
-              </p>
-            </article>
+                <div className="results-answers-grid">
+                  {selectedTest.answers.map((item) => (
+                    <div key={item.number} className="results-answers-item">
+                      <span className="results-answers-number">
+                        {item.number}
+                      </span>
+                      <span
+                        className={
+                          "results-answers-bubble " +
+                          (item.correct
+                            ? "results-answers-bubble--correct"
+                            : "results-answers-bubble--wrong")
+                        }
+                      >
+                        {item.answer}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </section>
 
-            {/* Answer sheet */}
-            <article className="card results-answers-card">
-              <header className="results-answers-card__header">
-                <h2 className="section-title">Đáp án chi tiết</h2>
-                <p className="results-answers-card__legend">
-                  <span className="results-answers-badge results-answers-badge--correct">
-                    Đúng
-                  </span>
-                  <span className="results-answers-badge results-answers-badge--wrong">
-                    Sai
-                  </span>
-                </p>
+            {/* History */}
+            <section className="card results-history-card">
+              <header className="results-history-card__header">
+                <h2 className="section-title">Lịch sử thi</h2>
               </header>
 
-              <div className="results-answers-grid">
-                {selectedTest.answers.map((item) => (
-                  <div key={item.number} className="results-answers-item">
-                    <span className="results-answers-number">
-                      {item.number}
-                    </span>
-                    <span
+              <div className="results-history-table">
+                <div className="results-history-row results-history-row--header">
+                  <div className="results-history-cell">Tên đề thi</div>
+                  <div className="results-history-cell">Điểm thi</div>
+                  <div className="results-history-cell">Thời gian làm bài</div>
+                  <div className="results-history-cell">Ngày thi</div>
+                </div>
+
+                {TESTS.map((test) => {
+                  const isActive = test.id === selectedTestId;
+                  return (
+                    <button
+                      key={test.id}
+                      type="button"
                       className={
-                        "results-answers-bubble " +
-                        (item.correct
-                          ? "results-answers-bubble--correct"
-                          : "results-answers-bubble--wrong")
+                        "results-history-row results-history-row--clickable " +
+                        (isActive ? "results-history-row--active" : "")
                       }
+                      onClick={() => setSelectedTestId(test.id)}
                     >
-                      {item.answer}
-                    </span>
-                  </div>
-                ))}
+                      <div className="results-history-cell">{test.name}</div>
+                      <div className="results-history-cell">{test.score}</div>
+                      <div className="results-history-cell">{test.duration}</div>
+                      <div className="results-history-cell">{test.date}</div>
+                    </button>
+                  );
+                })}
               </div>
-            </article>
-          </section>
-
-          {/* History */}
-          <section className="card results-history-card">
-            <header className="results-history-card__header">
-              <h2 className="section-title">Lịch sử thi</h2>
-            </header>
-
-            <div className="results-history-table">
-              <div className="results-history-row results-history-row--header">
-                <div className="results-history-cell">Tên đề thi</div>
-                <div className="results-history-cell">Điểm thi</div>
-                <div className="results-history-cell">Thời gian làm bài</div>
-                <div className="results-history-cell">Ngày thi</div>
-              </div>
-
-              {TESTS.map((test) => {
-                const isActive = test.id === selectedTestId;
-                return (
-                  <button
-                    key={test.id}
-                    type="button"
-                    className={
-                      "results-history-row results-history-row--clickable " +
-                      (isActive ? "results-history-row--active" : "")
-                    }
-                    onClick={() => setSelectedTestId(test.id)}
-                  >
-                    <div className="results-history-cell">{test.name}</div>
-                    <div className="results-history-cell">{test.score}</div>
-                    <div className="results-history-cell">{test.duration}</div>
-                    <div className="results-history-cell">{test.date}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        </main>
+            </section>
+          </main>
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
