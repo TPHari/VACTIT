@@ -128,7 +128,7 @@ button {
 /* Thẻ Support */
 .sidebar__support-card {
   margin-top: auto;
-  background: #f0f4ff; /* Nền xanh rất nhạt */
+  background: #3366ff;
   border-radius: var(--radius-md);
   padding: 18px 16px;
   text-align: center;
@@ -146,14 +146,14 @@ button {
 .sidebar__support-text h3 {
   margin: 0 0 4px;
   font-size: 15px;
-  color: var(--color-text-main);
+  color: #ffffff;
   font-weight: 700;
 }
 
 .sidebar__support-text p {
   margin: 0;
   font-size: 13px;
-  color: var(--color-text-muted);
+  color: #e0e7ff;
 }
 
 /* Nút trong thẻ support */
@@ -163,8 +163,8 @@ button {
     border: 1px solid var(--color-primary-soft);
 }
 .sidebar__support-card .btn--secondary:hover {
-    background: var(--color-primary);
-    color: #ffffff;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
 }
 
 /* Main */
@@ -469,6 +469,21 @@ button {
 }
 
 /* Leaderboard */
+
+.leaderboard-row {
+  transition: all 0.2s ease-out;
+  border-left: 3px solid transparent;
+}
+
+.leaderboard-row:hover {
+  background-color: #f0f7ff; /* Nền xanh rất nhạt */
+  transform: scale(1.01) translateX(4px); /* Phóng to nhẹ và trượt sang phải */
+  border-left-color: var(--color-primary); /* Hiện vạch màu xanh bên trái */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  z-index: 5;
+  border-radius: 8px;
+}
+
 .card--leaderboard {
   padding: 18px 20px;
 }
