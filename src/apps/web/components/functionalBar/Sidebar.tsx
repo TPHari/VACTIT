@@ -25,7 +25,6 @@ export default function Sidebar() {
   };
 
   return (
-    // [FIX]: Thêm 'overflow-x-hidden' để cắt bỏ scroll ngang thừa
     <aside className="sidebar fixed top-4 left-4 h-[calc(100vh-2rem)] rounded-3xl z-50 overflow-hidden overflow-x-hidden transition-all duration-300">
       
       {/* Logo Section */}
@@ -41,7 +40,6 @@ export default function Sidebar() {
       </div>
 
       {/* Nav Section */}
-      {/* [FIX]: Thêm 'overflow-x-hidden' vào đây nữa cho chắc */}
       <nav className="sidebar__nav flex-1 overflow-y-auto overflow-x-hidden py-2 custom-scrollbar"> 
         {MENU_ITEMS.map((item) => {
           const active = isActive(item.path);
@@ -49,7 +47,6 @@ export default function Sidebar() {
             <Link
               key={item.id}
               href={item.path}
-              // Dùng class CSS từ globals.css
               className={`sidebar__nav-item flex items-center px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 group gap-3 ${
                 active ? 'sidebar__nav-item--active' : ''
               }`}
@@ -74,7 +71,15 @@ export default function Sidebar() {
           <h3>Liên hệ hỗ trợ</h3>
           <p>Chúng mình sẽ hỗ trợ nhanh nhất có thể</p>
         </div>
-        <button className="btn btn--secondary mt-2 w-full">Nhắn tin</button>
+        
+        <a 
+          href="https://www.facebook.com/bailearn" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="btn btn--secondary mt-2 w-full text-center flex items-center justify-center no-underline"
+        >
+          Nhắn tin
+        </a>
       </div>
     </aside>
   );
