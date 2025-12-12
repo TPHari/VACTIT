@@ -1,138 +1,47 @@
-'use client';
+import React from 'react';
+import ExamContainer from '@/components/exam/ExamContainer';
 
-import React, { useEffect, useState } from 'react';
-import ViewerPane from '@/components/exam/ViewerPane';
-import Controls from '@/components/exam/Controls';
-import AnswerPanel from '@/components/exam/AnswerPanel';
+// Định nghĩa params cho Next.js 15 (Promise) hoặc Next.js 13/14
+type Params = Promise<{ testId: string }>;
 
-type Question = {
-  id: number;
-  text?: string;
-  options: string[];
-};
-
-type Params = Promise<{ testId: string }>
-
-export default function ExamPage(props: {
-  params: Params;
-} ) {
-  const params = React.use(props.params)
-  const testId = params.testId
-  const [pages, setPages] = useState<string[]>([]);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [zoom, setZoom] = useState(1);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [flags, setFlags] = useState<Record<number, boolean>>({});
-  const [questions, setQuestions] = useState<Question[]>([]);
-
-  const testData = {
-    title: 'Đề thi thử môn ABC',
-    durationSeconds: 3600, 
-    testId: testId,
-  }
-
-
-  useEffect(() => {
-    setQuestions(
-      Array.from({ length: 120 }).map((_, i) => ({
-        id: i + 1,
-        text: undefined,
-        options: ['A', 'B', 'C', 'D'],
-      }))
-    );
-  }, []);
-
-  useEffect(() => {
-   console.log(`Fetching pages for exam ${testId} from /api/exam/${testId}/pages`);
-   fetch(`/api/exam/${testId}/pages`)
-     .then(res => res.json())
-     .then(data => {
-       console.log('Fetched pages:', data);
-       setPages(data.pages);
-       setPageNumber(1);
-       console.log(`Loaded ${data.pages.length} pages for exam ${testId}`);
-     });
-  }, [testId]);
-
-  useEffect(() => {
-    const savedAnswers = localStorage.getItem(`exam_${testId}_answers`);
-    const savedFlags = localStorage.getItem(`exam_${testId}_flags`);
-    if (savedAnswers) {
-      setAnswers(JSON.parse(savedAnswers));
-    }
-    if (savedFlags) {
-      setFlags(JSON.parse(savedFlags));
-    }
-  }, [testId]);
-
-  function handleSelect(qid: number, value: string) {
-    setAnswers((answers) => {
-      const updatedAnswers = { ...answers, [qid]: value };
-      localStorage.setItem(`exam_${testId}_answers`, JSON.stringify(updatedAnswers));
-      return updatedAnswers;
-    }
-    );
-  }
-
-  async function submitAnswers() {
-  localStorage.removeItem(`exam_${testId}_answers`);
-  localStorage.removeItem(`exam_${testId}_flags`);
+// Giả lập hàm lấy data (Thay thế bằng logic gọi DB/API thật của bạn)
+async function getExamPages(testId: string) {
+  // LƯU Ý: Khi fetch trong Server Component, bạn cần dùng absolute URL 
+  // hoặc gọi trực tiếp vào Service/DB nếu database chung chỗ.
+  // Ở môi trường local dev thường cần http://localhost:3000
+  
   try {
-    const res = await fetch('/api/exam/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ testId, answers }),
+    // Cách 1: Fetch qua API nội bộ (cần URL đầy đủ). Hiện tại đang hard code testId là 123, bạn thay đổi theo nhu cầu. ${testId}
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/exam/123/pages`, {
+       cache: 'no-store' // Đảm bảo luôn lấy dữ liệu mới nhất
     });
-
-    if (!res.ok) {
-      const err = await res.json();
-      alert(`Failed: ${err.error}`);
-      return;
-    }
-
-    alert('Submitted');
-  } catch (err) {
-    console.error(err);
-    alert('Failed to submit');
+    
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.pages || [];
+  } catch (error) {
+    console.error("Failed to fetch exam pages:", error);
+    return [];
   }
 }
 
-  function handleExpire() {
-    alert('Time is up! Submitting your exam.');
-    submitAnswers();
-  }
+export default async function ExamPage(props: { params: Params }) {
+  // Unwrapping params (Next.js 15 pattern)
+  const params = await props.params;
+  const { testId } = params;
 
-  function handleToggleFlag(qid: number) {
-    const newFlags = { ...flags, [qid]: !flags[qid] };
-    setFlags(newFlags);
-    localStorage.setItem(`exam_${testId}_flags`, JSON.stringify(newFlags));
-  }
+  // Fetch data bên phía server
+  const pages = await getExamPages(testId);
+
   return (
-    <div className="min-h-screen flex">
-        <main className="flex-1 overflow-auto">
-          <div className="bg-white rounded-lg shadow px-4">
-            <Controls
-              startAt={Date.now()} // replace with actual start time
-              testData={testData}
-              onExpire={() => { handleExpire(); }}
-            />
-
-            <div className="flex flex-row gap-6 mt-2">
-              <ViewerPane pages={pages} zoom={zoom} />
-              <AnswerPanel
-                questions={questions}
-                answers={answers}
-                onSelect={handleSelect}
-                onSubmit={() => { submitAnswers(); }}
-                onClear={() => setAnswers({})}
-                flags={flags}
-                onToggleFlag={(qid) => {
-                  handleToggleFlag(qid);
-                }}
-              />
-            </div>
-          </div>
-        </main>
+    <div className="min-h-screen flex flex-col h-screen">
+      <main className="flex-1 overflow-hidden p-4 bg-gray-50">
+         {/* Truyền data xuống Client Component */}
+         <ExamContainer 
+            testId={testId} 
+            initialPages={pages} 
+         />
+      </main>
     </div>
   );
 }

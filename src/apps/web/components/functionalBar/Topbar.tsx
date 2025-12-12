@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {MOCK_USER as USER} from "@/lib/mock-user";
-
+import { MOCK_USER as USER } from "@/lib/mock-user";
 
 export default function Topbar() {
   const router = useRouter();
@@ -31,22 +30,20 @@ export default function Topbar() {
 
   const handleLogout = () => {
     setIsOpen(false);
-
-    // 🔐 Adjust keys to match your auth implementation
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
     }
-
     router.push("/auth/login");
   };
 
   return (
-    <header className="flex items-center justify-between gap-4">
+    // ✨ ĐÃ SỬA: Thêm các class định vị để Topbar 'né' Sidebar và nổi lên trên
+    <header className="fixed top-4 right-4 left-[18rem] z-40 flex h-16 items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-6 shadow-sm transition-all duration-300">
+      
       {/* Left: title or search */}
       <div className="flex flex-1 items-center gap-3">
-        {/* Example search bar, change to your actual content */}
         <div className="relative max-w-md flex-1">
           <input
             type="text"
@@ -61,7 +58,7 @@ export default function Topbar() {
         {/* Bell */}
         <button
           type="button"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm hover:bg-slate-50 border border-slate-100"
         >
           <Image
             src="/assets/logos/bell.png"
@@ -75,19 +72,19 @@ export default function Topbar() {
         <button
           type="button"
           onClick={() => setIsOpen((o) => !o)}
-          className="flex items-center gap-2 rounded-full bg-white px-2 py-1 shadow-sm transition hover:bg-slate-50"
+          className="flex items-center gap-2 rounded-full bg-white pl-1 pr-2 py-1 shadow-sm transition hover:bg-slate-50 border border-slate-100"
         >
-          <div className="h-9 w-9 overflow-hidden rounded-full">
+          <div className="h-8 w-8 overflow-hidden rounded-full border border-slate-200">
             <Image
               src="/assets/logos/avatar.png"
               alt={USER.name}
-              width={36}
-              height={36}
+              width={32}
+              height={32}
             />
           </div>
           <div className="hidden flex-col text-left text-xs sm:flex">
-            <span className="font-semibold text-brand-text">{USER.name}</span>
-            <span className="text-[11px] text-brand-muted">
+            <span className="font-semibold text-brand-text leading-tight">{USER.name}</span>
+            <span className="text-[10px] text-brand-muted leading-tight">
               ID: {USER.id}
             </span>
           </div>
@@ -109,24 +106,33 @@ export default function Topbar() {
 
         {/* Dropdown menu */}
         {isOpen && (
-          <div className="absolute right-0 top-[110%] z-20 w-48 rounded-xl bg-white p-1 shadow-lg ring-1 ring-slate-100">
-            <div className="px-3 py-2 text-xs text-slate-500">
-              <p className="font-semibold text-brand-text">{USER.name}</p>
-              <p className="truncate text-[11px]">{USER.email}</p>
+          <div className="absolute right-0 top-[120%] z-50 w-56 rounded-xl bg-white p-1 shadow-xl ring-1 ring-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="px-3 py-3 text-xs text-slate-500 bg-slate-50 rounded-t-lg mb-1">
+              <p className="font-bold text-brand-text text-sm mb-0.5">{USER.name}</p>
+              <p className="truncate text-[11px] font-medium">{USER.email}</p>
             </div>
-            <div className="my-1 h-px bg-slate-100" />
+            
             <button
               type="button"
               onClick={handleMyProfile}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-brand-text hover:bg-slate-50"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-brand-text hover:bg-slate-50 transition-colors"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-slate-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
               <span>Trang cá nhân</span>
             </button>
+            
+            <div className="my-1 h-px bg-slate-100 mx-2" />
+            
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-50"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
             >
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-red-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
               <span>Đăng xuất</span>
             </button>
           </div>
