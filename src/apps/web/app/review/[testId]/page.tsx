@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import Sidebar from "@/components/dashboard/Sidebar";
-import Topbar from "@/components/dashboard/Topbar";
+import Sidebar from "@/components/functionalBar/Sidebar";
+import Topbar from "@/components/functionalBar/Topbar";
 import ViewerPane from "@/components/exam/ViewerPane"; // reuse viewer
 import AnswerReviewPanel from "@/components/exam/AnswerReviewPanel";
 import { TESTS, TOTAL_QUESTIONS } from "@/lib/mock-tests";
