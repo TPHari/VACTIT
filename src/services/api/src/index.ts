@@ -1,20 +1,13 @@
-// API Service Entry Point
-// This will be used for optional Fastify API if needed
+import server from './server';
 
-import { fastify } from 'fastify';
-
-const server = fastify({
-  logger: true
-});
-
-server.get('/health', async (request, reply) => {
-  return { status: 'ok' };
-});
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+const HOST = process.env.HOST || '0.0.0.0';
 
 const start = async () => {
   try {
-    await server.listen({ port: 3001, host: '0.0.0.0' });
-    console.log('API server running on http://localhost:3001');
+    await server.listen({ port: PORT, host: HOST });
+    console.log(`API server running on http://${HOST}:${PORT}`);
+    console.log(`Health check: http://${HOST}:${PORT}/health`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);

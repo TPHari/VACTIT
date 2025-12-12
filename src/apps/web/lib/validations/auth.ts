@@ -1,20 +1,60 @@
-import { z } from 'zod';
+import type {  NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { api } from '@/lib/api-client';
 
-export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-});
+export const authOptions: NextAuthOptions= {
+  session: {
+    strategy: 'jwt',
+  },
+  pages: {
+    signIn: '/auth/login',
+  },
+  providers: [
+    CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        try {
+          if (!credentials?.email || !credentials?.password) return null;
+          
+          // Call Fastify API for authentication
+          const response = await api.auth.login({
+            email: credentials.email,
+            password: credentials.password,
+          });
 
-export const registerSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-});
+          if (response?.data?.user) {
+            return {
+              id: response.data.user.user_id,
+              name: response.data.user.name ?? undefined,
+              email: response.data.user.email,
+            };
+          }
 
-export type LoginInput = z.infer<typeof loginSchema>;
-export type RegisterInput = z.infer<typeof registerSchema>;
+          return null;
+        } catch (err) {
+          console.error('authorize error:', err);
+          return null;
+        }
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as any).id = token.id as string;
+      }
+      return session;
+    },
+  },
+};
+
