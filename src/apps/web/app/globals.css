@@ -17,8 +17,9 @@
   --radius-lg: 24px;
   --radius-md: 18px;
   --shadow-soft: 0 14px 40px rgba(15, 35, 95, 0.08);
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Inter",
-    "SF Pro Text", sans-serif;
+  /* Bóng đổ đậm hơn dùng cho trạng thái Hover */
+  --shadow-hover: 0 20px 40px rgba(15, 35, 95, 0.12);
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", sans-serif;
 }
 
 *,
@@ -47,7 +48,6 @@ button {
 }
 
 /* Sidebar */
-
 .sidebar {
   width: 260px;
   padding: 24px 20px;
@@ -129,7 +129,6 @@ button {
 }
 
 /* Main */
-
 .main {
   flex: 1;
   padding: 20px 32px 32px;
@@ -227,14 +226,45 @@ button {
   color: var(--color-text-main);
 }
 
-/* Generic cards & buttons */
+/* ==========================================================================
+   GENERIC CARDS (ĐÃ CẬP NHẬT TÍNH NĂNG ZOOM)
+   ========================================================================== 
+*/
 
 .card {
   background: var(--color-card-bg);
   border-radius: var(--radius-lg);
   padding: 18px 20px;
   box-shadow: var(--shadow-soft);
+  
+  /* --- [TÍNH NĂNG MỚI] --- 
+     Thêm transition cho transform (phóng to) và box-shadow (bóng đổ) 
+     cubic-bezier giúp chuyển động nảy nhẹ, tự nhiên hơn 
+  */
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
+  will-change: transform; /* Tối ưu hiệu năng render cho trình duyệt */
+  border: 1px solid transparent; /* Giữ chỗ cho border để tránh giật layout */
 }
+
+/* Khi đưa chuột vào Card (Hover) */
+.card:hover {
+  transform: scale(1.02); /* Phóng to 2% */
+  box-shadow: var(--shadow-hover); /* Bóng đổ sâu hơn để tạo cảm giác nổi */
+  z-index: 10; /* Đảm bảo card nổi lên trên các phần tử khác */
+}
+
+/* --- [CLASS TIỆN ÍCH RIÊNG CHO FIGURES] ---
+   Bạn có thể thêm class này vào thẻ <img>, <div> chứa số liệu, 
+   hoặc bất cứ thứ gì bạn muốn phóng to mà không phải là Card
+*/
+.hover-zoom {
+  transition: transform 0.2s ease-out;
+  cursor: default;
+}
+.hover-zoom:hover {
+  transform: scale(1.1); /* Phóng to 10% */
+}
+
 
 .btn {
   display: inline-flex;
@@ -247,6 +277,12 @@ button {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  /* Thêm hiệu ứng nhấn nút */
+  transition: transform 0.1s ease, filter 0.2s;
+}
+
+.btn:active {
+  transform: scale(0.95); /* Thu nhỏ khi click */
 }
 
 .btn--primary {
@@ -277,7 +313,7 @@ button {
 }
 
 /* Hero card */
-
+/* Card Hero thường to nên mình tắt hiệu ứng zoom quá lớn, chỉ zoom nhẹ hoặc tắt hẳn nếu muốn */
 .card--hero {
   display: flex;
   justify-content: space-between;
@@ -286,6 +322,8 @@ button {
   background: linear-gradient(90deg, #2864D2, #2864D2);
   color: #ffffff;
 }
+
+/* Các phần CSS còn lại GIỮ NGUYÊN HOÀN TOÀN để không vỡ giao diện */
 
 .card--hero__left {
   max-width: 60%;
@@ -312,7 +350,6 @@ button {
 }
 
 /* Grid layouts */
-
 .grid {
   display: grid;
   gap: 18px;
@@ -327,7 +364,6 @@ button {
 }
 
 /* Exam now card */
-
 .card--exam-now {
   display: flex;
   flex-direction: column;
@@ -354,7 +390,6 @@ button {
 }
 
 /* Daily quiz */
-
 .card--daily-quiz__header h2 {
   margin: 0 0 10px;
   font-size: 16px;
@@ -381,6 +416,12 @@ button {
   color: var(--color-text-main);
   text-align: left;
   cursor: pointer;
+  transition: all 0.2s ease; /* Thêm transition cho mượt */
+}
+
+.quiz-option:hover {
+  background: #edf2ff;
+  transform: translateX(4px); /* Hiệu ứng trượt nhẹ khi hover đáp án */
 }
 
 .quiz-option--selected {
@@ -390,7 +431,6 @@ button {
 }
 
 /* Leaderboard */
-
 .card--leaderboard {
   padding: 18px 20px;
 }
@@ -449,7 +489,6 @@ button {
 }
 
 /* Stats */
-
 .card--stats {
   display: flex;
   flex-direction: column;
@@ -507,7 +546,6 @@ button {
 }
 
 /* Chart */
-
 .stats__chart {
   margin-top: 4px;
   padding: 14px 16px 16px;
@@ -543,21 +581,11 @@ button {
   background: #ffd86a;
 }
 
-.chart-bar--h1 {
-  height: 80%;
-}
-.chart-bar--h2 {
-  height: 60%;
-}
-.chart-bar--h3 {
-  height: 95%;
-}
-.chart-bar--h4 {
-  height: 50%;
-}
-.chart-bar--h5 {
-  height: 70%;
-}
+.chart-bar--h1 { height: 80%; }
+.chart-bar--h2 { height: 60%; }
+.chart-bar--h3 { height: 95%; }
+.chart-bar--h4 { height: 50%; }
+.chart-bar--h5 { height: 70%; }
 
 .chart-axis {
   display: flex;
@@ -565,40 +593,32 @@ button {
   font-size: 11px;
 }
 
-/* Simple responsiveness for narrower screens */
-
+/* Responsive tweaks */
 @media (max-width: 1100px) {
   .grid--two-cols {
     grid-template-columns: 1fr;
   }
-
   .card--hero {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-
   .card--hero__left {
     max-width: 100%;
   }
-  /* Make the hero illustration pop out of the card */
-.hero-illustration-wrapper {
-  position: absolute;
-  right: -40px;     /* pushes part of the image OUTSIDE the card */
-  bottom: -20px;
-}
-
-.hero-illustration {
-  position: relative;
-  z-index: 2;
-}
-
-.card--hero {
-  position: relative;      /* allow absolute children */
-  overflow: visible;       /* SUPER IMPORTANT: allow the image to overflow */
-}
-
-
+  .hero-illustration-wrapper {
+    position: absolute;
+    right: -40px;
+    bottom: -20px;
+  }
+  .hero-illustration {
+    position: relative;
+    z-index: 2;
+  }
+  .card--hero {
+    position: relative;
+    overflow: visible;
+  }
   .stats__top {
     flex-direction: column;
     align-items: flex-start;
@@ -609,329 +629,59 @@ button {
   .sidebar {
     display: none;
   }
-
   .main {
     padding: 16px;
   }
 }
 
-/* =========================
-   Results page (Kết quả)
-   ========================= */
-
-.results-grid-top {
-  grid-template-columns: 1.5fr 1.4fr;
-  align-items: stretch;
-}
-
-.results-score-card {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.results-score-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.results-score-label {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.results-score-value {
-  margin: 4px 0 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--color-text-main);
-}
-
-.results-score-target {
-  text-align: right;
-}
-
-.results-score-target-label {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
-.results-score-target-value {
-  margin: 4px 0 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-primary-dark);
-}
-
-.results-score-card__body {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-}
-
-.results-score-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  height: 120px;
-}
-
-.results-score-triangle {
-  width: 0;
-  border-radius: 10px;
-  border-left: 32px solid transparent;
-  border-right: 32px solid transparent;
-}
-
-.results-score-triangle--large {
-  border-bottom: 80px solid #ffd86a;
-}
-
-.results-score-triangle--medium {
-  border-bottom: 60px solid #ffb347;
-}
-
-.results-score-triangle--small {
-  border-bottom: 40px solid #ffec99;
-}
-
-/* Subject summary cards */
-
-.results-subjects {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.results-subject-card {
-  border-radius: 20px;
-  padding: 18px 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
-  color: #ffffff;
-}
-
-.results-subject-card--math {
-  background: #3366ff;
-}
-
-.results-subject-card--verbal {
-  background: #ff4d4f;
-}
-
-.results-subject-card--logic {
-  background: #ffc83a;
-  color: #2b1900;
-}
-
-.results-subject-card__title {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.results-subject-card__stat {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  margin: 0;
-}
-
-.results-subject-card__number {
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.results-subject-card__text {
-  font-size: 12px;
-}
-
-/* Middle row */
-
-.results-grid-middle {
-  grid-template-columns: 1.2fr 1.4fr;
-  align-items: stretch;
-}
-
-.results-analysis-card__header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.results-analysis-card__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: #fff4d6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.results-analysis-card__text {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-text-muted);
-  line-height: 1.5;
-}
-
-/* Answer sheet */
-
-.results-answers-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.results-answers-card__legend {
-  display: flex;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.results-answers-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-}
-
-.results-answers-badge--correct {
-  background: #3366ff;
-  color: #ffffff;
-}
-
-.results-answers-badge--wrong {
-  background: #ff4d4f;
-  color: #ffffff;
-}
-
-.results-answers-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px 12px;
-}
-
-.results-answers-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-}
-
-.results-answers-number {
-  width: 18px;
-  text-align: right;
-  color: var(--color-text-muted);
-}
-
-.results-answers-bubble {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.results-answers-bubble--correct {
-  background: #3366ff;
-  color: #ffffff;
-}
-
-.results-answers-bubble--wrong {
-  background: #ff4d4f;
-  color: #ffffff;
-}
-
-/* History table */
-
-.results-history-card {
-  margin-top: 18px;
-}
-
-.results-history-card__header {
-  margin-bottom: 10px;
-}
-
-.results-history-table {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.results-history-row {
-  display: grid;
-  grid-template-columns: 2fr 0.7fr 1fr 1fr;
-  padding: 8px 0;
-  border-bottom: 1px solid #eef0fb;
-  font-size: 13px;
-}
-
-.results-history-row:last-child {
-  border-bottom: none;
-}
-
-.results-history-row--header {
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.results-history-row--clickable {
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  text-align: left;
-}
-
-.results-history-row--clickable:focus-visible {
-  outline: 2px solid #3366ff;
-  outline-offset: 2px;
-}
-
-.results-history-row--active {
-  background: #eef4ff;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
-
-.results-history-cell:nth-child(2),
-.results-history-cell:nth-child(3),
-.results-history-cell:nth-child(4) {
-  text-align: center;
-}
-
-/* Responsive tweaks */
-
-@media (max-width: 1024px) {
-  .results-grid-top {
-    grid-template-columns: 1fr;
-  }
-
-  .results-grid-middle {
-    grid-template-columns: 1fr;
-  }
-
-  .results-answers-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .results-subjects {
-    grid-template-columns: 1fr;
-  }
-}
+/* Results page (Kết quả) */
+.results-grid-top { grid-template-columns: 1.5fr 1.4fr; align-items: stretch; }
+.results-score-card { display: flex; flex-direction: column; gap: 16px; }
+.results-score-card__header { display: flex; justify-content: space-between; align-items: flex-end; }
+.results-score-label { margin: 0; font-size: 13px; color: var(--color-text-muted); }
+.results-score-value { margin: 4px 0 0; font-size: 28px; font-weight: 700; color: var(--color-text-main); }
+.results-score-target { text-align: right; }
+.results-score-target-label { margin: 0; font-size: 13px; color: var(--color-text-muted); }
+.results-score-target-value { margin: 4px 0 0; font-size: 18px; font-weight: 600; color: var(--color-primary-dark); }
+.results-score-card__body { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.results-score-chart { display: flex; align-items: flex-end; gap: 10px; height: 120px; }
+.results-score-triangle { width: 0; border-radius: 10px; border-left: 32px solid transparent; border-right: 32px solid transparent; }
+.results-score-triangle--large { border-bottom: 80px solid #ffd86a; }
+.results-score-triangle--medium { border-bottom: 60px solid #ffb347; }
+.results-score-triangle--small { border-bottom: 40px solid #ffec99; }
+.results-subjects { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.results-subject-card { border-radius: 20px; padding: 18px 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; color: #ffffff; }
+.results-subject-card--math { background: #3366ff; }
+.results-subject-card--verbal { background: #ff4d4f; }
+.results-subject-card--logic { background: #ffc83a; color: #2b1900; }
+.results-subject-card__title { font-size: 18px; font-weight: 700; }
+.results-subject-card__stat { display: flex; align-items: flex-end; gap: 8px; margin: 0; }
+.results-subject-card__number { font-size: 28px; font-weight: 700; }
+.results-subject-card__text { font-size: 12px; }
+.results-grid-middle { grid-template-columns: 1.2fr 1.4fr; align-items: stretch; }
+.results-analysis-card__header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.results-analysis-card__icon { width: 32px; height: 32px; border-radius: 999px; background: #fff4d6; display: flex; align-items: center; justify-content: center; }
+.results-analysis-card__text { margin: 0; font-size: 13px; color: var(--color-text-muted); line-height: 1.5; }
+.results-answers-card__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.results-answers-card__legend { display: flex; gap: 8px; font-size: 12px; }
+.results-answers-badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 999px; font-size: 11px; }
+.results-answers-badge--correct { background: #3366ff; color: #ffffff; }
+.results-answers-badge--wrong { background: #ff4d4f; color: #ffffff; }
+.results-answers-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px 12px; }
+.results-answers-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.results-answers-number { width: 18px; text-align: right; color: var(--color-text-muted); }
+.results-answers-bubble { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+.results-answers-bubble--correct { background: #3366ff; color: #ffffff; }
+.results-answers-bubble--wrong { background: #ff4d4f; color: #ffffff; }
+.results-history-card { margin-top: 18px; }
+.results-history-card__header { margin-bottom: 10px; }
+.results-history-table { display: flex; flex-direction: column; gap: 4px; }
+.results-history-row { display: grid; grid-template-columns: 2fr 0.7fr 1fr 1fr; padding: 8px 0; border-bottom: 1px solid #eef0fb; font-size: 13px; }
+.results-history-row:last-child { border-bottom: none; }
+.results-history-row--header { font-weight: 600; color: var(--color-text-muted); }
+.results-history-row--clickable { cursor: pointer; background: transparent; border: none; text-align: left; }
+.results-history-row--clickable:focus-visible { outline: 2px solid #3366ff; outline-offset: 2px; }
+.results-history-row--active { background: #eef4ff; border-radius: 10px; font-weight: 600; }
+.results-history-cell:nth-child(2), .results-history-cell:nth-child(3), .results-history-cell:nth-child(4) { text-align: center; }
+@media (max-width: 1024px) { .results-grid-top { grid-template-columns: 1fr; } .results-grid-middle { grid-template-columns: 1fr; } .results-answers-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 768px) { .results-subjects { grid-template-columns: 1fr; } }

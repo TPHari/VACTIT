@@ -101,7 +101,7 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
           {exam.status === 'completed' ? 'Xem lại' : 'Chi tiết'}
         </button>
         
-        <Link href={`/test/${exam.id}`} className="flex-1">
+        <Link href={`/exam/${exam.id}`} className="flex-1">
              {/* Đổi màu nút nếu đã làm xong */}
             <button className={`w-full h-full py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
                 exam.status === 'completed' 
