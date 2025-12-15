@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: vactit-api
+    runtime: node
+    region: singapore
+    plan: free
+    branch: dev
+    # Build from monorepo root so workspaces + devDeps are installed
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run -w src/services/api build
+    startCommand: npm run -w src/services/api start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: vactit-redis
+          property: connectionString
+      - key: FRONTEND_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    autoDeploy: true
+
+  - type: worker
+    name: vactit-worker
+    runtime: node
+    region: singapore
+    plan: free
+    branch: dev
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run -w src/services/worker build
+    startCommand: npm run -w src/services/worker start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: vactit-redis
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true
+
+  - type: redis
+    name: vactit-redis
+    region: singapore
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
