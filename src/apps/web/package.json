@@ -2,14 +2,19 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "prisma": {
+    "schema": "../../services/api/prisma/schema.prisma"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@prisma/client": "^6.18.0",
     "@tailwindcss/postcss": "^4.0.0",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
@@ -30,6 +35,7 @@
     "@types/react-dom": "^19.2.2",
     "eslint": "^9.38.0",
     "eslint-config-next": "^16.0.0",
+    "prisma": "^6.18.0",
     "typescript": "^5.9.3"
   }
 }
