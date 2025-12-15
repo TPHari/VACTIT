@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { api } from '@/lib/api-client';
 
 type Test = {
   test_id: string;
@@ -83,9 +84,16 @@ export default function AdminTestsPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/tests');
-      const data = await res.json();
-      if (data.ok) setTests(data.data || []);
+      const data = await api.admin.tests.getAll();
+      if (data.ok) {
+        setTests(data.data || []);
+      } else {
+        console.error('Failed to load tests:', data.error);
+        alert('Không thể tải danh sách đề thi: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err: any) {
+      console.error('Failed to load tests:', err);
+      alert('Lỗi kết nối API: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -187,23 +195,39 @@ export default function AdminTestsPage() {
       alert('Vui lòng điền đầy đủ: tên, thời gian bắt đầu/kết thúc, thời lượng và tệp đề (PDF).');
       return;
     }
-    const method = editing ? 'PUT' : 'POST';
     if (editing) payload.test_id = editing.test_id;
-    const res = await fetch('/api/admin/tests', { method, body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
-    const data = await res.json();
-    if (data.ok) {
-      setShowForm(false);
-      await load();
-    } else {
-      alert('Error: ' + (data.error || 'unknown'));
+    
+    try {
+      const data = editing 
+        ? await api.admin.tests.update(payload)
+        : await api.admin.tests.create(payload);
+      
+      if (data.ok) {
+        setShowForm(false);
+        await load();
+      } else {
+        alert('Lỗi: ' + (data.error || 'Không xác định'));
+      }
+    } catch (err: any) {
+      console.error('Failed to save test:', err);
+      alert('Lỗi kết nối API: ' + err.message);
     }
   }
 
   async function remove(test_id: string) {
-    if (!confirm('Delete this test?')) return;
-    const res = await fetch(`/api/admin/tests?test_id=${encodeURIComponent(test_id)}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (data.ok) load(); else alert('Delete failed');
+    if (!confirm('Xóa đề thi này?')) return;
+    
+    try {
+      const data = await api.admin.tests.delete(test_id);
+      if (data.ok) {
+        await load();
+      } else {
+        alert('Xóa thất bại: ' + (data.error || 'Không xác định'));
+      }
+    } catch (err: any) {
+      console.error('Failed to delete test:', err);
+      alert('Lỗi kết nối API: ' + err.message);
+    }
   }
 
   const filteredTests = tests.filter(t => t.title.toLowerCase().includes(searchTerm.trim().toLowerCase()));
