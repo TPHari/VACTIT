@@ -47,7 +47,7 @@ export default function TestApiPage() {
 
       // Handle users
       if (usersData.status === 'fulfilled') {
-        const data = usersData.value;
+        const data: any = usersData.value;
         // API returns { data: [...] } format
         const userArray = data?.data || data;
         setUsers(Array.isArray(userArray) ? userArray : []);
@@ -59,7 +59,7 @@ export default function TestApiPage() {
 
       // Handle tests
       if (testsData.status === 'fulfilled') {
-        const data = testsData.value;
+        const data: any = testsData.value;
         const testArray = data?.data || data;
         setTests(Array.isArray(testArray) ? testArray : []);
         console.log('Tests loaded:', testArray);
@@ -70,7 +70,7 @@ export default function TestApiPage() {
 
       // Handle trials
       if (trialsData.status === 'fulfilled') {
-        const data = trialsData.value;
+        const data: any = trialsData.value;
         const trialArray = data?.data || data;
         setTrials(Array.isArray(trialArray) ? trialArray : []);
         console.log('Trials loaded:', trialArray);
@@ -81,7 +81,7 @@ export default function TestApiPage() {
 
       // Handle responses
       if (responsesData.status === 'fulfilled') {
-        const data = responsesData.value;
+        const data: any = responsesData.value;
         const responseArray = data?.data || data;
         setResponses(Array.isArray(responseArray) ? responseArray : []);
         console.log('Responses loaded:', responseArray);
