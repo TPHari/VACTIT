@@ -4,7 +4,7 @@ import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import NewsList from '@/components/news/NewsList';
 
-export const MOCK_NEWS = [
+const MOCK_NEWS = [
   {
     id: 'news-1',
     title: 'ĐIỂM ƯU TIÊN LÀ GÌ? CÁCH TÍNH ĐIỂM ƯU TIÊN 2025',

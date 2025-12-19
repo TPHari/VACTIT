@@ -13,6 +13,7 @@ export class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -36,6 +37,7 @@ export class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -60,6 +62,7 @@ export class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -84,6 +87,7 @@ export class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -145,5 +149,13 @@ export const api = {
       apiClient.post<any>('/api/auth/signup', data),
     login: (data: { email: string; password: string }) =>
       apiClient.post<any>('/api/auth/login', data),
+  },
+  admin: {
+    tests: {
+      getAll: () => apiClient.get<any>('/api/admin/tests'),
+      create: (data: any) => apiClient.post<any>('/api/admin/tests', data),
+      update: (data: any) => apiClient.put<any>('/api/admin/tests', data),
+      delete: (testId: string) => apiClient.delete<any>(`/api/admin/tests?test_id=${encodeURIComponent(testId)}`),
+    },
   },
 };
