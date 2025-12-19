@@ -1,135 +1,142 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-// [THÊM] Import useSearchParams để đọc từ khóa tìm kiếm từ URL
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { api } from '@/lib/api-client';
 import ExamCard from './ExamCard';
 import ExamModal from './ExamModal';
 import ExamFilterBar from '../functionalBar/ExamFilterBar';
-import Loading from '../ui/LoadingSpinner'; // Hoặc Loading.tsx tùy tên file của bạn
-import { MOCK_EXAMS } from '../../mockData/mockExam';
+import Loading from '../ui/LoadingSpinner';
 
-const getUniqueSubjects = (exams: any[]) => {
-  const subjects = exams.map(e => e.subject).filter(Boolean);
-  return Array.from(new Set(subjects));
-};
+interface ExamUI {
+  id: string;
+  title: string;
+  author: string;
+  questions: number; // Lưu ý: Biến này đang chứa số lượng trials (lượt làm bài)
+  duration: number;
+  date: string;
+  status: string;
+  type: string;
+  subject: string;
+}
 
 export default function ExamList() {
-  // --- [TÍNH NĂNG MỚI] Lấy từ khóa tìm kiếm ---
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('query')?.toLowerCase() || '';
 
-  // State quản lý Filter
-  const [examSubTab, setExamSubTab] = useState('chua-lam');
-  const [filterSubject, setFilterSubject] = useState('');
-  const [filterDifficulty, setFilterDifficulty] = useState('');
-  const [sortOrder, setSortOrder] = useState('newest');
-  const [selectedExam, setSelectedExam] = useState<any | null>(null);
+  const [allExams, setAllExams] = useState<ExamUI[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Status Tab: 'all' | 'completed' | 'not_started'
+  const [currentTab, setCurrentTab] = useState('all'); 
+  const [selectedExam, setSelectedExam] = useState<ExamUI | null>(null);
   
-  // State Loading
-  const [isLoading, setIsLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState('newest');
 
-  // Giả lập Loading khi vào trang
+  // --- 1. GỌI API & MAPPING DỮ LIỆU ---
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 1000); 
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchExams = async () => {
+      setLoading(true);
+      try {
+        const response = await api.tests.getAll({
+          query: searchQuery,
+          type: 'all', 
+        });
 
-  // Lấy danh sách môn học duy nhất
-  const uniqueSubjects = useMemo(() => getUniqueSubjects(MOCK_EXAMS), []);
+        const rawData = response.data || [];
 
-  // --- LOGIC FILTER CORE ---
-  const filteredExams = useMemo(() => {
-    let result = [...MOCK_EXAMS];
+        const formattedData: ExamUI[] = rawData.map((item: any) => ({
+          id: item.test_id,
+          title: item.title,
+          author: item.author?.name || 'Unknown',
+          questions: item._count?.trials || 0, 
+          duration: item.duration || 0,
+          date: item.start_time || new Date().toISOString(),
+          status: item.status || 'Regular',
+          type: item.type || 'practice',
+          subject: 'Tổng hợp',
+        }));
 
-    // 1. [MỚI] Lọc theo từ khóa tìm kiếm (Search Query)
-    if (searchQuery) {
-      result = result.filter(e => 
-        e.title.toLowerCase().includes(searchQuery) || 
-        // Tìm theo môn học nếu muốn
-        (e.subject && e.subject.toLowerCase().includes(searchQuery))
-      );
-    }
+        setAllExams(formattedData);
+      } catch (error) {
+        console.error("Failed to fetch exams:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // 2. Filter theo Tab (Status)
-    if (examSubTab === 'chua-lam') result = result.filter(e => e.status !== 'completed');
-    else if (examSubTab === 'da-lam') result = result.filter(e => e.status === 'completed');
+    fetchExams();
+  }, [searchQuery]); // Chỉ fetch lại khi search query thay đổi
 
-    // 3. Filter theo Môn học
-    if (filterSubject) result = result.filter(e => e.subject === filterSubject);
-    
-    // 4. Filter theo Độ khó
-    if (filterDifficulty) result = result.filter(e => e.difficulty === filterDifficulty);
+  // --- 2. LOGIC FILTER CLIENT-SIDE ---
+  const displayedExams = useMemo(() => {
+    return allExams
+      .filter((exam) => {
+        if (currentTab === 'completed') {
+           // Đã làm = Có trial (questions > 0)
+           if (exam.questions === 0) return false;
+        } else if (currentTab === 'not_started') {
+           // Chưa làm = Chưa có trial (questions === 0)
+           if (exam.questions > 0) return false;
+        }
 
-    // 5. Sorting
-    result.sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return sortOrder === 'oldest' ? dateA - dateB : dateB - dateA;
-    });
+        return true;
+      })
+      .sort((a, b) => {
+        // [SỬA LOGIC SORT]: Sắp xếp theo ngày tháng (Timestamp)
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
 
-    return result;
-  }, [examSubTab, filterSubject, filterDifficulty, sortOrder, searchQuery]); // [QUAN TRỌNG]: Thêm searchQuery vào dependency
+        if (sortOrder === 'newest') {
+          return dateB - dateA; // Mới nhất lên đầu
+        }
+        if (sortOrder === 'oldest') {
+          return dateA - dateB; // Cũ nhất lên đầu
+        }
+        return 0;
+      });
+  }, [allExams, currentTab, sortOrder]);
 
   return (
     <>
-      {/* Loading Screen */}
-      {isLoading && <Loading />}
+      {loading && <Loading />}
 
-      {/* 2. Filter Bar */}
       <ExamFilterBar 
-        currentTab={examSubTab}
-        onTabChange={setExamSubTab}
-        subject={filterSubject}
-        onSubjectChange={setFilterSubject}
-        subjectsList={uniqueSubjects}
-        difficulty={filterDifficulty}
-        onDifficultyChange={setFilterDifficulty}
+        currentTab={currentTab}
+        onTabChange={setCurrentTab}
         sort={sortOrder}
         onSortChange={setSortOrder}
       />
 
-      {/* 3. Scrollable Grid Area */}
       <div className="flex-1 overflow-y-auto pr-2 pb-6 custom-scrollbar p-2">
-        {filteredExams.length > 0 ? (
+        {!loading && displayedExams.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-            {filteredExams.map((exam) => (
-              // Zoom Effect on Hover
+            {displayedExams.map((exam) => (
               <div 
                 key={exam.id} 
                 className="h-full transform transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-2 hover:z-10"
               >
                 <ExamCard 
-                  exam={exam} 
-                  onSelect={(e) => setSelectedExam(e)} 
+                  exam={{
+                    ...exam,
+                    // Chỉ truyền số phút vào
+                    duration: exam.duration ? Math.floor(exam.duration / 60) : 0
+                  }} 
+                  onSelect={() => setSelectedExam(exam)} 
                 />
               </div>
             ))}
           </div>
-        ) : (
-          // Empty State (Khi không tìm thấy kết quả)
+        ) : !loading && (
           <div className="flex flex-col items-center justify-center h-64 text-gray-400">
              <svg className="w-16 h-16 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
              </svg>
-             <p>Không tìm thấy đề thi nào phù hợp với từ khóa "{searchQuery}".</p>
-             <button 
-                onClick={() => {
-                   setFilterSubject(''); 
-                   setFilterDifficulty(''); 
-                   // Nếu muốn xóa luôn từ khóa tìm kiếm:
-                   // router.replace(pathname); 
-                }}
-                className="mt-2 text-blue-600 hover:underline text-sm"
-             >
-                Xóa bộ lọc
-             </button>
+             <p>Không tìm thấy đề thi nào phù hợp.</p>
           </div>
         )}
       </div>
 
-      {/* 4. Modal */}
       {selectedExam && (
         <ExamModal 
           exam={selectedExam} 

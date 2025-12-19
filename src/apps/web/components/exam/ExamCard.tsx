@@ -1,10 +1,23 @@
 import React from 'react';
 import Link from 'next/link';
-import { Exam } from '../../mockData/mockExam'; // Import type nếu bạn đã tách file, hoặc để any
+
+// [1] Định nghĩa Interface khớp với dữ liệu từ ExamList truyền xuống
+export interface ExamData {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  duration: number;    // ExamList truyền vào số phút (number)
+  questions: number;   // ExamList truyền vào số lượng (number)
+  subject: string;
+  isVip?: boolean;     // Optional (API hiện tại chưa có, để ? để không lỗi)
+  author: string; 
+  type: string;
+}
 
 interface ExamProps {
-  exam: Exam; // Hoặc exam: any
-  onSelect: (exam: any) => void;
+  exam: ExamData;
+  onSelect: (exam: ExamData) => void;
 }
 
 export default function ExamCard({ exam, onSelect }: ExamProps) {
@@ -37,7 +50,6 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
 
   return (
     <div className={`bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full border group relative ${
-        // Thêm viền xanh lá nhẹ nếu đã làm xong để dễ nhận biết hơn
         exam.status === 'completed' ? 'border-green-200 bg-green-50/30' : 'border-gray-100 hover:border-blue-200'
     }`}>
       
@@ -45,14 +57,12 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
       <div className="flex justify-between items-start mb-3">
         {/* Ngày tháng */}
         <span className="text-[10px] text-gray-500 font-semibold bg-gray-100 px-2 py-1 rounded">
-          {exam.date}
+          {new Date(exam.date).toLocaleDateString('vi-VN')}
         </span>
         
         <div className="flex gap-1 items-center">
-            {/* 1. Hiển thị Status Badge ở đây */}
             {getStatusBadge(exam.status)}
 
-            {/* 2. VIP Badge */}
             {exam.isVip && (
                 <span className="bg-gray-900 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500 shadow-sm ml-1">
                 VIP
@@ -72,16 +82,18 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
 
       {/* Stats */}
       <div className="space-y-2 mb-4 border-t border-gray-100 pt-3">
+        {/* [2] Sửa views thành questions */}
         <div className="flex items-center gap-2 text-xs text-gray-500">
-          <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-          <span>{exam.views} lượt thi</span>
+          <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+          <span>{exam.questions} lượt thi</span> {/* Hoặc 'câu hỏi' tùy ý nghĩa bạn map */}
         </div>
+        
+        {/* [3] Duration: Đã là số, thêm chữ 'phút' vào đây */}
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <span>{exam.duration} phút</span>
         </div>
         
-        {/* Hiển thị thêm môn học nếu có */}
         {exam.subject && (
             <div className="flex items-center gap-2 text-xs text-gray-500">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-purple-400">
@@ -102,7 +114,6 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
         </button>
         
         <Link href={`/exam/${exam.id}`} className="flex-1">
-             {/* Đổi màu nút nếu đã làm xong */}
             <button className={`w-full h-full py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
                 exam.status === 'completed' 
                 ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300' 

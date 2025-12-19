@@ -11,8 +11,8 @@ const MENU_ITEMS = [
   { id: 'result', label: 'Kết quả', path: '/result' },
   { id: 'leaderboard', label: 'Bảng xếp hạng', path: '/leaderboard' },
   { id: 'teachers', label: 'Giáo viên', path: '/teachers' },
-  { id: 'guide', label: 'Hướng dẫn thi', path: '/guide' },
-  { id: 'faq', label: 'Câu hỏi thường gặp', path: '/faq' },
+  //{ id: 'guide', label: 'Hướng dẫn thi', path: '/guide' },
+  //{ id: 'faq', label: 'Câu hỏi thường gặp', path: '/faq' },
   { id: 'news', label: 'Tin tức mới nhất', path: '/news' },
 ];
 

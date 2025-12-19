@@ -22,7 +22,7 @@ export class ApiClient {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
       } catch (e) {
-        // If response is not JSON, use statusText
+        // Fallback
       }
       console.error(`GET ${endpoint} failed:`, errorMessage);
       throw new Error(errorMessage);
@@ -47,7 +47,7 @@ export class ApiClient {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
       } catch (e) {
-        // If response is not JSON, use statusText
+        // Fallback
       }
       console.error(`POST ${endpoint} failed:`, errorMessage);
       throw new Error(errorMessage);
@@ -72,7 +72,7 @@ export class ApiClient {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
       } catch (e) {
-        // If response is not JSON, use statusText
+        // Fallback
       }
       console.error(`PUT ${endpoint} failed:`, errorMessage);
       throw new Error(errorMessage);
@@ -96,7 +96,7 @@ export class ApiClient {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
       } catch (e) {
-        // If response is not JSON, use statusText
+        // Fallback
       }
       console.error(`DELETE ${endpoint} failed:`, errorMessage);
       throw new Error(errorMessage);
@@ -118,7 +118,16 @@ export const api = {
     delete: (id: string) => apiClient.delete<any>(`/api/users/${id}`),
   },
   tests: {
-    getAll: () => apiClient.get<any[]>('/api/tests'),
+    getAll: (params?: { query?: string; type?: string; page?: number; limit?: number }) => {
+        const searchParams = new URLSearchParams();
+        if (params) {
+            if (params.query) searchParams.set('query', params.query);
+            if (params.type && params.type !== 'all') searchParams.set('type', params.type);
+            if (params.page) searchParams.set('page', params.page.toString());
+            if (params.limit) searchParams.set('limit', params.limit.toString());
+        }
+        return apiClient.get<any>(`/api/tests?${searchParams.toString()}`);
+    },
     getById: (id: string) => apiClient.get<any>(`/api/tests/${id}`),
     create: (data: any) => apiClient.post<any>('/api/tests', data),
     update: (id: string, data: any) => apiClient.put<any>(`/api/tests/${id}`, data),
