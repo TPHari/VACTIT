@@ -71,7 +71,7 @@ export default function LoginPage() {
           <p className="text-sm text-gray-500 mb-6">Câu này có thể là tagline hoặc mục đích của app này nha</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white">
-            <input
+            <input  
               {...register('email')}
               placeholder="Tên đăng nhập/Tài khoản email"
               className="w-full px-3 py-2 border rounded-md"
