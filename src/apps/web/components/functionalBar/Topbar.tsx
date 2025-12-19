@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { MOCK_USER as USER } from "@/lib/mock-user"; // Đảm bảo đường dẫn này đúng trong project của bạn
+import { MOCK_USER as USER } from "@/lib/mock-user";
 
 export default function Topbar() {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function Topbar() {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  // Lấy giá trị search hiện tại từ URL để khi F5 không bị mất text trong ô input
+  // State lưu giá trị input (chỉ để hiển thị, không trigger API)
   const [searchTerm, setSearchTerm] = useState(searchParams.get("query")?.toString() || "");
 
   // Đóng menu profile khi click ra ngoài
@@ -28,24 +28,19 @@ export default function Topbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- LOGIC TÌM KIẾM (REAL SEARCH) ---
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      const params = new URLSearchParams(searchParams);
-      
-      if (searchTerm) {
-        params.set("query", searchTerm);
-      } else {
-        params.delete("query");
-      }
-      
-      // Cập nhật URL mà không reload trang (scroll: false giữ vị trí cuộn)
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    }, 300); // Đợi 300ms sau khi ngừng gõ mới tìm
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, searchParams, pathname, router]);
-
+  // Hàm xử lý tìm kiếm khi bấm Enter ---
+  const handleSearch = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (searchTerm.trim()) {
+      params.set("query", searchTerm.trim());
+    } else {
+      params.delete("query");
+    }
+    
+    // Dùng push thay vì replace để người dùng có thể back lại kết quả cũ
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const handleLogout = () => {
     setIsOpen(false);
@@ -58,7 +53,6 @@ export default function Topbar() {
   };
 
   return (
-    // fixed top-4 right-4 left-[18rem]: Cố định vị trí, tránh Sidebar (260px ~ 16.25rem, để 18rem cho thoáng)
     <header className="fixed top-4 right-4 left-[18rem] z-40 flex h-16 items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-md px-6 shadow-sm transition-all duration-300">
       
       {/* Left: Search Bar */}
@@ -75,14 +69,25 @@ export default function Topbar() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            // Bắt sự kiện phím Enter
+            onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                    handleSearch();
+                }
+            }}
             placeholder="Tìm kiếm đề thi, giáo viên..."
             className="block w-full p-2.5 pl-10 text-sm text-slate-800 border border-slate-200 rounded-full bg-slate-50 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
           />
           
-          {/* Nút xóa (X) hiện khi có text */}
+          {/* Nút xóa (X) */}
           {searchTerm && (
             <button 
-                onClick={() => setSearchTerm("")}
+                onClick={() => {
+                    setSearchTerm("");
+                    // Tùy chọn: Có muốn xóa search ngay khi bấm X không? 
+                    // Nếu muốn thì bỏ comment dòng dưới:
+                    // router.push(pathname, { scroll: false }); 
+                }}
                 className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
