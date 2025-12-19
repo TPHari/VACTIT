@@ -1,7 +1,5 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
@@ -10,7 +8,7 @@
 /coverage
 
 # next.js
-/.next/
+src/apps/web/.next/
 /out/
 
 # production
@@ -40,9 +38,7 @@ yarn-error.log*
 next-env.d.ts
 
 # IDE
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+.vscode/
 .idea
 *.swp
 *.swo
@@ -60,6 +56,8 @@ logs
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
-.vscode/settings.json
 /src/generated/prisma
+
+# Next.js build output
+src/apps/web/.next/
 

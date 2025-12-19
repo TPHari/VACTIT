@@ -1,0 +1,335 @@
+{
+  "info": {
+    "name": "VACTIT API",
+    "description": "API endpoints for VACTIT platform - testing frontend/backend/database/worker integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "https://vactit.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "LOCAL_URL",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "API Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/health",
+              "host": ["{{BASE_URL}}"],
+              "path": ["health"]
+            },
+            "description": "Check API health status, database connection, Redis connection, and uptime"
+          }
+        },
+        {
+          "name": "Queue Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/health/queue",
+              "host": ["{{BASE_URL}}"],
+              "path": ["health", "queue"]
+            },
+            "description": "Check BullMQ queue status and job counts"
+          }
+        },
+        {
+          "name": "Root Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/",
+              "host": ["{{BASE_URL}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/users",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/users/STU0001",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "users", "STU0001"]
+            }
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"STU0001\",\n  \"name\": \"Test Student\",\n  \"email\": \"test@student.com\",\n  \"role\": \"Student\",\n  \"created_at\": \"2025-12-07T00:00:00Z\",\n  \"hash_password\": \"hashed_password_123\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/users",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "users"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"email\": \"updated@student.com\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/users/STU0001",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "users", "STU0001"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tests",
+      "item": [
+        {
+          "name": "Get All Tests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/tests",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "tests"]
+            }
+          }
+        },
+        {
+          "name": "Get Test by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/tests/TEST001",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "tests", "TEST001"]
+            }
+          }
+        },
+        {
+          "name": "Create Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"test_id\": \"TEST001\",\n  \"title\": \"V-ACT Mock Test 1\",\n  \"description\": \"Practice test for V-ACT exam\",\n  \"duration_minutes\": 90,\n  \"total_questions\": 100,\n  \"passing_score\": 700,\n  \"created_at\": \"2025-12-07T00:00:00Z\",\n  \"updated_at\": \"2025-12-07T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/tests",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "tests"]
+            }
+          }
+        },
+        {
+          "name": "Update Test",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Test Title\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/tests/TEST001",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "tests", "TEST001"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trials",
+      "item": [
+        {
+          "name": "Get All Trials",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/trials",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "trials"]
+            }
+          }
+        },
+        {
+          "name": "Get Trial by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/trials/TRIAL001",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "trials", "TRIAL001"]
+            }
+          }
+        },
+        {
+          "name": "Create Trial",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trial_id\": \"TRIAL001\",\n  \"user_id\": \"STU0001\",\n  \"test_id\": \"TEST001\",\n  \"started_at\": \"2025-12-07T10:00:00Z\",\n  \"completed_at\": \"2025-12-07T11:30:00Z\",\n  \"total_score\": null\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/trials",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "trials"]
+            },
+            "description": "Create a new trial (test attempt). Leave total_score null initially."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Responses",
+      "item": [
+        {
+          "name": "Get All Responses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/responses",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "responses"]
+            }
+          }
+        },
+        {
+          "name": "Create Response",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trial_id\": \"TRIAL001\",\n  \"question_id\": 1,\n  \"chosen_option\": \"A\",\n  \"response_time_seconds\": 45\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/responses",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "responses"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs (Worker Queue)",
+      "item": [
+        {
+          "name": "Submit Scoring Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trialId\": \"TRIAL001\",\n  \"userId\": \"STU0001\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/jobs/score-test",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "jobs", "score-test"]
+            },
+            "description": "Queue a scoring job for a trial. Returns jobId to track status."
+          }
+        },
+        {
+          "name": "Get Job Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/jobs/status/1",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "jobs", "status", "1"]
+            },
+            "description": "Check the status of a queued job. Replace '1' with actual jobId."
+          }
+        }
+      ]
+    }
+  ]
+}

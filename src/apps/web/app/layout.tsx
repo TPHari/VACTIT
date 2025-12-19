@@ -1,3 +1,4 @@
+// apps/web/app/layout.tsx
 import type { Metadata } from 'next';
 import './globals.css';
 
@@ -14,7 +15,8 @@ export default function RootLayout({
   return (
     <html lang="vi" className="h-full">
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
-        {children}
+          {/* Không còn Sidebar, Topbar. Chỉ render nội dung trần. */}
+          {children}
       </body>
     </html>
   );
