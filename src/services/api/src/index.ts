@@ -1,5 +1,5 @@
-import server from './server';
 import "dotenv/config";
+import server from './server';
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const HOST = process.env.HOST || '0.0.0.0';
