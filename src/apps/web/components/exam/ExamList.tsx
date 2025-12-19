@@ -119,8 +119,7 @@ export default function ExamList() {
                 <ExamCard 
                   exam={{
                     ...exam,
-                    // Chỉ truyền số phút vào
-                    duration: exam.duration ? Math.floor(exam.duration / 60) : 0
+                    duration: exam.duration ? Math.floor(exam.duration) : 0
                   }} 
                   onSelect={() => setSelectedExam(exam)} 
                 />
