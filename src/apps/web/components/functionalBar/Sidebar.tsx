@@ -11,8 +11,8 @@ const MENU_ITEMS = [
   { id: 'result', label: 'Kết quả', path: '/result' },
   { id: 'leaderboard', label: 'Bảng xếp hạng', path: '/leaderboard' },
   { id: 'teachers', label: 'Giáo viên', path: '/teachers' },
-  { id: 'guide', label: 'Hướng dẫn thi', path: '/guide' },
-  { id: 'faq', label: 'Câu hỏi thường gặp', path: '/faq' },
+  //{ id: 'guide', label: 'Hướng dẫn thi', path: '/guide' },
+  //{ id: 'faq', label: 'Câu hỏi thường gặp', path: '/faq' },
   { id: 'news', label: 'Tin tức mới nhất', path: '/news' },
 ];
 
@@ -25,14 +25,10 @@ export default function Sidebar() {
   };
 
   return (
-    // 1. top-4 left-4 bottom-4: Cách đều các cạnh 16px (1rem)
-    // 2. rounded-3xl: Bo góc mạnh
-    // 3. shadow-xl: Đổ bóng sâu để tạo cảm giác nổi
-    // 4. h-[calc(100vh-2rem)]: Chiều cao tự tính toán để không bị tràn
-    <aside className="fixed top-4 left-4 h-[calc(100vh-2rem)] w-64 bg-white rounded-3xl shadow-xl border border-gray-100 flex flex-col z-50 overflow-hidden transition-all duration-300">
+    <aside className="sidebar fixed top-4 left-4 h-[calc(100vh-2rem)] rounded-3xl z-50 overflow-hidden overflow-x-hidden transition-all duration-300">
       
       {/* Logo Section */}
-      <div className="h-20 flex items-center justify-center border-b border-gray-50 bg-gray-50/50">
+      <div className="sidebar__logo h-20 mb-4 border-b border-black/5">
         <Image
           src="/assets/logos/logo.png"
           alt="BAI-LEARN logo"
@@ -40,22 +36,19 @@ export default function Sidebar() {
           height={36}
           className="object-contain"
         />
-        <span className="ml-3 font-extrabold text-xl text-blue-600 tracking-tight">BAI-LEARN</span>
+        <span className="sidebar__logo-text ml-3">BAI·LEARN</span>
       </div>
 
       {/* Nav Section */}
-      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2 custom-scrollbar"> 
+      <nav className="sidebar__nav flex-1 overflow-y-auto overflow-x-hidden py-2 custom-scrollbar"> 
         {MENU_ITEMS.map((item) => {
           const active = isActive(item.path);
           return (
             <Link
               key={item.id}
               href={item.path}
-              // Bo góc cho từng item để đồng bộ
-              className={`flex items-center px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 group ${
-                active
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                  : 'text-gray-500 hover:bg-blue-50 hover:text-blue-600'
+              className={`sidebar__nav-item flex items-center px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 group gap-3 ${
+                active ? 'sidebar__nav-item--active' : ''
               }`}
             >
               {item.label}
@@ -64,8 +57,8 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Support Card (Compact) */}
-      <div className="sidebar__support-card">
+      {/* Support Card */}
+      <div className="sidebar__support-card mt-auto">
         <div className="sidebar__support-illustration">
           <img
             src="/assets/logos/support.png"
@@ -78,7 +71,15 @@ export default function Sidebar() {
           <h3>Liên hệ hỗ trợ</h3>
           <p>Chúng mình sẽ hỗ trợ nhanh nhất có thể</p>
         </div>
-        <button className="btn btn--secondary">Nhắn tin</button>
+        
+        <a 
+          href="https://www.facebook.com/bailearn" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="btn btn--secondary mt-2 w-full text-center flex items-center justify-center no-underline"
+        >
+          Nhắn tin
+        </a>
       </div>
     </aside>
   );
