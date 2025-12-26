@@ -158,6 +158,8 @@ export const api = {
       apiClient.post<any>('/api/auth/signup', data),
     login: (data: { email: string; password: string }) =>
       apiClient.post<any>('/api/auth/login', data),
+    oauthGoogle: (data: { email: string; name?: string; picture?: string }) =>
+      apiClient.post<any>('/api/auth/oauth/google', data),
   },
   admin: {
     tests: {
