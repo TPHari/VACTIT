@@ -24,7 +24,8 @@
     "prisma:studio": "cd src/services/api/prisma && npx prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^6.18.0"
+    "@prisma/client": "^6.18.0",
+    "@supabase/supabase-js": "^2.89.0"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
