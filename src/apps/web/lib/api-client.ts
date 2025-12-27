@@ -178,4 +178,7 @@ export const api = {
   leaderboard: {
     get: () => apiClient.get<any>('/api/leaderboard'),
   },
+  news: {
+    getAll: () => apiClient.get<any>('/api/news'),
+  },
 };

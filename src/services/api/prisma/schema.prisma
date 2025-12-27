@@ -83,3 +83,14 @@ model Response {
 
   @@id([trial_id, question_id])
 }
+
+model News {
+  news_id     String   @id @default(uuid())
+  title       String
+  excerpt     String?  // Đoạn trích ngắn mô tả bài viết
+  content     String?  // Nội dung chi tiết
+  author      String   // Tên tác giả
+  image       String?  // URL ảnh thumbnail
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
