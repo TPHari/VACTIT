@@ -7,6 +7,7 @@ import { userRoutes } from './routes/user.routes';
 import { testRoutes } from './routes/test.routes';
 import { trialRoutes } from './routes/trial.routes';
 import { responseRoutes } from './routes/response.routes';
+import { teacherRoutes } from './routes/teacher.routes';
 
 // Initialize Prisma
 const prisma = new PrismaClient({
@@ -194,6 +195,7 @@ server.register(userRoutes);
 server.register(testRoutes);
 server.register(trialRoutes);
 server.register(responseRoutes);
+server.register(teacherRoutes);
 
 // ============ Job Queue Endpoints ============
 // Submit scoring job

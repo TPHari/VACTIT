@@ -169,4 +169,10 @@ export const api = {
       delete: (testId: string) => apiClient.delete<any>(`/api/admin/tests?test_id=${encodeURIComponent(testId)}`),
     },
   },
+  teachers: {
+      getAll: () => apiClient.get<any>('/api/teachers'),
+      create: (data: any) => apiClient.post<any>('/api/teachers', data),
+      update: (data: any) => apiClient.put<any>('/api/teachers', data),
+      delete: (teacherId: string) => apiClient.delete<any>(`/api/teachers?teacher_id=${encodeURIComponent(teacherId)}`),
+    },
 };

@@ -1,10 +1,20 @@
 import TeacherCard from './TeacherCard';
 
-export default function TeacherList({ items }: { items: Array<any> }) {
+interface TeacherListProps {
+  items: Array<any>;
+  onSelect: (teacher: any) => void;
+}
+
+export default function TeacherList({ items, onSelect }: TeacherListProps) {
   return (
-    <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    // Sử dụng flex-wrap và justify-center để các thẻ w-56 luôn căn giữa đẹp mắt
+    <div className="flex flex-wrap justify-center gap-6 pb-8">
       {items.map((t) => (
-        <TeacherCard key={t.id} teacher={t} />
+        <TeacherCard 
+          key={t.id} 
+          teacher={t} 
+          onSelect={onSelect} 
+        />
       ))}
     </div>
   );
