@@ -174,5 +174,8 @@ export const api = {
       create: (data: any) => apiClient.post<any>('/api/teachers', data),
       update: (data: any) => apiClient.put<any>('/api/teachers', data),
       delete: (teacherId: string) => apiClient.delete<any>(`/api/teachers?teacher_id=${encodeURIComponent(teacherId)}`),
-    },
+  },
+  leaderboard: {
+    get: () => apiClient.get<any>('/api/leaderboard'),
+  },
 };
