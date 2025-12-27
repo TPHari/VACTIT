@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import ExamList from '@/components/exam/ExamList';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 

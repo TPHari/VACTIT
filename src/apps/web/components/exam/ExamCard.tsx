@@ -1,14 +1,18 @@
-import React from 'react';
+import React, {useState} from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { api } from '../../lib/api-client';
 import { Exam } from '../../mockData/mockExam'; // Import type nếu bạn đã tách file, hoặc để any
 
 interface ExamProps {
   exam: Exam; // Hoặc exam: any
   onSelect: (exam: any) => void;
+  currentUserId?: string; 
 }
 
-export default function ExamCard({ exam, onSelect }: ExamProps) {
-  
+export default function ExamCard({ exam, onSelect, currentUserId }: ExamProps) {
+   const router = useRouter();
+  const [loading, setLoading] = useState(false);
   // Logic xác định màu sắc và nhãn dựa trên status
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -34,6 +38,28 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
         return null;
     }
   };
+
+  async function handleTakeTest() {
+      if (loading) return;
+      setLoading(true);
+      try {
+        // const testId = (exam as any).test_id ?? (exam as any).id ?? (exam as any).testId;
+        const testId = "123"; // Thay bằng cách lấy testId thực tế từ exam
+        const currentUserId = "lkchautest@gmail.com"; // Thay bằng cách lấy userId thực tế từ context hoặc props
+        console.log('Starting trial for testId:', testId, 'userId:', currentUserId);
+        const payload = { testId, userId: currentUserId };
+        const res = await api.trials.create(payload);
+        const trial = res?.data;
+        const trialId = trial?.trial_id ?? trial?.id ?? trial?.trialId;
+        if (!trialId) throw new Error('Missing trial id in response');
+        router.push(`/exam/${testId}`);
+      } catch (err: any) {
+        console.error('Failed to start trial', err);
+        // optional: show UI feedback
+      } finally {
+        setLoading(false);
+      }
+    }
 
   return (
     <div className={`bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full border group relative ${
@@ -93,24 +119,26 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
       </div>
 
       {/* Buttons */}
-      <div className="flex gap-2 mt-auto">
-        <button
-          onClick={() => onSelect(exam)}
-          className="flex-1 py-2 text-xs text-gray-600 font-medium hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
-        >
-          {exam.status === 'completed' ? 'Xem lại' : 'Chi tiết'}
-        </button>
-        
-        <Link href={`/test/${exam.id}`} className="flex-1">
-             {/* Đổi màu nút nếu đã làm xong */}
-            <button className={`w-full h-full py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
-                exam.status === 'completed' 
-                ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300' 
+        <div className="flex gap-2 mt-auto">
+          <button
+            onClick={() => onSelect(exam)}
+            className="flex-1 py-2 text-xs text-gray-600 font-medium hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
+          >
+            {exam.status === 'completed' ? 'Xem lại' : 'Chi tiết'}
+          </button>
+
+          {/* replaced Link with action button that calls API */}
+          <button
+            onClick={handleTakeTest}
+            disabled={loading}
+            className={`flex-1 py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
+              exam.status === 'completed'
+                ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300'
                 : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
-            }`}>
-             {exam.status === 'completed' ? 'Thi lại' : (exam.status === 'in_progress' ? 'Tiếp tục' : 'Thi ngay')}
-            </button>
-        </Link>
+            } ${loading ? 'opacity-60 pointer-events-none' : ''}`}
+          >
+            {loading ? 'Đang khởi tạo...' : (exam.status === 'completed' ? 'Thi lại' : (exam.status === 'in_progress' ? 'Tiếp tục' : 'Thi ngay'))}
+          </button>
       </div>
     </div>
   );

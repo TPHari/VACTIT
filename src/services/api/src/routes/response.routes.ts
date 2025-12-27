@@ -1,4 +1,16 @@
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
+
+const createResponsesSchema = z.object({
+    trialId: z.string().min(1),
+    responses: z.array(
+      z.object({
+        questionId: z.string().min(1),
+        chosenOption: z.string().optional().nullable(),
+        responseTime: z.number().min(0),
+      })
+    ).min(1),
+  });
 
 export async function responseRoutes(server: FastifyInstance) {
   // Get all responses
@@ -26,16 +38,49 @@ export async function responseRoutes(server: FastifyInstance) {
 
   // Create response
   server.post('/api/responses', async (request, reply) => {
-    try {
-      const response = await server.prisma.response.create({
-        data: request.body as any
+try {
+      const parsed = createResponsesSchema.safeParse(request.body);
+      if (!parsed.success) {
+        reply.status(422);
+        return { error: 'invalid_input', details: parsed.error.flatten() };
+      }
+
+      const { trialId, responses } = parsed.data;
+      console.log('Creating responses for trialId:', trialId, 'responses count:', responses);
+      // ensure trial exists
+      const trial = await server.prisma.trial.findUnique({
+        where: { trial_id: trialId },
       });
+
+      if (!trial) {
+        reply.status(404);
+        return { error: 'trial_not_found' };
+      }
+
+      // prepare rows
+      const rows = responses.map(r => ({
+        trial_id: trialId,
+        question_id: r.questionId,
+        chosen_option: r.chosenOption ?? null,
+        response_time: r.responseTime,
+      }));
+
+      // insert all responses in a transaction
+      //delete existing responses for the trial first
+      await server.prisma.response.deleteMany({
+        where: { trial_id: trialId },
+      });
+      const createdResponses = await server.prisma.$transaction(
+        rows.map(row => 
+          server.prisma.response.create({ data: row })
+        )
+      );
       reply.status(201);
-      return { data: response };
+      return { data: createdResponses };
     } catch (error) {
-      reply.status(400);
+      reply.status(500);
       return { 
-        error: error instanceof Error ? error.message : 'Failed to create response' 
+        error: error instanceof Error ? error.message : 'Failed to create responses' 
       };
     }
   });
