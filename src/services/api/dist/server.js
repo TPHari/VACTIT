@@ -15,6 +15,11 @@ const response_routes_1 = require("./routes/response.routes");
 // Initialize Prisma
 const prisma = new client_1.PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    datasources: {
+        db: {
+            url: process.env.DATABASE_URL,
+        },
+    },
 });
 // Initialize Fastify server
 const server = (0, fastify_1.fastify)({
@@ -88,15 +93,16 @@ server.get('/health', async (request, reply) => {
         redis: 'not configured',
         uptime: process.uptime(),
     };
-    // Test database
+    // Test database 
     try {
-        await prisma.$queryRaw `SELECT 1`;
+        await prisma.user.findFirst();
         health.database = 'connected';
     }
     catch (error) {
         health.status = 'degraded';
         health.database = 'disconnected';
         health.databaseError = error.message;
+        console.error('Database health check failed:', error.message);
     }
     // Test Redis (if available)
     if (redisConnection) {
