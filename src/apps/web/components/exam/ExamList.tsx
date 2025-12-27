@@ -3,34 +3,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api-client';
-import ExamCard from './ExamCard';
+import ExamCard, { ExamData } from './ExamCard'; // Import Interface chuẩn từ Card
 import ExamModal from './ExamModal';
 import ExamFilterBar from '../functionalBar/ExamFilterBar';
 import Loading from '../ui/LoadingSpinner';
-
-interface ExamUI {
-  id: string;
-  title: string;
-  author: string;
-  questions: number; // Lưu ý: Biến này đang chứa số lượng trials (lượt làm bài)
-  duration: number;
-  date: string;
-  status: string;
-  type: string;
-  subject: string;
-}
 
 export default function ExamList() {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('query')?.toLowerCase() || '';
 
-  const [allExams, setAllExams] = useState<ExamUI[]>([]);
+  // Sử dụng đúng Interface ExamData
+  const [allExams, setAllExams] = useState<ExamData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Status Tab: 'all' | 'completed' | 'not_started'
   const [currentTab, setCurrentTab] = useState('all'); 
-  const [selectedExam, setSelectedExam] = useState<ExamUI | null>(null);
-  
+  const [selectedExam, setSelectedExam] = useState<ExamData | null>(null);
   const [sortOrder, setSortOrder] = useState('newest');
 
   // --- 1. GỌI API & MAPPING DỮ LIỆU ---
@@ -45,17 +32,32 @@ export default function ExamList() {
 
         const rawData = response.data || [];
 
-        const formattedData: ExamUI[] = rawData.map((item: any) => ({
-          id: item.test_id,
-          title: item.title,
-          author: item.author?.name || 'Unknown',
-          questions: item._count?.trials || 0, 
-          duration: item.duration || 0,
-          date: item.start_time || new Date().toISOString(),
-          status: item.status || 'Regular',
-          type: item.type || 'practice',
-          subject: 'Tổng hợp',
-        }));
+        // [MAPPING CHUẨN MỰC]
+        const formattedData: ExamData[] = rawData.map((item: any) => {
+          
+          // 1. Xác định status: Có trial của user này không?
+          const isTaken = item.trials && item.trials.length > 0;
+          const status = isTaken ? 'completed' : 'not_started';
+
+          return {
+            id: item.test_id,
+            title: item.title,
+            author: item.author?.name || 'Unknown',
+            
+            // 2. Số câu hỏi (Nếu DB chưa có relation questions, fallback về 0)
+            questions: item._count?.questions || 0, 
+            
+            // 3. Tổng lượt thi (Độ phổ biến)
+            totalTrials: item._count?.trials || 0,
+            
+            duration: item.duration ? Math.floor(item.duration / 60) : 0, // Convert giây -> phút
+            date: item.start_time || new Date().toISOString(),
+            status: status,
+            type: item.type || 'practice',
+            subject: 'Tổng hợp',
+            isVip: false, // Mặc định hoặc lấy từ DB
+          };
+        });
 
         setAllExams(formattedData);
       } catch (error) {
@@ -66,33 +68,21 @@ export default function ExamList() {
     };
 
     fetchExams();
-  }, [searchQuery]); // Chỉ fetch lại khi search query thay đổi
+  }, [searchQuery]); 
 
-  // --- 2. LOGIC FILTER CLIENT-SIDE ---
+  // --- 2. LOGIC FILTER ---
   const displayedExams = useMemo(() => {
     return allExams
       .filter((exam) => {
-        if (currentTab === 'completed') {
-           // Đã làm = Có trial (questions > 0)
-           if (exam.questions === 0) return false;
-        } else if (currentTab === 'not_started') {
-           // Chưa làm = Chưa có trial (questions === 0)
-           if (exam.questions > 0) return false;
-        }
-
+        if (currentTab === 'completed') return exam.status === 'completed';
+        if (currentTab === 'not_started') return exam.status !== 'completed';
         return true;
       })
       .sort((a, b) => {
-        // [SỬA LOGIC SORT]: Sắp xếp theo ngày tháng (Timestamp)
         const dateA = new Date(a.date).getTime();
         const dateB = new Date(b.date).getTime();
-
-        if (sortOrder === 'newest') {
-          return dateB - dateA; // Mới nhất lên đầu
-        }
-        if (sortOrder === 'oldest') {
-          return dateA - dateB; // Cũ nhất lên đầu
-        }
+        if (sortOrder === 'newest') return dateB - dateA;
+        if (sortOrder === 'oldest') return dateA - dateB;
         return 0;
       });
   }, [allExams, currentTab, sortOrder]);
@@ -117,10 +107,7 @@ export default function ExamList() {
                 className="h-full transform transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-2 hover:z-10"
               >
                 <ExamCard 
-                  exam={{
-                    ...exam,
-                    duration: exam.duration ? Math.floor(exam.duration) : 0
-                  }} 
+                  exam={exam} 
                   onSelect={() => setSelectedExam(exam)} 
                 />
               </div>
