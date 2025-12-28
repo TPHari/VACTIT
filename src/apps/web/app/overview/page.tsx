@@ -1,6 +1,16 @@
-import React from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+
 export default function OverviewTab() {
+  const [user, setUser] = useState<any>(null);
+  useEffect(() => {
+    fetch('/api/user')
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok) setUser(data.user);
+      });
+  }, []);
   return (
     <DashboardLayout>
       <div className="flex flex-row">
@@ -8,7 +18,7 @@ export default function OverviewTab() {
           <h1 className="page-title mb-6">Tổng quan</h1>
           <section className="card card--hero mb-6">
             <div className="card--hero__left">
-              <p className="hero__subtitle">Chào mừng đã trở lại, Thanh!</p>
+              <p className="hero__subtitle">Chào mừng đã trở lại, {user?.name || '...' }!</p>
               <p className="hero__text">
                 Tiếp tục làm bài thôi nào, bạn còn 10 bài chưa làm trong tuần vừa rồi
               </p>

@@ -66,7 +66,7 @@ export const MOCK_EXAMS: Exam[] = Array.from({ length: 50 }).map((_, index) => {
   const titleSuffix = getRandomItem(TITLES);
   
   return {
-    id: `exam-${index + 1}`, // ID dạng chuỗi: "exam-1", "exam-2"
+    id: `${index + 1}`, // ID dạng chuỗi: "exam-1", "exam-2"
     
     // Tạo Title có tên môn học để nhìn cho hợp lý
     title: `[${subject}] ${titleSuffix}`,
