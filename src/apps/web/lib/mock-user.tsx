@@ -11,11 +11,3 @@ export type UserProfile = {
   avatarUrl?: string;
 };
 
-export const MOCK_USER: UserProfile = {
-  id: "012345",
-  name: "Quang Thanh",
-  email: "quang.thanh@example.com",
-  phone: "0900 000 000",
-  membership: "normal",
-  avatarUrl: "/assets/logos/avatar.png",
-};

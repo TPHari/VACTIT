@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { MOCK_USER, type UserProfile, type Membership } from "@/lib/mock-user";
+import { type UserProfile, type Membership } from "@/lib/mock-user";
 
 const MEMBERSHIP_LABELS: Record<Membership, string> = {
   normal: "Thường",
@@ -10,19 +10,30 @@ const MEMBERSHIP_LABELS: Record<Membership, string> = {
   premium: "Premium",
 };
 
-export default function ProfilePage() {
-  const [user, setUser] = useState<UserProfile>(MOCK_USER);
-  const [isEditing, setIsEditing] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState(
-    user.avatarUrl ?? "/assets/logos/avatar.png",
-  );
 
-  // simple controlled inputs
+export default function ProfilePage() {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string>("/assets/logos/avatar.png");
+
+  // Fetch user info on mount
+  useEffect(() => {
+    fetch('/api/user')
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok) {
+          setUser(data.user);
+          setAvatarPreview(data.user.avatarUrl || "/assets/logos/avatar.png");
+        }
+      });
+  }, []);
+
+  // Controlled input handlers
   const handleFieldChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setUser((prev) => ({ ...prev, [name]: value }));
+    setUser((prev) => prev ? { ...prev, [name]: value } : prev);
   };
 
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -30,23 +41,24 @@ export default function ProfilePage() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setAvatarPreview(url);
-
-    // in real app you'd upload + store URL from backend
-    setUser((prev) => ({ ...prev, avatarUrl: url }));
+    setUser((prev) => prev ? { ...prev, avatarUrl: url } : prev);
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     // here you'd call your API: await updateUser(user)
-    console.log("Saving profile:", user);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setUser(MOCK_USER); // reset to original mock
-    setAvatarPreview(MOCK_USER.avatarUrl ?? "/assets/logos/avatar.png");
+    // Optionally re-fetch user from API to reset
+    if (user) setAvatarPreview(user.avatarUrl || "/assets/logos/avatar.png");
     setIsEditing(false);
   };
+
+  if (!user) {
+    return <div className="max-w-2xl mx-auto py-10 text-center text-slate-400">Đang tải thông tin người dùng...</div>;
+  }
 
   return (
     <DashboardLayout>

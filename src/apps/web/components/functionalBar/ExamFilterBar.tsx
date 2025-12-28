@@ -6,13 +6,6 @@ import FilterDropdown from '../exam/FilterDropdown';
 interface ExamFilterBarProps {
   currentTab: string;
   onTabChange: (tab: string) => void;
-  
-  subject: string;
-  onSubjectChange: (val: string) => void;
-  subjectsList: string[]; // Danh sách môn học lấy từ data
-
-  difficulty: string;
-  onDifficultyChange: (val: string) => void;
 
   sort: string;
   onSortChange: (val: string) => void;
@@ -21,30 +14,31 @@ interface ExamFilterBarProps {
 export default function ExamFilterBar({
   currentTab,
   onTabChange,
-  subject,
-  onSubjectChange,
-  subjectsList,
-  difficulty,
-  onDifficultyChange,
   sort,
   onSortChange
 }: ExamFilterBarProps) {
   
+  const tabs = [
+    { id: 'all', label: 'Tất cả' },
+    { id: 'completed', label: 'Đã làm' },
+    { id: 'not_started', label: 'Chưa làm' },
+  ];
+
   return (
     <div className="bg-white p-3 rounded-xl shadow-sm mb-4 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-4 flex-shrink-0 border border-gray-100">
-      {/* 1. Tabs (Chưa làm / Đã làm) */}
+      {/* 1. Tabs (Tất cả / Đã làm / Chưa làm) */}
       <div className="flex gap-2 bg-blue-50 p-1 rounded-lg w-full sm:w-auto overflow-x-auto">
-        {['chua-lam', 'da-lam', 'tong-hop'].map((tab) => (
+        {tabs.map((tab) => (
           <button
-            key={tab}
-            onClick={() => onTabChange(tab)}
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
             className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all ${
-              currentTab === tab
+              currentTab === tab.id
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-gray-500 hover:bg-white/50'
             }`}
           >
-            {tab === 'chua-lam' ? 'Chưa làm' : tab === 'da-lam' ? 'Đã làm' : 'Tổng hợp'}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -53,7 +47,7 @@ export default function ExamFilterBar({
       <div className="flex gap-3 w-full sm:w-auto justify-end">
         {/* Filter: Sắp xếp */}
         <FilterDropdown
-          label="Mới nhất"
+          label="Sắp xếp"
           value={sort}
           onChange={onSortChange}
           options={[
@@ -61,26 +55,7 @@ export default function ExamFilterBar({
             { value: 'oldest', label: 'Cũ nhất' },
           ]}
         />
-
-        {/* Filter: Môn học */}
-        <FilterDropdown
-          label="Môn học"
-          value={subject}
-          onChange={onSubjectChange}
-          options={subjectsList.map(s => ({ value: s, label: s }))}
-        />
-
-        {/* Filter: Độ khó */}
-        <FilterDropdown
-          label="Độ khó"
-          value={difficulty}
-          onChange={onDifficultyChange}
-          options={[
-            { value: 'Easy', label: 'Dễ' },
-            { value: 'Medium', label: 'Trung bình' },
-            { value: 'Hard', label: 'Khó' },
-          ]}
-        />
+        
       </div>
     </div>
   );
