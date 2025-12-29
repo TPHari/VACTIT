@@ -1,4 +1,4 @@
-import React from 'react';
+import Image from "next/image";
 
 export default function ViewerPane({ pages, zoom }: { pages: string[]; zoom: number }) {
   const baseHeight = "160vh"
@@ -12,8 +12,10 @@ export default function ViewerPane({ pages, zoom }: { pages: string[]; zoom: num
           <div className="text-gray-500">No pages found.</div>
         ) : (
           pages.map((src, idx) => (
-              <img
+              <Image
                 key = {idx}
+                width = {800}
+                height = {1280}
                 src={src}
                 alt={`Exam page ${idx + 1}`}
                 loading="lazy"

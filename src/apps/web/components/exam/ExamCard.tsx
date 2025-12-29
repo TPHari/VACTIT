@@ -1,5 +1,8 @@
-import React from 'react';
+import React, {useState} from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { api } from '../../lib/api-client';
+
 
 // [1] Định nghĩa Interface khớp với dữ liệu từ ExamList truyền xuống
 export interface ExamData {
@@ -18,10 +21,12 @@ export interface ExamData {
 interface ExamProps {
   exam: ExamData;
   onSelect: (exam: ExamData) => void;
+  currentUserId?: string; 
 }
 
-export default function ExamCard({ exam, onSelect }: ExamProps) {
-  
+export default function ExamCard({ exam, onSelect, currentUserId }: ExamProps) {
+   const router = useRouter();
+  const [loading, setLoading] = useState(false);
   // Logic xác định màu sắc và nhãn dựa trên status
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -47,6 +52,37 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
         return null;
     }
   };
+
+  async function handleTakeTest() {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const testId = exam.id; // Replace with actual test ID from exam data
+      let userId = currentUserId;
+      if (!userId) {
+        const res = await fetch('/api/user');
+        if (!res.ok) throw new Error('Failed to fetch current user');
+        const data = await res.json();
+        console.log('Fetched current user data:', data);
+        userId = data?.user.user_id;
+      }
+      if (!userId) throw new Error('Missing user id');
+      console.log('Starting trial for testId:', testId, 'userId:', userId);
+      const payload = { testId, userId };
+      const res = await api.trials.create(payload);
+      const trial = res?.data;
+      const NotAllowed = res?.alreadyDone;
+      console.log("trial data", trial, "NotAllowed:", NotAllowed);
+      if (NotAllowed) {
+        alert('Bạn đã tham gia kỳ thi này rồi. Vui lòng không tham gia lại.');
+      }
+      else router.push(`/exam/${trial.trial_id}`);
+    } catch (err: any) {
+      console.error('Failed to start trial', err);
+    } finally {
+      setLoading(false);
+    }
+    }
 
   return (
     <div className={`bg-white p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full border group relative ${
@@ -105,23 +141,26 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
       </div>
 
       {/* Buttons */}
-      <div className="flex gap-2 mt-auto">
-        <button
-          onClick={() => onSelect(exam)}
-          className="flex-1 py-2 text-xs text-gray-600 font-medium hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
-        >
-          {exam.status === 'completed' ? 'Xem lại' : 'Chi tiết'}
-        </button>
-        
-        <Link href={`/exam/${exam.id}`} className="flex-1">
-            <button className={`w-full h-full py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
-                exam.status === 'completed' 
-                ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300' 
+        <div className="flex gap-2 mt-auto">
+          <button
+            onClick={() => onSelect(exam)}
+            className="flex-1 py-2 text-xs text-gray-600 font-medium hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
+          >
+            {exam.status === 'completed' ? 'Xem lại' : 'Chi tiết'}
+          </button>
+
+          {/* replaced Link with action button that calls API */}
+          <button
+            onClick={handleTakeTest}
+            disabled={loading}
+            className={`flex-1 py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
+              exam.status === 'completed'
+                ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300'
                 : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
-            }`}>
-             {exam.status === 'completed' ? 'Thi lại' : (exam.status === 'in_progress' ? 'Tiếp tục' : 'Thi ngay')}
-            </button>
-        </Link>
+            } ${loading ? 'opacity-60 pointer-events-none' : ''}`}
+          >
+            {loading ? 'Đang khởi tạo...' : (exam.status === 'completed' ? 'Thi lại' : (exam.status === 'in_progress' ? 'Tiếp tục' : 'Thi ngay'))}
+          </button>
       </div>
     </div>
   );

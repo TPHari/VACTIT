@@ -20,6 +20,7 @@
     "dotenv": "^17.2.3",
     "fastify": "^5.0.0",
     "ioredis": "^5.8.2",
+    "mupdf": "^1.26.4",
     "zod": "^4.1.13"
   },
   "devDependencies": {

@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState} from 'react';
 import ViewerPane from '@/components/exam/ViewerPane';
 import Controls from '@/components/exam/Controls';
 import AnswerPanel from '@/components/exam/AnswerPanel';
+import { api } from '@/lib/api-client';
+import { useRouter } from 'next/navigation';
 
 //Chức năng: Giao diện làm bài
 
@@ -51,6 +53,8 @@ export default function ExamContainer({
     if (savedFlags) setFlags(JSON.parse(savedFlags));
   }, [testId]);
 
+  const router = useRouter();
+
   // 2. Logic Handlers
   function handleSelect(qid: number, value: string) {
     setAnswers((prev) => {
@@ -72,24 +76,29 @@ export default function ExamContainer({
     // Xóa storage trước hoặc sau khi submit thành công tùy logic business
     // Ở đây tôi giữ lại để đề phòng lỗi mạng
     
-    try {
-      const res = await fetch('/api/exam/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ testId, answers }),
-      });
+  const trialId = testId; // if you navigate to /exam/<trialId>, pass it as testId prop
+    const responsesPayload = Object.entries(answers).map(([qid, chosen]) => ({
+      questionId: String(qid),
+      chosenOption: chosen ?? null,
+      responseTime: 0, // replace with real timing if you collect it
+    }));
 
-      if (!res.ok) {
-        const err = await res.json();
-        alert(`Nộp bài thất bại: ${err.error}`);
+    try {
+      const res =  await api.responses.create({
+        trialId: trialId,
+        responses: responsesPayload,
+      });
+      if (res.error) {
+        alert('Lỗi khi nộp bài: ' + res.error);
         return;
       }
 
-      // Clear storage khi thành công
+      // Clear storage when successful
       localStorage.removeItem(`exam_${testId}_answers`);
       localStorage.removeItem(`exam_${testId}_flags`);
       alert('Nộp bài thành công!');
-      // Có thể redirect sang trang kết quả tại đây: router.push(`/result/${testId}`)
+      // optional: redirect to results page
+      router.push('/result');
     } catch (err) {
       console.error(err);
       alert('Lỗi kết nối khi nộp bài');

@@ -1,19 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Sidebar from "@/components/functionalBar/Sidebar";
-import Topbar from "@/components/functionalBar/Topbar";
+import React, { useEffect, useState } from "react";
 import ViewerPane from "@/components/exam/ViewerPane"; // reuse viewer
 import AnswerReviewPanel from "@/components/exam/AnswerReviewPanel";
 import { TESTS, TOTAL_QUESTIONS } from "@/lib/mock-tests";
-
-export default function ReviewPage({
-  params,
-}: {
-  params: { testId: string };
-}) {
-  const { testId } = params;
-
+type Params = Promise<{ testId: string }>
+export default function ReviewPage(props: {
+  params : Params,}) {
+  const params = React.use(props.params)
+  const testId = params.testId
   const test = TESTS.find((t) => t.id === testId);
   const [pages, setPages] = useState<string[]>([]);
   const [zoom] = useState(1);
