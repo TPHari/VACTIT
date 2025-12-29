@@ -1,6 +1,3 @@
-#!/usr/bin/env Rscript
-# Simple R script to run a 2PL IRT model for 4 sections and return 0-300 scaled scores per section
-# Expects JSON on stdin with shape: { "responses": [ [q1,q2,...,q120], ... ], optional "names": ["A","B",...] }
 
 suppressWarnings(suppressPackageStartupMessages({
   library(jsonlite)

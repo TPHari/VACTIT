@@ -15,7 +15,7 @@ RUN R -e "options(repos='https://cloud.r-project.org'); pkgs <- c('plumber','jso
 # Copy scripts into the image
 WORKDIR /src
 # copy scripts from the build context (workflow uses ./src/services/worker as context)
-COPY scripts/ /src/scripts/
+COPY scripts/ /src/services/worker/scripts/
 
 EXPOSE 8000
-CMD ["Rscript", "/src/scripts/irt_api.R"]
+CMD ["Rscript", "/src/services/worker/scripts/irt_api.R"]
