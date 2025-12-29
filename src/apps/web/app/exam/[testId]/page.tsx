@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from "react";
 import ExamContainer from "@/components/exam/ExamContainer";
-
+import { api } from "@/lib/api-client";
 
 type Params = Promise<{ testId: string }>
 
@@ -16,16 +16,10 @@ export default function ExamPage(props: {
 
 
   useEffect(() => {
-    console.log(`Fetching pages for exam ${testId}`);
-
-
-    fetch(`/api/exam/${testId}/pages`)
+    try {
+      api.tests.getPages(testId)
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch");
-        return res.json();
-      })
-      .then((data) => {
-        setPages(data.pages || []);
+        setPages(res.pages);
       })
       .catch((err) => {
         console.error(err);
@@ -33,6 +27,10 @@ export default function ExamPage(props: {
       .finally(() => {
         setLoading(false);
       });
+    } catch (error) {
+      console.error('Error fetching pages:', error);
+      setLoading(false);
+    }
   }, [testId]);
 
 

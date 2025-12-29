@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api-client';
 
+
 // [1] Định nghĩa Interface khớp với dữ liệu từ ExamList truyền xuống
 export interface ExamData {
   id: string;
@@ -53,25 +54,34 @@ export default function ExamCard({ exam, onSelect, currentUserId }: ExamProps) {
   };
 
   async function handleTakeTest() {
-      if (loading) return;
-      setLoading(true);
-      try {
-        // const testId = (exam as any).test_id ?? (exam as any).id ?? (exam as any).testId;
-        const testId = "123"; // Thay bằng cách lấy testId thực tế từ exam
-        const currentUserId = "lkchautest@gmail.com"; // Thay bằng cách lấy userId thực tế từ context hoặc props
-        console.log('Starting trial for testId:', testId, 'userId:', currentUserId);
-        const payload = { testId, userId: currentUserId };
-        const res = await api.trials.create(payload);
-        const trial = res?.data;
-        const trialId = trial?.trial_id ?? trial?.id ?? trial?.trialId;
-        if (!trialId) throw new Error('Missing trial id in response');
-        router.push(`/exam/${testId}`);
-      } catch (err: any) {
-        console.error('Failed to start trial', err);
-        // optional: show UI feedback
-      } finally {
-        setLoading(false);
+    if (loading) return;
+    setLoading(true);
+    try {
+      const testId = exam.id; // Replace with actual test ID from exam data
+      let userId = currentUserId;
+      if (!userId) {
+        const res = await fetch('/api/user');
+        if (!res.ok) throw new Error('Failed to fetch current user');
+        const data = await res.json();
+        console.log('Fetched current user data:', data);
+        userId = data?.user.user_id;
       }
+      if (!userId) throw new Error('Missing user id');
+      console.log('Starting trial for testId:', testId, 'userId:', userId);
+      const payload = { testId, userId };
+      const res = await api.trials.create(payload);
+      const trial = res?.data;
+      const NotAllowed = res?.alreadyDone;
+      console.log("trial data", trial, "NotAllowed:", NotAllowed);
+      if (NotAllowed) {
+        alert('Bạn đã tham gia kỳ thi này rồi. Vui lòng không tham gia lại.');
+      }
+      else router.push(`/exam/${trial.trial_id}`);
+    } catch (err: any) {
+      console.error('Failed to start trial', err);
+    } finally {
+      setLoading(false);
+    }
     }
 
   return (

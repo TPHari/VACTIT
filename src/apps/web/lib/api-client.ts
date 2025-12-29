@@ -132,6 +132,7 @@ export const api = {
     create: (data: any) => apiClient.post<any>('/api/tests', data),
     update: (id: string, data: any) => apiClient.put<any>(`/api/tests/${id}`, data),
     delete: (id: string) => apiClient.delete<any>(`/api/tests/${id}`),
+    getPages: (trialId: string) => apiClient.get<any>(`/api/exam/${trialId}/pages`),
   },
   trials: {
     getAll: () => apiClient.get<any[]>('/api/trials'),
