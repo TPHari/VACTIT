@@ -116,12 +116,25 @@ main <- function(){
   cat(toJSON(out, dataframe = 'rows', auto_unbox = TRUE))
 }
 
-safe_is_cli <- function(){
-  # Detect running under Rscript (CLI) vs being sourced by another process (like plumber).
-  # Rscript typically includes a `--file=` argument in commandArgs(); interactive() is TRUE in R console.
-  args <- commandArgs(trailingOnly = FALSE)
-  (!interactive()) && any(grepl("--file=", args))
+is_being_sourced <- function(){
+  # If this script is being loaded with source()/sys.source(), the call stack
+  # will include a 'source' or 'sys.source' call. Detect that and treat as
+  # being sourced so we do not run CLI main().
+  calls <- sys.calls()
+  if (length(calls) == 0) return(FALSE)
+  any(vapply(calls, function(x) {
+    txt <- paste(deparse(x), collapse = "")
+    grepl("(^|\\W)(source|sys.source)\\W*\\(", txt)
+  }, logical(1)))
 }
+
+safe_is_cli <- function(){
+  # CLI only when non-interactive with an explicit --file and NOT being sourced.
+  args <- commandArgs(trailingOnly = FALSE)
+  cli_invoked <- (!interactive()) && any(grepl("--file=", args))
+  cli_invoked && !is_being_sourced()
+}
+
 if (safe_is_cli()){
   tryCatch({ main() }, error = function(e) { cat(toJSON(list(error = paste0('R runtime error: ', e$message)), auto_unbox=TRUE)) })
   quit(status = 0)
