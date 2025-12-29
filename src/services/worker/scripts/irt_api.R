@@ -96,11 +96,3 @@ function(req, res){
   res$status <- 501
   return(list(error = 'no_scoring_impl', message = 'No project scoring implementation found. Provide irt_run.R exposing process_responses().'))
 }
-
-# Run plumber when executed directly
-safe_is_cli <- function(){ tryCatch({ identical(sys.call(1), quote(-1)) }, error = function(e) FALSE) }
-if (safe_is_cli()){
-  pr <- plumber::plumb(sys.frame(1)$ofile)
-  port <- as.integer(Sys.getenv('PORT', '8000'))
-  pr$run(host='0.0.0.0', port = port)
-}

@@ -116,28 +116,12 @@ main <- function(){
   cat(toJSON(out, dataframe = 'rows', auto_unbox = TRUE))
 }
 
-is_being_sourced <- function(){
-  # If this script is being loaded with source()/sys.source(), the call stack
-  # will include a 'source' or 'sys.source' call. Detect that and treat as
-  # being sourced so we do not run CLI main().
-  calls <- sys.calls()
-  if (length(calls) == 0) return(FALSE)
-  any(vapply(calls, function(x) {
-    txt <- paste(deparse(x), collapse = "")
-    grepl("(^|\\W)(source|sys.source)\\W*\\(", txt)
-  }, logical(1)))
-}
-
 safe_is_cli <- function(){
-  # More robust CLI detection:
-  # - If this file is being sourced (source() in the call stack) -> not CLI.
-  # - Otherwise consider CLI only when one of the --file= args names this file (irt_run.R).
-  if (is_being_sourced()) return(FALSE)
+  # Simple CLI detection: run main only when R was invoked with --file=irt_run.R
   args <- commandArgs(trailingOnly = FALSE)
   file_args <- args[grepl("--file=", args)]
   if (length(file_args) == 0) return(FALSE)
-  file_paths <- sub("--file=", "", file_args)
-  any(basename(file_paths) == basename("irt_run.R"))
+  any(basename(sub("--file=", "", file_args)) == "irt_run.R")
 }
 
 if (safe_is_cli()){
