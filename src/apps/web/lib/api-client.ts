@@ -10,105 +10,69 @@ export class ApiClient {
   async get<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
 
     if (!response.ok) {
-      let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+      let errorMessage = `API Error: ${response.status}`;
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-      } catch (e) {
-        // Fallback
-      }
+      } catch (e) {}
       console.error(`GET ${endpoint} failed:`, errorMessage);
       throw new Error(errorMessage);
     }
-
     return response.json();
   }
 
   async post<T>(endpoint: string, data: any): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(data),
     });
-
     if (!response.ok) {
-      let errorMessage = `API Error: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-      } catch (e) {
-        // Fallback
-      }
-      console.error(`POST ${endpoint} failed:`, errorMessage);
-      throw new Error(errorMessage);
+         let errorMessage = `API Error: ${response.status}`;
+         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
+         throw new Error(errorMessage);
     }
-
     return response.json();
   }
-
+  
   async put<T>(endpoint: string, data: any): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(data),
     });
-
     if (!response.ok) {
-      let errorMessage = `API Error: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-      } catch (e) {
-        // Fallback
-      }
-      console.error(`PUT ${endpoint} failed:`, errorMessage);
-      throw new Error(errorMessage);
+         let errorMessage = `API Error: ${response.status}`;
+         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
+         throw new Error(errorMessage);
     }
-
     return response.json();
   }
 
   async delete<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
-
     if (!response.ok) {
-      let errorMessage = `API Error: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-      } catch (e) {
-        // Fallback
-      }
-      console.error(`DELETE ${endpoint} failed:`, errorMessage);
-      throw new Error(errorMessage);
+         let errorMessage = `API Error: ${response.status}`;
+         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
+         throw new Error(errorMessage);
     }
-
     return response.json();
   }
 }
 
 export const apiClient = new ApiClient();
 
-// Convenience methods for different resources
 export const api = {
   users: {
     getAll: () => apiClient.get<any[]>('/api/users'),
@@ -117,24 +81,28 @@ export const api = {
     update: (id: string, data: any) => apiClient.put<any>(`/api/users/${id}`, data),
     delete: (id: string) => apiClient.delete<any>(`/api/users/${id}`),
   },
+
   tests: {
     getAll: (params?: { 
         query?: string; 
         type?: string; 
         category?: string; 
-        status?: string; // Thêm status
-        sort?: string;   // Thêm sort
+        status?: string;
+        sort?: string;
         page?: number; 
-        limit?: number 
+        limit?: number;
+        userId?: string;
     }) => {
         const searchParams = new URLSearchParams();
         if (params) {
             if (params.query) searchParams.set('query', params.query);
             if (params.category && params.category !== 'all') searchParams.set('category', params.category);
-            if (params.status && params.status !== 'all') searchParams.set('status', params.status); // Truyền status
-            if (params.sort) searchParams.set('sort', params.sort); // Truyền sort
+            if (params.status && params.status !== 'all') searchParams.set('status', params.status);
+            if (params.sort) searchParams.set('sort', params.sort);
+            if (params.userId) searchParams.set('userId', params.userId); // <--- THÊM
             
-            // ... page, limit
+            if (params.page) searchParams.set('page', params.page.toString());
+            if (params.limit) searchParams.set('limit', params.limit.toString());
         }
         return apiClient.get<any>(`/api/tests?${searchParams.toString()}`);
     },
@@ -143,6 +111,7 @@ export const api = {
     update: (id: string, data: any) => apiClient.put<any>(`/api/tests/${id}`, data),
     delete: (id: string) => apiClient.delete<any>(`/api/tests/${id}`),
   },
+  
   trials: {
     getAll: () => apiClient.get<any[]>('/api/trials'),
     getById: (id: string) => apiClient.get<any>(`/api/trials/${id}`),

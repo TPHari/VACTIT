@@ -4,23 +4,23 @@ import Link from 'next/link';
 export interface ExamData {
   id: string;
   title: string;
-  date: string;       // Ngày hiển thị (Start Time đã format)
-  startTime?: string; // ISO String đầy đủ (Quan trọng để tính toán)
-  dueTime?: string;   // ISO String đầy đủ
-  status: string;     // 'completed' | 'not_started'
+  date: string;
+  startTime?: string;
+  dueTime?: string;
+  status: string;
   duration: number;
   questions: number;
   totalTrials: number;
   subject: string;
   isVip?: boolean;
   author: string;
-  type: string;       // 'exam' | 'practice'
+  type: string;
 }
 
 interface ExamProps {
   exam: ExamData;
   onSelect: (exam: ExamData) => void;
-  categoryContext?: string; // Tab hiện tại
+  categoryContext?: string;
 }
 
 export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps) {
@@ -31,34 +31,29 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
   const isCompleted = exam.status === 'completed';
   const isPractice = exam.type === 'practice';
   
-  // Logic kiểm tra trạng thái mở/đóng của bài thi
   useEffect(() => {
     const checkStatus = () => {
       const now = new Date().getTime();
       const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
-      const due = exam.dueTime ? new Date(exam.dueTime).getTime() : Infinity; // Nếu không có dueTime thì coi như vô hạn
+      const due = exam.dueTime ? new Date(exam.dueTime).getTime() : Infinity;
 
       if (isPractice) {
-        setIsExamOpen(true); // Bài luyện tập luôn mở
+        setIsExamOpen(true);
         return;
       }
 
-      // Bài thi (Exam): Phải trong khung giờ (Start <= Now <= Due)
       if (now >= start && now <= due) {
         setIsExamOpen(true);
       } else {
         setIsExamOpen(false);
       }
 
-      // LOGIC COUNTDOWN (Chỉ chạy nếu chưa bắt đầu và còn < 24h)
       const distance = start - now;
       if (distance > 0 && distance <= 24 * 60 * 60 * 1000) {
-        // Tính toán giờ, phút, giây
         const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
         
-        // Format số đẹp (01, 02...)
         const h = hours < 10 ? `0${hours}` : hours;
         const m = minutes < 10 ? `0${minutes}` : minutes;
         const s = seconds < 10 ? `0${seconds}` : seconds;
@@ -69,19 +64,12 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
       }
     };
 
-    // Chạy ngay lập tức
     checkStatus();
-
-    // Cập nhật mỗi giây
     const timer = setInterval(checkStatus, 1000);
-
     return () => clearInterval(timer);
   }, [exam.startTime, exam.dueTime, exam.type, isPractice]);
 
-
-  // Helper: Render Badge trạng thái
   const renderStatusBadge = () => {
-    // Ưu tiên hiển thị Countdown nếu có
     if (timeLeft) {
       return (
         <span className="text-[10px] font-bold px-2 py-1 rounded bg-orange-100 text-orange-600 flex items-center gap-1 animate-pulse border border-orange-200">
@@ -90,7 +78,6 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
       );
     }
 
-    // Nếu không countdown, hiển thị theo Context hoặc Status tính toán
     if (isCompleted) {
        return <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded border border-green-200">Đã làm</span>;
     }
@@ -100,7 +87,6 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
     }
 
     if (categoryContext === 'locked' || (!isExamOpen && !isPractice && !timeLeft)) {
-        // Check kỹ hơn: Nếu đã qua dueTime mới là Locked, nếu chưa tới startTime mà > 24h là Upcoming
         const now = new Date().getTime();
         const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
         if (now < start) return <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-100 text-blue-600 border border-blue-200">📅 Sắp tới</span>;
@@ -114,9 +100,8 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
     return null;
   };
 
-  // Logic Text hiển thị trên nút bấm
   const getButtonText = () => {
-    if (isCompleted) return 'Thi lại'; // Hoặc 'Xem lại' tùy logic
+    if (isCompleted) return 'Thi lại';
     if (!isExamOpen && !isPractice) {
         const now = new Date().getTime();
         const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
@@ -126,7 +111,6 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
     return 'Thi ngay';
   }
 
-  // Determine container style
   const isLockedVisual = !isExamOpen && !isPractice && !isCompleted;
 
   return (
@@ -135,7 +119,6 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
         isCompleted ? 'bg-green-50/40 border-green-200' : 'bg-white border-gray-100 hover:border-blue-300'
     }`}>
       
-      {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <span className="text-[10px] text-gray-500 font-semibold bg-white/60 px-2 py-1 rounded border border-gray-100">
           {new Date(exam.date).toLocaleDateString('vi-VN')}
@@ -151,7 +134,6 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
         </div>
       </div>
 
-      {/* Title */}
       <h3
         className={`font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] transition-colors ${
             isLockedVisual ? 'text-gray-500 cursor-not-allowed' : 'text-gray-800 group-hover:text-blue-600 cursor-pointer'
@@ -162,14 +144,13 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
         {exam.title}
       </h3>
 
-      {/* Stats */}
       <div className="space-y-2 mb-4 border-t border-gray-100/50 pt-3">
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
-          <span>{exam.totalTrials || 0} lượt thi</span>
+          <span>Bạn đã thi: {exam.totalTrials} lần</span>
         </div>
         
         <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -178,7 +159,6 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
         </div>
       </div>
 
-      {/* Buttons */}
       <div className="flex gap-2 mt-auto">
         <button
           onClick={() => onSelect(exam)}
@@ -193,7 +173,6 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
           {isCompleted ? 'Kết quả' : 'Chi tiết'}
         </button>
         
-        {/* Nút Thi ngay / Countdown / Locked */}
         {(!isExamOpen && !isPractice && !isCompleted) ? (
             <button disabled className={`flex-1 py-2 text-white text-xs font-medium rounded-lg cursor-not-allowed shadow-sm ${
                 timeLeft ? 'bg-orange-400' : 'bg-gray-400'

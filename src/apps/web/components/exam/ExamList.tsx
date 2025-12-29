@@ -7,7 +7,6 @@ import ExamCard, { ExamData } from './ExamCard';
 import ExamModal from './ExamModal';
 import Loading from '../ui/LoadingSpinner';
 
-// 1. Event Categories (Tabs lớn)
 const EVENT_CATEGORIES = [
   { id: 'all', label: 'Tất cả', icon: '🌐' },
   { id: 'in_progress', label: 'Đang diễn ra', icon: '🔥' },
@@ -17,7 +16,6 @@ const EVENT_CATEGORIES = [
   { id: 'locked', label: 'Đã kết thúc', icon: '🔒' },
 ];
 
-// 2. Status Filters (Bộ lọc phụ)
 const STATUS_FILTERS = [
   { id: 'all', label: 'Tất cả trạng thái' },
   { id: 'not_started', label: 'Chưa làm' },
@@ -28,39 +26,70 @@ export default function ExamList() {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('query')?.toLowerCase() || '';
 
+  // [2] State lưu User ID lấy từ API User
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+
   const [allExams, setAllExams] = useState<ExamData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // --- STATE QUẢN LÝ ---
-  const [currentCategory, setCurrentCategory] = useState('all'); // Event Tab
-  const [currentStatus, setCurrentStatus] = useState('all');     // Filter: Đã làm/Chưa làm
-  const [sortOrder, setSortOrder] = useState('newest');          // Sort: Mới/Cũ
+  const [currentCategory, setCurrentCategory] = useState('all'); 
+  const [currentStatus, setCurrentStatus] = useState('all');     
+  const [sortOrder, setSortOrder] = useState('newest');          
 
   const [selectedExam, setSelectedExam] = useState<ExamData | null>(null);
 
-  // --- GỌI API ---
+  // [3] Fetch User Info (Logic tương tự trang Profile)
+  useEffect(() => {
+    // Gọi endpoint nội bộ của Next.js (nơi NextAuth lưu session) để lấy info
+    fetch('/api/user')
+      .then(res => res.json())
+      .then(data => {
+        // Kiểm tra data trả về
+        // Tùy vào format API /api/user của bạn trả về { user: ... } hay trực tiếp
+        const userObj = data.user || data.data?.user || data;
+        
+        if (userObj) {
+           const uid = userObj.user_id || userObj.id || userObj.email; // Fallback lấy ID
+           if (uid) {
+             console.log("ExamList: Found User ID:", uid);
+             setCurrentUserId(uid);
+           }
+        }
+      })
+      .catch(err => {
+         // Không làm gì nếu chưa login (khách)
+         console.log("ExamList: Guest mode (No user logged in)");
+      });
+  }, []);
+
+  // [4] Fetch Exams
   useEffect(() => {
     const fetchExams = async () => {
       setLoading(true);
       try {
-        // Truyền tất cả params xuống Backend để xử lý query
         const response = await api.tests.getAll({
           query: searchQuery,
           category: currentCategory,
-          status: currentStatus, // Gửi status
-          sort: sortOrder,       // Gửi sort order
+          status: currentStatus,
+          sort: sortOrder,
+          userId: currentUserId,
         });
 
         const rawData = response.data || [];
 
         const formattedData: ExamData[] = rawData.map((item: any) => {
-          const isTaken = item.trials && item.trials.length > 0;
+          const userTrials = item.trials || [];
+          const isTaken = userTrials.length > 0;
+          
           return {
             id: item.test_id,
             title: item.title,
             author: item.author?.name || 'Unknown',
             questions: item._count?.questions || 0, 
-            totalTrials: item._count?.trials || 0,
+            
+            // [HIỂN THỊ] Số lượt thi của user này
+            totalTrials: userTrials.length, 
+            
             duration: item.duration ? Math.floor(item.duration / 60) : 0,
             date: item.start_time || item.created_at || new Date().toISOString(),
             startTime: item.start_time,
@@ -81,11 +110,11 @@ export default function ExamList() {
     };
 
     fetchExams();
-  }, [searchQuery, currentCategory, currentStatus, sortOrder]); 
+  // Thêm currentUserId vào dependency để khi fetch user xong thì gọi lại API test
+  }, [searchQuery, currentCategory, currentStatus, sortOrder, currentUserId]); 
 
   return (
     <>
-      {/* --- PHẦN 1: EVENT CATEGORIES (Giao diện nổi bật) --- */}
       <div className="mb-6">
         <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">Sự kiện & Danh mục</h2>
         <div className="flex overflow-x-auto custom-scrollbar pb-2 gap-2">
@@ -106,10 +135,7 @@ export default function ExamList() {
         </div>
       </div>
 
-      {/* --- PHẦN 2: SECONDARY FILTERS (Giao diện gọn gàng hơn) --- */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-        
-        {/* Filter Trạng thái (Pills nhỏ) */}
         <div className="flex items-center gap-2 overflow-x-auto">
           <span className="text-xs font-semibold text-gray-400 uppercase mr-1">Lọc theo:</span>
           {STATUS_FILTERS.map((stat) => (
@@ -127,7 +153,6 @@ export default function ExamList() {
           ))}
         </div>
 
-        {/* Sort Dropdown (Gọn gàng bên phải) */}
         <div className="flex items-center gap-2">
            <span className="text-xs font-semibold text-gray-400 uppercase">Sắp xếp:</span>
            <select 
@@ -141,7 +166,6 @@ export default function ExamList() {
         </div>
       </div>
 
-      {/* --- LIST EXAMS --- */}
       {loading && <Loading />}
 
       <div className="flex-1 overflow-y-auto pr-2 pb-6 custom-scrollbar p-2">
