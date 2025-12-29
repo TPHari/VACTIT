@@ -120,7 +120,10 @@ main <- function(){
 }
 
 safe_is_cli <- function(){
-  tryCatch({ identical(sys.call(1), quote(-1)) }, error = function(e) FALSE)
+  # Detect running under Rscript (CLI) vs being sourced by another process (like plumber).
+  # Rscript typically includes a `--file=` argument in commandArgs(); interactive() is TRUE in R console.
+  args <- commandArgs(trailingOnly = FALSE)
+  (!interactive()) && any(grepl("--file=", args))
 }
 if (safe_is_cli()){
   tryCatch({ main() }, error = function(e) { cat(toJSON(list(error = paste0('R runtime error: ', e$message)), auto_unbox=TRUE)) })
