@@ -378,7 +378,21 @@ export async function DELETE(req: NextRequest) {
     }
 
     const prisma = await getPrisma();
-    await prisma.test.delete({ where: { test_id } });
+    // delete dependent questions first to avoid FK constraint violations
+    try {
+      await prisma.$transaction([
+        prisma.question.deleteMany({ where: { test_id } }),
+        prisma.test.delete({ where: { test_id } }),
+      ]);
+    } catch (txErr) {
+      // If transaction fails, try a safer sequence: delete questions then delete test
+      try {
+        await prisma.question.deleteMany({ where: { test_id } });
+      } catch (qErr) {
+        console.error('Failed to delete questions for test', test_id, qErr);
+      }
+      await prisma.test.delete({ where: { test_id } });
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('DELETE /api/admin/tests error', err);
