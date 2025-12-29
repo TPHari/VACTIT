@@ -2,6 +2,69 @@
 
 A modern online examination platform built with Next.js, designed for scalable and efficient test administration.
 
+## Project Structure
+
+This is a **monorepo** project organized using npm workspaces, containing multiple applications and services:
+
+```
+VACTIT/
+├── src/
+│   ├── apps/                    # Frontend Applications
+│   │   └── web/                 # Next.js Web Application
+│   │       ├── app/             # Next.js App Router pages
+│   │       ├── components/      # React components
+│   │       ├── features/        # Feature-specific code
+│   │       ├── lib/             # Utility libraries
+│   │       └── prisma/          # Database schema & client
+│   │
+│   ├── services/                # Backend Services
+│   │   ├── api/                 # REST API Server
+│   │   │   ├── src/             # API source code
+│   │   │   └── prisma/          # Database migrations & schema
+│   │   └── worker/              # Background Workers
+│   │       └── src/             # Worker scripts (scoring, etc.)
+│   │
+│   ├── packages/                # Shared Packages
+│   │   ├── config/              # Shared configuration
+│   │   ├── types/               # Shared TypeScript types
+│   │   └── ui/                  # Shared UI components
+│   │
+│   └── infra/                   # Infrastructure
+│       └── docker/              # Docker configurations
+│           ├── Dockerfile.api   # API container
+│           ├── Dockerfile.web   # Web container
+│           ├── Dockerfile.worker # Worker container
+│           └── docker-compose.yml
+│
+├── docs/                        # Documentation
+├── pa/                          # Project artifacts
+└── public/                      # Static assets
+    └── uploads/                 # User-uploaded files
+```
+
+### Main Components
+
+#### Web Application (`src/apps/web/`)
+- **Frontend**: Next.js 15 with React 19
+- **Routing**: App Router with dynamic routes
+- **Features**: Exam taking, results, admin dashboard, authentication
+- **Styling**: TailwindCSS 4
+
+#### API Service (`src/services/api/`)
+- **Backend**: Node.js REST API
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT-based auth
+- **Routes**: Admin, auth, exam management
+
+#### Worker Service (`src/services/worker/`)
+- **Purpose**: Background task processing
+- **Tasks**: Exam scoring, data processing
+
+####Shared Packages (`src/packages/`)
+- **config**: Environment & app configuration
+- **types**: Shared TypeScript interfaces
+- **ui**: Reusable UI components
+
 ## Features
 
 - Modern web interface for online examinations

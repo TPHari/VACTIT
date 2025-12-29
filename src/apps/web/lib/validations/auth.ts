@@ -1,5 +1,6 @@
-import type {  NextAuthOptions } from 'next-auth';
+import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import { api } from '@/lib/api-client';
 
 export const authOptions: NextAuthOptions= {
@@ -10,6 +11,10 @@ export const authOptions: NextAuthOptions= {
     signIn: '/auth/login',
   },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+    }),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
@@ -43,18 +48,64 @@ export const authOptions: NextAuthOptions= {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
+    async signIn({ user, account, profile }) {
+      // If user signs in with Google, ensure a matching DB row exists (create if missing).
+      if (account?.provider === "google") {
+        try {
+          const email = (profile as any)?.email || user.email;
+          const name = (profile as any)?.name || user.name;
+
+          if (!email) return false;
+
+          // API route now: "if exists -> return unchanged; else create"
+          await api.auth.oauthGoogle({
+            email,
+            name: name ?? undefined,
+          });
+
+          return true;
+        } catch (err) {
+          console.error("google signIn ensure-user failed:", err);
+          return false;
+        }
       }
+
+      return true;
+    },
+
+    async jwt({ token, user, account, profile }) {
+      // This runs on every request. Only set fields when we actually have fresh auth info.
+      // That is: when user/account exists (initial sign-in), not on every subsequent call.
+      if (user) {
+        const email = (profile as any)?.email || user.email;
+
+        // For Google, prefer stable id = email (matches your DB user_id)
+        if (account?.provider === "google" && email) {
+          token.id = email;
+          (token as any).email = email;
+        } else {
+          // Credentials login: your authorize() should have set user.id already
+          // But if your system uses email as user_id, keeping email works too.
+          token.id = (user as any).id ?? email ?? token.id;
+          if (email) (token as any).email = email;
+        }
+      }
+
+      // Fallback: if id missing, use stored email
+      if (!token.id && (token as any).email) {
+        token.id = (token as any).email;
+      }
+
       return token;
     },
+
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id as string;
+        (session.user as any).id = token.id as string;       
       }
       return session;
     },
   },
+
 };
 

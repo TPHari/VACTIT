@@ -11,6 +11,11 @@ import { responseRoutes } from './routes/response.routes';
 // Initialize Prisma
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
 });
 
 // Initialize Fastify server
@@ -97,14 +102,15 @@ server.get('/health', async (request, reply) => {
     uptime: process.uptime(),
   };
 
-  // Test database
+  // Test database 
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.user.findFirst();
     health.database = 'connected';
   } catch (error: any) {
     health.status = 'degraded';
     health.database = 'disconnected';
     health.databaseError = error.message;
+    console.error('Database health check failed:', error.message);
   }
 
   // Test Redis (if available)

@@ -1,8 +1,11 @@
-// This file is now ONLY for the Overview content
-// It acts as the default page (localhost:3000)
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/validations/auth';
 
-import OverviewTab from './overview/page';
-
-export default function HomePage() {
-  return <OverviewTab />;
+export default async function HomePage() {
+  const session = await getServerSession(authOptions as any);
+  if (session) {
+    redirect('/overview');
+  }
+  redirect('/auth/login');
 }

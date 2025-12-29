@@ -175,6 +175,7 @@ export default function LoginPage() {
             {/* Google Login Button */}
             <button
               type="button"
+              onClick={() => signIn('google', { callbackUrl: '/' })}
               className="w-full flex items-center justify-center gap-3 border border-gray-300 bg-white py-3.5 rounded-full text-gray-700 font-medium hover:bg-gray-50 transition-all"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

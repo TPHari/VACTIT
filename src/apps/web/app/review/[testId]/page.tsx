@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/functionalBar/Sidebar";
 import Topbar from "@/components/functionalBar/Topbar";
 import ViewerPane from "@/components/exam/ViewerPane"; // reuse viewer
@@ -10,9 +10,9 @@ import { TESTS, TOTAL_QUESTIONS } from "@/lib/mock-tests";
 export default function ReviewPage({
   params,
 }: {
-  params: Promise<{ testId: string }>;
+  params: { testId: string };
 }) {
-  const { testId } = use(params);
+  const { testId } = params;
 
   const test = TESTS.find((t) => t.id === testId);
   const [pages, setPages] = useState<string[]>([]);
