@@ -1,57 +1,134 @@
 import { FastifyInstance } from 'fastify';
 
+// Interface cho Query Params
 interface GetTestsQuery {
   query?: string;
-  type?: string;
+  type?: string; 
+  category?: 'upcoming' | 'countdown' | 'in_progress' | 'locked' | 'practice' | 'all';
+  status?: 'completed' | 'not_started' | 'all';
+  sort?: 'newest' | 'oldest';
   page?: string;
   limit?: string;
 }
 
 export async function testRoutes(server: FastifyInstance) {
   
+  // 1. API Lấy danh sách bài thi (GET /api/tests)
   server.get<{ Querystring: GetTestsQuery }>('/api/tests', async (request, reply) => {
     try {
-      const { query, type, page = '1', limit = '12' } = request.query;
+      const { 
+        query, 
+        type, 
+        category = 'all', 
+        status = 'all', 
+        sort = 'newest',
+        page = '1', 
+        limit = '12' 
+      } = request.query;
       
       const pageInt = parseInt(page);
       const limitInt = parseInt(limit);
       const skip = (pageInt - 1) * limitInt;
 
-      // [CHUẨN HÓA 1]: Lấy User ID để check trạng thái
+      // --- A. LOGIC NGƯỜI DÙNG (User Logic) ---
+      // Lấy user từ request (đã qua middleware auth)
       const user = (request as any).user; 
       const currentUserId = user?.user_id || user?.id; 
+      // Nếu không có user (khách), dùng UUID rỗng để không tìm thấy bài đã làm
+      const fallbackId = currentUserId || '00000000-0000-0000-0000-000000000000'; 
 
+      // --- B. Mốc thời gian ---
+      const now = new Date();
+      const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
+
+      // --- C. Bộ lọc (WHERE) ---
       const where: any = {};
+
       if (query) {
         where.title = { contains: query, mode: 'insensitive' };
       }
-      if (type && type !== 'all') {
-        where.type = type;
+
+      // Filter theo Category (Time-based Logic)
+      switch (category) {
+        case 'upcoming':
+          where.type = 'exam';
+          where.start_time = { gt: oneDayLater };
+          break;
+        case 'countdown':
+          where.type = 'exam';
+          where.start_time = { gt: now, lte: oneDayLater };
+          break;
+        case 'in_progress':
+          where.type = 'exam';
+          where.start_time = { lte: now };
+          where.due_time = { gte: now };
+          break;
+        case 'locked':
+          where.type = 'exam';
+          where.due_time = { lt: now };
+          break;
+        case 'practice':
+          where.type = 'practice';
+          break;
+        case 'all':
+        default:
+          if (type && type !== 'all') where.type = type;
+          break;
       }
 
+      // Filter theo Status (User Logic)
+      if (status === 'completed') {
+        // Chỉ lấy bài user hiện tại đã làm
+        where.trials = { some: { student_id: fallbackId } };
+      } else if (status === 'not_started') {
+        // Chỉ lấy bài user hiện tại chưa làm
+        where.trials = { none: { student_id: fallbackId } };
+      }
+
+      // --- D. Sắp xếp (ORDER BY) ---
+      let orderBy: any = [];
+
+      if (['upcoming', 'countdown', 'in_progress'].includes(category)) {
+         // Sự kiện -> Sắp xếp tăng dần theo thời gian bắt đầu
+         orderBy = [
+           { start_time: 'asc' }, 
+           { test_id: 'asc' }
+         ];
+      } else {
+         // Tab thường -> Sắp xếp theo lựa chọn user (dựa trên start_time)
+         if (sort === 'oldest') {
+            orderBy = [
+              { start_time: 'asc' }, 
+              { test_id: 'asc' }
+            ];
+         } else {
+            // Mới nhất (Mặc định)
+            orderBy = [
+              { start_time: 'desc' }, 
+              { test_id: 'desc' }
+            ];
+         }
+      }
+
+      // --- E. Truy vấn ---
       const [tests, total] = await Promise.all([
         server.prisma.test.findMany({
           where,
           skip: skip,
           take: limitInt,
-          orderBy: { test_id: 'desc' },
+          orderBy: orderBy,
           include: {
-            author: {
-              select: { user_id: true, name: true, email: true }
+            author: { 
+              select: { user_id: true, name: true, email: true } 
             },
-            
+            // Include để check trạng thái "Đã làm" của User hiện tại
             trials: {
-              where: {
-                student_id: currentUserId 
-              },
+              where: { student_id: fallbackId },
               take: 1, 
               select: { trial_id: true } 
             },
-
-            _count: {
-              select: { 
-                trials: true,    // Tổng số lượt thi (cho Popularity)
-              } 
+            _count: { 
+              select: { trials: true } 
             }
           }
         }),
@@ -60,11 +137,11 @@ export async function testRoutes(server: FastifyInstance) {
 
       return { 
         data: tests, 
-        pagination: {
-          total,
-          page: pageInt,
-          limit: limitInt,
-          totalPages: Math.ceil(total / limitInt)
+        pagination: { 
+          total, 
+          page: pageInt, 
+          limit: limitInt, 
+          totalPages: Math.ceil(total / limitInt) 
         }
       };
 
@@ -75,25 +152,38 @@ export async function testRoutes(server: FastifyInstance) {
     }
   });
 
-  // ... (Các route getById, create giữ nguyên như cũ)
-  // Get test by ID
+  // 2. Get By ID
   server.get<{ Params: { id: string } }>('/api/tests/:id', async (request, reply) => {
     try {
       const test = await server.prisma.test.findUnique({
         where: { test_id: request.params.id },
-        include: { author: true, trials: true } // Có thể cần filter trials ở đây giống bên trên nếu muốn detail cũng hiện status
+        include: { 
+          author: true, 
+          trials: true 
+        }
       });
-      if (!test) return reply.status(404).send({ error: 'Test not found' });
+      if (!test) {
+        reply.status(404);
+        return { error: 'Test not found' };
+      }
       return { data: test };
-    } catch (error) { return reply.status(500).send({ error: 'Error' }); }
+    } catch (error) {
+      server.log.error(error);
+      reply.status(500);
+      return { error: 'Failed to fetch test' };
+    }
   });
 
-  // Create test
+  // 3. Create
   server.post('/api/tests', async (request, reply) => {
     try {
       const test = await server.prisma.test.create({ data: request.body as any });
       reply.status(201);
       return { data: test };
-    } catch (error) { return reply.status(400).send({ error: 'Error' }); }
+    } catch (error) {
+      server.log.error(error);
+      reply.status(400);
+      return { error: 'Failed to create test' };
+    }
   });
 }

@@ -1,65 +1,148 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-// Interface chuẩn dùng chung cho cả ExamList và ExamCard
 export interface ExamData {
   id: string;
   title: string;
-  date: string;
-  status: string; 
+  date: string;       // Ngày hiển thị (Start Time đã format)
+  startTime?: string; // ISO String đầy đủ (Quan trọng để tính toán)
+  dueTime?: string;   // ISO String đầy đủ
+  status: string;     // 'completed' | 'not_started'
   duration: number;
-  questions: number;    // Số câu hỏi
-  totalTrials: number;  // Tổng lượt thi
+  questions: number;
+  totalTrials: number;
   subject: string;
   isVip?: boolean;
   author: string;
-  type: string;
+  type: string;       // 'exam' | 'practice'
 }
 
 interface ExamProps {
   exam: ExamData;
   onSelect: (exam: ExamData) => void;
+  categoryContext?: string; // Tab hiện tại
 }
 
-export default function ExamCard({ exam, onSelect }: ExamProps) {
+export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps) {
   
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return (
-          <span className="flex items-center gap-1 bg-green-100 text-green-700 border border-green-200 text-[10px] font-bold px-2 py-1 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-              <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-            </svg>
-            Đã làm
-          </span>
-        );
-      case 'in_progress':
-        return (
-          <span className="flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] font-bold px-2 py-1 rounded-full">
-             Đang làm
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
+  const [timeLeft, setTimeLeft] = useState<string>('');
+  const [isExamOpen, setIsExamOpen] = useState(false);
 
   const isCompleted = exam.status === 'completed';
+  const isPractice = exam.type === 'practice';
+  
+  // Logic kiểm tra trạng thái mở/đóng của bài thi
+  useEffect(() => {
+    const checkStatus = () => {
+      const now = new Date().getTime();
+      const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
+      const due = exam.dueTime ? new Date(exam.dueTime).getTime() : Infinity; // Nếu không có dueTime thì coi như vô hạn
+
+      if (isPractice) {
+        setIsExamOpen(true); // Bài luyện tập luôn mở
+        return;
+      }
+
+      // Bài thi (Exam): Phải trong khung giờ (Start <= Now <= Due)
+      if (now >= start && now <= due) {
+        setIsExamOpen(true);
+      } else {
+        setIsExamOpen(false);
+      }
+
+      // LOGIC COUNTDOWN (Chỉ chạy nếu chưa bắt đầu và còn < 24h)
+      const distance = start - now;
+      if (distance > 0 && distance <= 24 * 60 * 60 * 1000) {
+        // Tính toán giờ, phút, giây
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        // Format số đẹp (01, 02...)
+        const h = hours < 10 ? `0${hours}` : hours;
+        const m = minutes < 10 ? `0${minutes}` : minutes;
+        const s = seconds < 10 ? `0${seconds}` : seconds;
+        
+        setTimeLeft(`${h}:${m}:${s}`);
+      } else {
+        setTimeLeft('');
+      }
+    };
+
+    // Chạy ngay lập tức
+    checkStatus();
+
+    // Cập nhật mỗi giây
+    const timer = setInterval(checkStatus, 1000);
+
+    return () => clearInterval(timer);
+  }, [exam.startTime, exam.dueTime, exam.type, isPractice]);
+
+
+  // Helper: Render Badge trạng thái
+  const renderStatusBadge = () => {
+    // Ưu tiên hiển thị Countdown nếu có
+    if (timeLeft) {
+      return (
+        <span className="text-[10px] font-bold px-2 py-1 rounded bg-orange-100 text-orange-600 flex items-center gap-1 animate-pulse border border-orange-200">
+           ⏳ {timeLeft}
+        </span>
+      );
+    }
+
+    // Nếu không countdown, hiển thị theo Context hoặc Status tính toán
+    if (isCompleted) {
+       return <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded border border-green-200">Đã làm</span>;
+    }
+    
+    if (categoryContext === 'in_progress' || (isExamOpen && !isPractice)) {
+        return <span className="text-[10px] font-bold px-2 py-1 rounded bg-red-100 text-red-600 animate-pulse border border-red-200">● Đang diễn ra</span>;
+    }
+
+    if (categoryContext === 'locked' || (!isExamOpen && !isPractice && !timeLeft)) {
+        // Check kỹ hơn: Nếu đã qua dueTime mới là Locked, nếu chưa tới startTime mà > 24h là Upcoming
+        const now = new Date().getTime();
+        const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
+        if (now < start) return <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-100 text-blue-600 border border-blue-200">📅 Sắp tới</span>;
+        return <span className="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">🔒 Đã kết thúc</span>;
+    }
+
+    if (isPractice) {
+        return <span className="text-[10px] font-bold px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-100">📖 Luyện tập</span>;
+    }
+
+    return null;
+  };
+
+  // Logic Text hiển thị trên nút bấm
+  const getButtonText = () => {
+    if (isCompleted) return 'Thi lại'; // Hoặc 'Xem lại' tùy logic
+    if (!isExamOpen && !isPractice) {
+        const now = new Date().getTime();
+        const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
+        if (now < start) return 'Chưa mở';
+        return 'Đã kết thúc';
+    }
+    return 'Thi ngay';
+  }
+
+  // Determine container style
+  const isLockedVisual = !isExamOpen && !isPractice && !isCompleted;
 
   return (
     <div className={`p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full border group relative ${
-        isCompleted ? 'bg-green-50/40 border-green-200' : 'bg-white border-gray-100 hover:border-blue-200'
+        isLockedVisual ? 'bg-gray-50/80 border-gray-200' : 
+        isCompleted ? 'bg-green-50/40 border-green-200' : 'bg-white border-gray-100 hover:border-blue-300'
     }`}>
       
-      {/* Header: Date + Badge */}
+      {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <span className="text-[10px] text-gray-500 font-semibold bg-white/60 px-2 py-1 rounded border border-gray-100">
           {new Date(exam.date).toLocaleDateString('vi-VN')}
         </span>
         
         <div className="flex gap-1 items-center">
-            {getStatusBadge(exam.status)}
+            {renderStatusBadge()}
             {exam.isVip && (
                 <span className="bg-gray-900 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500 shadow-sm ml-1">
                 VIP
@@ -70,47 +153,38 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
 
       {/* Title */}
       <h3
-        className="text-gray-800 font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] group-hover:text-blue-600 transition-colors cursor-pointer"
+        className={`font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] transition-colors ${
+            isLockedVisual ? 'text-gray-500 cursor-not-allowed' : 'text-gray-800 group-hover:text-blue-600 cursor-pointer'
+        }`}
         title={exam.title}
-        onClick={() => onSelect(exam)}
+        onClick={() => !isLockedVisual && onSelect(exam)}
       >
         {exam.title}
       </h3>
 
-      {/* Stats Area */}
+      {/* Stats */}
       <div className="space-y-2 mb-4 border-t border-gray-100/50 pt-3">
-        
-        {/* Dòng 1: Tổng lượt thi */}
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
-          <span>{exam.totalTrials} lượt thi</span>
+          <span>{exam.totalTrials || 0} lượt thi</span>
         </div>
         
-        {/* Dòng 2: Thời gian */}
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <span>{exam.duration} phút</span>
         </div>
-        
-        {/* Dòng 3: Môn học */}
-        {exam.subject && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-purple-400">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                </svg>
-                <span>{exam.subject}</span>
-            </div>
-        )}
       </div>
 
       {/* Buttons */}
       <div className="flex gap-2 mt-auto">
         <button
           onClick={() => onSelect(exam)}
+          disabled={isLockedVisual}
           className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors border ${
+            isLockedVisual ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed' :
             isCompleted 
               ? 'text-green-700 bg-white border-green-200 hover:bg-green-50' 
               : 'text-gray-600 bg-white hover:bg-gray-50 border-gray-200'
@@ -119,15 +193,24 @@ export default function ExamCard({ exam, onSelect }: ExamProps) {
           {isCompleted ? 'Kết quả' : 'Chi tiết'}
         </button>
         
-        <Link href={`/exam/${exam.id}`} className="flex-1">
-            <button className={`w-full h-full py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
-                isCompleted
-                ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300' 
-                : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
+        {/* Nút Thi ngay / Countdown / Locked */}
+        {(!isExamOpen && !isPractice && !isCompleted) ? (
+            <button disabled className={`flex-1 py-2 text-white text-xs font-medium rounded-lg cursor-not-allowed shadow-sm ${
+                timeLeft ? 'bg-orange-400' : 'bg-gray-400'
             }`}>
-             {isCompleted ? 'Thi lại' : 'Thi ngay'}
+                {timeLeft ? timeLeft : getButtonText()}
             </button>
-        </Link>
+        ) : (
+            <Link href={`/exam/${exam.id}`} className="flex-1">
+                <button className={`w-full h-full py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
+                    isCompleted
+                    ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300' 
+                    : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
+                }`}>
+                 {getButtonText()}
+                </button>
+            </Link>
+        )}
       </div>
     </div>
   );

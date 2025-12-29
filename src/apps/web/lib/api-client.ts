@@ -118,13 +118,23 @@ export const api = {
     delete: (id: string) => apiClient.delete<any>(`/api/users/${id}`),
   },
   tests: {
-    getAll: (params?: { query?: string; type?: string; page?: number; limit?: number }) => {
+    getAll: (params?: { 
+        query?: string; 
+        type?: string; 
+        category?: string; 
+        status?: string; // Thêm status
+        sort?: string;   // Thêm sort
+        page?: number; 
+        limit?: number 
+    }) => {
         const searchParams = new URLSearchParams();
         if (params) {
             if (params.query) searchParams.set('query', params.query);
-            if (params.type && params.type !== 'all') searchParams.set('type', params.type);
-            if (params.page) searchParams.set('page', params.page.toString());
-            if (params.limit) searchParams.set('limit', params.limit.toString());
+            if (params.category && params.category !== 'all') searchParams.set('category', params.category);
+            if (params.status && params.status !== 'all') searchParams.set('status', params.status); // Truyền status
+            if (params.sort) searchParams.set('sort', params.sort); // Truyền sort
+            
+            // ... page, limit
         }
         return apiClient.get<any>(`/api/tests?${searchParams.toString()}`);
     },
