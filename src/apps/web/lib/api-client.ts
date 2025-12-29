@@ -138,6 +138,10 @@ export const api = {
     getById: (id: string) => apiClient.get<any>(`/api/trials/${id}`),
     create: (data: any) => apiClient.post<any>('/api/trials', data),
     update: (id: string, data: any) => apiClient.put<any>(`/api/trials/${id}`, data),
+    getByStudent: (studentId: string) =>
+      apiClient.get<any>(`/api/students/${encodeURIComponent(studentId)}/trials`),
+    getDetails: (trialId: string) =>
+      apiClient.get<any>(`/api/trials/${encodeURIComponent(trialId)}/details`),
   },
   responses: {
     getAll: () => apiClient.get<any[]>('/api/responses'),

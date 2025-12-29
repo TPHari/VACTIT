@@ -25,5 +25,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "react-spinners": "^0.17.0"
   }
 }

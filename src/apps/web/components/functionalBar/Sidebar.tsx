@@ -28,16 +28,16 @@ export default function Sidebar() {
     <aside className="sidebar fixed top-4 left-4 h-[calc(100vh-2rem)] rounded-3xl z-50 overflow-hidden overflow-x-hidden transition-all duration-300">
       
       {/* Logo Section */}
-      <div className="sidebar__logo h-20 mb-4 border-b border-black/5">
+      <Link href="/" className="sidebar__logo h-20 mb-4 border-b border-black/5 flex items-center cursor-pointer">
         <Image
           src="/assets/logos/logo.png"
           alt="BAI-LEARN logo"
-          width={36} 
+          width={36}
           height={36}
           className="object-contain"
         />
         <span className="sidebar__logo-text ml-3">BAI·LEARN</span>
-      </div>
+      </Link>
 
       {/* Nav Section */}
       <nav className="sidebar__nav flex-1 overflow-y-auto overflow-x-hidden py-2 custom-scrollbar"> 

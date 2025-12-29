@@ -127,7 +127,7 @@ export async function authRoutes(server: FastifyInstance) {
         reply.status(401);
         return { error: 'Email hoặc mật khẩu không đúng' };
       }
-
+      console.log('User logged in successfully:', user);
       return {
         data: {
           user: {
