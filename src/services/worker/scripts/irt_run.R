@@ -129,10 +129,15 @@ is_being_sourced <- function(){
 }
 
 safe_is_cli <- function(){
-  # CLI only when non-interactive with an explicit --file and NOT being sourced.
+  # More robust CLI detection:
+  # - If this file is being sourced (source() in the call stack) -> not CLI.
+  # - Otherwise consider CLI only when one of the --file= args names this file (irt_run.R).
+  if (is_being_sourced()) return(FALSE)
   args <- commandArgs(trailingOnly = FALSE)
-  cli_invoked <- (!interactive()) && any(grepl("--file=", args))
-  cli_invoked && !is_being_sourced()
+  file_args <- args[grepl("--file=", args)]
+  if (length(file_args) == 0) return(FALSE)
+  file_paths <- sub("--file=", "", file_args)
+  any(basename(file_paths) == basename("irt_run.R"))
 }
 
 if (safe_is_cli()){
