@@ -25,7 +25,7 @@ export default function AdminTestsPage() {
   const [showForm, setShowForm] = useState(false);
   const [showStats, setShowStats] = useState<Test | null>(null);
   const [editing, setEditing] = useState<Test | null>(null);
-  const [form, setForm] = useState<any>({ title: '', start_date: '', start_time: '', due_date: '', due_time: '', type: 'regular', status: 'regular', url: '', duration: '' });
+  const [form, setForm] = useState<any>({ title: '', start_date: '', start_time: '', due_date: '', due_time: '', type: 'regular', status: 'regular', url: '', duration: '', answers: '', num_questions: '' });
 
   // helpers for date/time conversion and display
   function isoToDateAndTime(iso?: string | null) {
@@ -84,7 +84,7 @@ export default function AdminTestsPage() {
   async function load() {
     setLoading(true);
     try {
-      const data = await api.admin.tests.getAll();
+      const data = await api.admin.tests.get();
       if (data.ok) {
         setTests(data.data || []);
       } else {
@@ -198,10 +198,25 @@ export default function AdminTestsPage() {
     if (editing) payload.test_id = editing.test_id;
     
     try {
-      const data = editing 
-        ? await api.admin.tests.update(payload)
-        : await api.admin.tests.create(payload);
-      
+      let data;
+      if (editing) {
+        data = await api.admin.tests.put(payload);
+      } else {
+        // create: send FormData including file and answers if available
+        const fd = new FormData();
+        // append fields
+        Object.keys(payload).forEach(k => {
+          const v = (payload as any)[k];
+          if (v === undefined || v === null) return;
+          fd.append(k, String(v));
+        });
+        if (form.file) fd.append('file', form.file);
+        if (form.answers) fd.append('answers', form.answers);
+        if (form.num_questions) fd.append('num_questions', String(form.num_questions));
+
+        data = await api.admin.tests.post(fd);
+      }
+
       if (data.ok) {
         setShowForm(false);
         await load();
@@ -386,6 +401,17 @@ export default function AdminTestsPage() {
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm">Số lượng câu hỏi</label>
+                  <input type="number" min={1} value={form.num_questions ?? ''} onChange={e=>setForm((s:any)=>({...s, num_questions: Number(e.target.value)}))} className="w-full border p-2 rounded" />
+                </div>
+                <div>
+                  <label className="block text-sm">Chuỗi đáp án đúng (ví dụ: ABCDABCD...)</label>
+                  <input type="text" value={form.answers ?? ''} onChange={e=>setForm((s:any)=>({...s, answers: e.target.value}))} className="w-full border p-2 rounded" />
                 </div>
               </div>
             </div>
