@@ -35,8 +35,8 @@ export async function trialRoutes(server: FastifyInstance) {
       return { data: trials, count: trials.length };
     } catch (error) {
       reply.status(500);
-      return { 
-        error: error instanceof Error ? error.message : 'Failed to fetch trials' 
+      return {
+        error: error instanceof Error ? error.message : 'Failed to fetch trials'
       };
     }
   });
@@ -61,14 +61,14 @@ export async function trialRoutes(server: FastifyInstance) {
       return { data: trial };
     } catch (error) {
       reply.status(500);
-      return { 
-        error: error instanceof Error ? error.message : 'Failed to fetch trial' 
+      return {
+        error: error instanceof Error ? error.message : 'Failed to fetch trial'
       };
     }
   });
 
   // Create trial
-server.post('/api/trials', async (request, reply) => {
+  server.post('/api/trials', async (request, reply) => {
     try {
       const parsed = createTrialSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -106,26 +106,26 @@ server.post('/api/trials', async (request, reply) => {
       }
 
       // Check if this user already has a trial for this test
-    const existingTrialforExam = await server.prisma.trial.findFirst({
-      where: {
-        test_id: testId,
-        student_id: userId,
-        test: {
-          type: "exam"
-        }
-      },
-      select: {
-        trial_id: true,
-        test_id: true,
-        test: {
-          select: {
-            title: true
+      const existingTrialforExam = await server.prisma.trial.findFirst({
+        where: {
+          test_id: testId,
+          student_id: userId,
+          test: {
+            type: "exam"
           }
         },
-        start_time: true,
-        end_time: true
-      }
-    });
+        select: {
+          trial_id: true,
+          test_id: true,
+          test: {
+            select: {
+              title: true
+            }
+          },
+          start_time: true,
+          end_time: true
+        }
+      });
       console.log("existingTrialforExam", existingTrialforExam);
 
       if (existingTrialforExam) {
@@ -134,7 +134,8 @@ server.post('/api/trials', async (request, reply) => {
       }
 
       const start = new Date();
-      const end = new Date(start.getTime() + test.duration * 60000);
+      // duration is in minutes, default to 0 if null
+      const end = new Date(start.getTime() + (test.duration || 0) * 60000);
       const trialId = generateTrialId();
 
       const trial = await server.prisma.trial.create({

@@ -56,8 +56,13 @@ const scoringWorker = new Worker(
       await prisma.trial.update({
         where: { trial_id: trialId },
         data: {
-          total_score: score,
-          updated_at: new Date(),
+          processed_score: score,
+          // raw_score: score, // Optional: if you want to store it as raw_score too, but processed_score seems to be the main one
+          // updated_at is not in the schema shown earlier (only start_time/end_time/raw_score/processed_score/tactic)
+          // The schema showed:
+          // trial_id, student_id, test_id, start_time, end_time, raw_score, processed_score, tactic.
+          // There is NO updated_at field in the Trial model shown in schema.prisma:179-ish (Step 179 output)
+          // So I should remove updated_at as well.
         },
       });
 
