@@ -10,7 +10,7 @@ suppressWarnings(suppressPackageStartupMessages({
 }))
 
 ## process_responses(data)
-## - data: list with `responses` (matrix-like or list-of-lists) and optional `names`
+## - data: list with `responses` (matrix-like or list-of-lists) and optional `names` and optional `item_params`
 ## Returns: list with `students` (dataframe) and `items` (list of item param tibbles)
 process_responses <- function(data){
   if (is.null(data) || is.null(data$responses)) stop('missing responses')
@@ -55,13 +55,57 @@ process_responses <- function(data){
     if (length(use_items) < 3) stop(sprintf('[%s] not enough valid items after removing non-varying', section_label))
     data_use <- data_items[, use_items, drop = FALSE]
 
-    set.seed(123)
-    fit <- tryCatch({ mirt::mirt(data_use, 1, itemtype = '2PL', verbose = FALSE) }, error = function(e) stop(paste0('fit error: ', e$message)))
+    item_params <- NULL
+    fit <- NULL
+    
+    # Check if we have pre-calculated params for this section
+    section_params_df <- NULL
+    if (!is.null(data$item_params) && !is.null(data$item_params[[section_code]])) {
+        section_params_df <- as.data.frame(data$item_params[[section_code]])
+    }
 
-    co <- mirt::coef(fit, IRTpars = TRUE, simplify = TRUE)$items
-    item_params <- tibble::tibble(Item = rownames(co), a = as.numeric(co[, 'a']), b = as.numeric(co[, 'b']))
-    prop_correct <- colMeans(data_use, na.rm = TRUE)
-    item_params <- item_params %>% dplyr::left_join(tibble::tibble(Item = names(prop_correct), Prop_Correct = as.numeric(prop_correct)), by = 'Item')
+    if (!is.null(section_params_df)) {
+        
+        valid_param_items <- intersect(colnames(data_use), section_params_df$Item)
+        if (length(valid_param_items) < 1) stop(paste0('No matching items for fixed params in ', section_label))
+        
+        data_use <- data_use[, valid_param_items, drop=FALSE]
+        
+        # Subset params to match data_use columns order
+        current_params <- section_params_df %>% filter(Item %in% valid_param_items) %>% arrange(match(Item, colnames(data_use)))
+      
+        sv <- mirt::mirt(data_use, 1, itemtype = '2PL', pars = 'values', verbose = FALSE)
+        
+        # Update values
+        for(i in seq_len(nrow(current_params))) {
+            itm_name <- current_params$Item[i]
+            
+            val_a <- current_params$a[i]
+            val_b <- current_params$b[i]
+            val_d <- -1 * val_a * val_b
+            
+            sv[sv$item == itm_name & sv$name == 'a1', 'value'] <- val_a
+            sv[sv$item == itm_name & sv$name == 'd',  'value'] <- val_d
+            
+            # Fix them so they are not estimated
+            sv[sv$item == itm_name & (sv$name == 'a1' | sv$name == 'd'), 'est'] <- FALSE
+        }
+        
+        # Run mirt with fixed parameters (should be instant-ish)
+        fit <- mirt::mirt(data_use, 1, itemtype = '2PL', pars = sv, verbose = FALSE, TOL = 1e-4, technical = list(warn = FALSE))
+        
+        item_params <- current_params
+
+    } else {
+        # --- SLOW PATH: Calibrate from scratch ---
+        set.seed(123)
+        fit <- tryCatch({ mirt::mirt(data_use, 1, itemtype = '2PL', verbose = FALSE) }, error = function(e) stop(paste0('fit error: ', e$message)))
+        
+        co <- mirt::coef(fit, IRTpars = TRUE, simplify = TRUE)$items
+        item_params <- tibble::tibble(Item = rownames(co), a = as.numeric(co[, 'a']), b = as.numeric(co[, 'b']))
+        prop_correct <- colMeans(data_use, na.rm = TRUE)
+        item_params <- item_params %>% dplyr::left_join(tibble::tibble(Item = names(prop_correct), Prop_Correct = as.numeric(prop_correct)), by = 'Item')
+    }
 
     fs <- mirt::fscores(fit, method = 'EAP', full.scores.SE = TRUE)
     theta <- as.numeric(fs[,1]); se <- as.numeric(fs[,2])
