@@ -14,14 +14,14 @@ const redisConnection = new IORedis(process.env.REDIS_URL || 'redis://localhost:
 const scoringWorker = new Worker(
   'scoring-queue',
   async (job: Job) => {
-    console.log(`🔄 Processing job ${job.id}:`, job.data);
+    console.log(`Processing job ${job.id}:`, job.data);
 
     const { trialId, userId } = job.data;
 
     try {
       // Step 1: Fetch trial and responses from database
       await job.updateProgress(25);
-      
+
       const trial = await prisma.trial.findUnique({
         where: { trial_id: trialId },
       });
@@ -30,7 +30,7 @@ const scoringWorker = new Worker(
         throw new Error(`Trial ${trialId} not found`);
       }
 
-      console.log(`✅ Found trial: ${trialId}`);
+      console.log(`Found trial: ${trialId}`);
       await job.updateProgress(50);
 
       // Step 2: Fetch responses for this trial
@@ -38,7 +38,7 @@ const scoringWorker = new Worker(
         where: { trial_id: trialId },
       });
 
-      console.log(`✅ Found ${responses.length} responses`);
+      console.log(`Found ${responses.length} responses`);
 
       // Step 3: Calculate score (simplified - replace with actual IRT algorithm)
       // In production, this would:
@@ -49,8 +49,8 @@ const scoringWorker = new Worker(
 
       // Simplified scoring: 10 points per correct answer
       const score = Math.floor(Math.random() * 300) + 700; // 700-1000 range
-      
-      console.log(`📊 Calculated score: ${score}`);
+
+      console.log(`Calculated score: ${score}`);
 
       // Step 4: Update trial with score
       await prisma.trial.update({
@@ -63,7 +63,7 @@ const scoringWorker = new Worker(
 
       await job.updateProgress(100);
 
-      console.log(`✅ Job ${job.id} completed. Score: ${score}`);
+      console.log(`Job ${job.id} completed. Score: ${score}`);
 
       return {
         trialId,
@@ -73,7 +73,7 @@ const scoringWorker = new Worker(
         completedAt: new Date().toISOString(),
       };
     } catch (error: any) {
-      console.error(`❌ Job ${job.id} failed:`, error.message);
+      console.error(`Job ${job.id} failed:`, error.message);
       throw error;
     }
   },
@@ -89,11 +89,11 @@ const scoringWorker = new Worker(
 
 // Event handlers
 scoringWorker.on('completed', (job) => {
-  console.log(`✅ Job ${job.id} completed successfully`);
+  console.log(`Job ${job.id} completed successfully`);
 });
 
 scoringWorker.on('failed', (job, err) => {
-  console.error(`❌ Job ${job?.id} failed:`, err.message);
+  console.error(`Job ${job?.id} failed:`, err.message);
 });
 
 scoringWorker.on('active', (job) => {
@@ -101,18 +101,18 @@ scoringWorker.on('active', (job) => {
 });
 
 scoringWorker.on('error', (err) => {
-  console.error('❌ Worker error:', err);
+  console.error('Worker error:', err);
 });
 
-console.log('🚀 Scoring worker started and listening for jobs...');
+console.log('Scoring worker started and listening for jobs...');
 
 // Graceful shutdown
 const shutdown = async () => {
-  console.log('🛑 Shutting down worker...');
+  console.log('Shutting down worker...');
   await scoringWorker.close();
   await prisma.$disconnect();
   await redisConnection.quit();
-  console.log('✅ Worker shut down gracefully');
+  console.log('Worker shut down gracefully');
   process.exit(0);
 };
 
