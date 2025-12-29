@@ -5,13 +5,13 @@ const zod_1 = require("zod");
 const node_crypto_1 = require("node:crypto");
 const password_1 = require("../utils/password");
 const signupSchema = zod_1.z.object({
-    name: zod_1.z.string().min(1),
-    email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(6),
+    name: zod_1.z.string().min(1, 'Tên không được để trống'),
+    email: zod_1.z.string().email('Sai cú pháp email'),
+    password: zod_1.z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
 });
 const loginSchema = zod_1.z.object({
-    email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(6),
+    email: zod_1.z.string().email('Sai cú pháp email'),
+    password: zod_1.z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
 });
 // OAuth (Google) - we only need enough info to ensure a User exists in DB.
 // NextAuth handles Google verification + web session; this endpoint upserts the user record.
@@ -24,13 +24,20 @@ async function authRoutes(server) {
     // Register/Signup endpoint
     server.post('/api/auth/signup', async (request, reply) => {
         try {
+            console.log('Signup request body:', request.body);
             const parsed = signupSchema.safeParse(request.body);
             if (!parsed.success) {
                 reply.status(422);
-                return {
-                    error: 'invalid_input',
-                    details: parsed.error.flatten(),
-                };
+                console.log('Full error:', JSON.stringify(parsed.error, null, 2));
+                // Zod uses 'issues' not 'errors'
+                const errors = parsed.error.issues;
+                if (errors && errors.length > 0) {
+                    // Return the first error's custom message
+                    const errorMessage = errors[0].message;
+                    console.log('Returning error:', errorMessage);
+                    return { error: errorMessage };
+                }
+                return { error: 'Dữ liệu không nhập không hợp lệ !' };
             }
             const { name, email, password } = parsed.data;
             // Check if user exists
@@ -39,7 +46,7 @@ async function authRoutes(server) {
             });
             if (existing) {
                 reply.status(409);
-                return { error: 'email_exists' };
+                return { error: 'Email đã tồn tại' };
             }
             const hashed = await (0, password_1.hashPassword)(password);
             const user = await server.prisma.user.create({
@@ -76,10 +83,13 @@ async function authRoutes(server) {
             const parsed = loginSchema.safeParse(request.body);
             if (!parsed.success) {
                 reply.status(422);
-                return {
-                    error: 'invalid_input',
-                    details: parsed.error.flatten(),
-                };
+                // Zod uses 'issues' not 'errors'
+                const errors = parsed.error.issues;
+                if (errors && errors.length > 0) {
+                    // Return the first error's custom message
+                    return { error: errors[0].message };
+                }
+                return { error: 'Dữ liệu nhập không hợp lệ !' };
             }
             const { email, password } = parsed.data;
             const user = await server.prisma.user.findUnique({
@@ -87,12 +97,12 @@ async function authRoutes(server) {
             });
             if (!user || !user.hash_password) {
                 reply.status(401);
-                return { error: 'invalid_credentials' };
+                return { error: 'Email hoặc mật khẩu không đúng' };
             }
             const isValid = await (0, password_1.verifyPassword)(password, user.hash_password);
             if (!isValid) {
                 reply.status(401);
-                return { error: 'invalid_credentials' };
+                return { error: 'Email hoặc mật khẩu không đúng' };
             }
             return {
                 data: {
@@ -109,7 +119,7 @@ async function authRoutes(server) {
         catch (error) {
             reply.status(500);
             return {
-                error: error instanceof Error ? error.message : 'Login failed',
+                error: error instanceof Error ? error.message : 'Đăng nhập thất bại'
             };
         }
     });
