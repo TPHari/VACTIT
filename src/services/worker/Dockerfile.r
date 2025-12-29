@@ -18,4 +18,4 @@ WORKDIR /srv
 COPY scripts/ /srv/scripts/
 
 EXPOSE 8000
-CMD ["Rscript", "/srv/scripts/irt_api.R"]
+CMD ["Rscript", "/src/scripts/irt_api.R"]
