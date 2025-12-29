@@ -13,9 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN R -e "options(repos='https://cloud.r-project.org'); pkgs <- c('plumber','jsonlite','mirt','purrr','dplyr','tibble','readr','stringr'); install.packages(pkgs); installed <- pkgs %in% installed.packages()[,'Package']; if(!all(installed)) { print('INSTALL_FAILED'); quit(status=1) } else { print('INSTALL_OK') }"
 
 # Copy scripts into the image
-WORKDIR /srv
+WORKDIR /src
 # copy scripts from the build context (workflow uses ./src/services/worker as context)
-COPY scripts/ /srv/scripts/
+COPY scripts/ /src/scripts/
 
 EXPOSE 8000
 CMD ["Rscript", "/src/scripts/irt_api.R"]
