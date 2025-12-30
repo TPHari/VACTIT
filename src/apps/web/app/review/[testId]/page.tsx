@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import ViewerPane from "@/components/exam/ViewerPane"; // reuse viewer
 import AnswerReviewPanel from "@/components/exam/AnswerReviewPanel";
 import { TESTS, TOTAL_QUESTIONS } from "@/lib/mock-tests";
+import { api } from "@/lib/api-client";
 type Params = Promise<{ testId: string }>
 export default function ReviewPage(props: {
   params : Params,}) {
@@ -14,12 +15,14 @@ export default function ReviewPage(props: {
   const [zoom] = useState(1);
 
   useEffect(() => {
-    async function loadPages() {
-      const res = await fetch(`/api/exam/${testId}/pages`);
-      const data = await res.json();
-      setPages(data.pages || []);
-    }
-    loadPages();
+    try {
+      Promise.all([
+        api.tests.getPages(testId),
+      ]).then(([res]) => {
+        setPages(res.pages || []);
+      });
+    } catch (error) {
+      console.error('Error fetching data:', error);    }
   }, [testId]);
 
   if (!test) {
