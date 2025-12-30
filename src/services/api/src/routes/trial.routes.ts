@@ -145,6 +145,9 @@ export async function trialRoutes(server: FastifyInstance) {
           end_time: end,
           student: { connect: { user_id: userId } },
           test: { connect: { test_id: testId } },
+          raw_score: {},
+          processed_score: {},
+          tactic: {},
         },
         select: {
           trial_id: true,

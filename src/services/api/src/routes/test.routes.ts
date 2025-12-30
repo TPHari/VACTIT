@@ -150,7 +150,7 @@ export async function testRoutes(server: FastifyInstance) {
         return { error: 'trial_not_found' };
       }
 
-      const folderPath = `exam-${trial.test_id}`;
+      const folderPath = `${trial.test_id}`;
       // 1️⃣ Read files from Supabase Storage
       const { data: files, error } = await supabase.storage
         .from(BUCKET)

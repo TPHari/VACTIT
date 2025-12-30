@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import ViewerPane from '@/components/exam/ViewerPane';
 import Controls from '@/components/exam/Controls';
 import AnswerPanel from '@/components/exam/AnswerPanel';
@@ -20,19 +20,27 @@ type ExamContainerProps = {
   testId: string;
   initialPages: string[]; // Data được truyền từ Server Component
   totalQuestions?: number;
+  testTitle?: string;
+  durationMinutes?: number;
+  realTestId?: string; // The test_id from database (e.g. 1767...)
 };
 
 export default function ExamContainer({
   testId,
   initialPages,
-  totalQuestions = 120
+  totalQuestions = 120,
+  testTitle,
+  durationMinutes,
+  realTestId
 }: ExamContainerProps) {
   // State
   const [zoom, setZoom] = useState(1);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [flags, setFlags] = useState<Record<number, boolean>>({});
-  
+
   // Giả lập câu hỏi (hoặc nhận từ props nếu API trả về chi tiết câu hỏi)
+  // Re-generate questions with correct IDs if realTestId is present?
+  // Actually, UI uses 1..120. We only need to map at submission time.
   const questions: Question[] = Array.from({ length: totalQuestions }).map((_, i) => ({
     id: i + 1,
     text: undefined,
@@ -40,8 +48,8 @@ export default function ExamContainer({
   }));
 
   const testData = {
-    title: 'Đề thi thử ĐGNL',
-    durationSeconds: 150 * 60, // 150 phút
+    title: testTitle || 'Đề thi thử ĐGNL',
+    durationSeconds: (durationMinutes || 120) * 60,
     testId: testId,
   };
 
@@ -75,16 +83,17 @@ export default function ExamContainer({
   async function submitAnswers() {
     // Xóa storage trước hoặc sau khi submit thành công tùy logic business
     // Ở đây tôi giữ lại để đề phòng lỗi mạng
-    
-  const trialId = testId; // if you navigate to /exam/<trialId>, pass it as testId prop
+
+    const trialId = testId; // if you navigate to /exam/<trialId>, pass it as testId prop
     const responsesPayload = Object.entries(answers).map(([qid, chosen]) => ({
-      questionId: String(qid),
+      // Update format to match DB: realTestId_questionNumber
+      questionId: realTestId ? `${realTestId}_${qid}` : String(qid),
       chosenOption: chosen ?? null,
       responseTime: 0, // replace with real timing if you collect it
     }));
 
     try {
-      const res =  await api.responses.create({
+      const res = await api.responses.create({
         trialId: trialId,
         responses: responsesPayload,
       });
@@ -121,17 +130,17 @@ export default function ExamContainer({
       <div className="flex flex-row gap-6 mt-2 flex-1 overflow-hidden">
         {/* Truyền pages từ Server Component vào đây */}
         <ViewerPane pages={initialPages} zoom={zoom} />
-        
+
         <AnswerPanel
           questions={questions}
           answers={answers}
           onSelect={handleSelect}
           onSubmit={submitAnswers}
           onClear={() => {
-             if(confirm("Bạn có chắc muốn xóa hết đáp án?")) {
-                setAnswers({});
-                localStorage.removeItem(`exam_${testId}_answers`);
-             }
+            if (confirm("Bạn có chắc muốn xóa hết đáp án?")) {
+              setAnswers({});
+              localStorage.removeItem(`exam_${testId}_answers`);
+            }
           }}
           flags={flags}
           onToggleFlag={handleToggleFlag}

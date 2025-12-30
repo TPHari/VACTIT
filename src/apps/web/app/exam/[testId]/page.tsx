@@ -8,27 +8,33 @@ type Params = Promise<{ testId: string }>
 
 export default function ExamPage(props: {
   params: Params;
-} ) {
+}) {
   const params = React.use(props.params)
   const testId = params.testId
   const [pages, setPages] = useState<string[]>([]);
+  const [trialData, setTrialData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
 
   useEffect(() => {
     try {
-      api.tests.getPages(testId)
-      .then((res) => {
-        setPages(res.pages);
-      })
-      .catch((err) => {
-        console.error(err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      // Fetch both pages and trial details (which contains test info)
+      Promise.all([
+        api.tests.getPages(testId),
+        api.trials.getById(testId)
+      ])
+        .then(([pagesRes, trialRes]) => {
+          setPages(pagesRes.pages || []);
+          setTrialData(trialRes.data);
+        })
+        .catch((err) => {
+          console.error(err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     } catch (error) {
-      console.error('Error fetching pages:', error);
+      console.error('Error fetching data:', error);
       setLoading(false);
     }
   }, [testId]);
@@ -42,11 +48,15 @@ export default function ExamPage(props: {
   return (
     <div className="min-h-screen flex flex-col h-screen">
       <main className="flex-1 overflow-hidden p-4 bg-gray-50">
-        <ExamContainer testId={testId} initialPages={pages} />
+        <ExamContainer
+          testId={testId}
+          initialPages={pages}
+          testTitle={trialData?.test?.title}
+          durationMinutes={trialData?.test?.duration}
+          realTestId={trialData?.test?.test_id}
+        />
       </main>
     </div>
-  );
+  )
 }
-
-
 

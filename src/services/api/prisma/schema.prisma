@@ -55,9 +55,8 @@ model Trial {
   test_id         String
   start_time      DateTime
   end_time        DateTime
-  raw_score       Decimal  @default(0)
-  processed_score Decimal  @default(0)
-  /// JSONB in Postgres → Json in Prisma
+  raw_score       Json?
+  processed_score Json?
   tactic          Json?
 
   // Relations
