@@ -116,6 +116,14 @@ export async function POST(req: NextRequest) {
 
     const { title, start_time, due_time, type, status, duration, author_id, answers, num_questions } = fields;
 
+    // Normalize incoming `type` and `status` and parse times accordingly
+    const allowedTypes = ['practice', 'exam'];
+    const incomingType = typeof type === 'string' ? type.toLowerCase() : '';
+    const normType = allowedTypes.includes(incomingType) ? incomingType : 'practice';
+
+    const incomingStatus = typeof status === 'string' ? status.toLowerCase() : '';
+    const normStatus = incomingStatus === 'premium' ? 'Premium' : 'Regular';
+
     // generate a simple test_id — in production you may want a nicer format
     const test_id = String(Date.now());
 
@@ -230,15 +238,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // create Test record
+    // parse start/due times according to normalized type
+    const parsedStart = normType === 'practice' ? null : start_time ? new Date(start_time) : null;
+    const parsedDue = normType === 'practice' ? null : due_time ? new Date(due_time) : null;
+
+    // create Test record (use normalized type/status and parsed times)
     const created = await prisma.test.create({
       data: {
         test_id,
         title: title ?? 'Untitled',
-        start_time: start_time ? new Date(start_time) : null,
-        due_time: due_time ? new Date(due_time) : null,
-        type: type ?? 'practice',
-        status: status ?? 'Regular',
+        start_time: parsedStart,
+        due_time: parsedDue,
+        type: normType,
+        status: normStatus,
         url: publicUrl ?? '',
         duration: typeof duration === 'number' ? duration : (typeof duration === 'string' && duration ? Number(duration) : null),
         author_id: authorId,
