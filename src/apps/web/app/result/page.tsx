@@ -329,10 +329,14 @@ export default function ResultsPage() {
                         <div
                           key={t.trial_id}
                           onClick={() => setSelectedTrialId(t.trial_id)}
-                          className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr] border-b border-slate-100 py-2 text-left transition cursor-pointer ${isActive
+                          className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr]
+                          items-center
+                          border-b border-slate-100 py-2 text-left transition cursor-pointer
+                          ${isActive
                             ? "rounded-md bg-[#eef4ff] font-semibold"
                             : "bg-transparent"
-                            }`}
+                          }`}
+
                         >
                           <div className="text-center">{t.test?.title ?? t.test_id}</div>
                           <div className="text-center">
