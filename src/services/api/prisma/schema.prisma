@@ -21,31 +21,32 @@ model User {
   hash_password String
 
   // Relations
-  authoredTests Test[]   @relation("UserTests")
-  trials        Trial[]  @relation("StudentTrials")
+  authoredTests Test[]  @relation("UserTests")
+  trials        Trial[] @relation("StudentTrials")
 }
 
 model Test {
   /// PK: varchar(10), e.g. '00001'
   /// Note: autoincrement formatting (00001) is handled in app logic, not Prisma.
-  test_id   String   @id
-  author_id String
-  title     String
+  test_id    String    @id
+  author_id  String
+  title      String
   /// nullable for 'practice'
   start_time DateTime?
   /// 'exam' | 'practice'
-  type      String
+  type       String
   /// 'Premium' | 'Regular', default 'Regular'
-  status    String   @default("Regular")
+  status     String    @default("Regular")
   /// nullable for 'practice'
-  due_time  DateTime?
-  url       String
+  due_time   DateTime?
+  url        String
   /// duration in seconds, can be null if you want
-  duration  Int?
+  duration   Int?
 
   // Relations
   author User    @relation("UserTests", fields: [author_id], references: [user_id])
   trials Trial[]
+  questions Question[]
 }
 
 model Trial {
@@ -55,14 +56,13 @@ model Trial {
   test_id         String
   start_time      DateTime
   end_time        DateTime
-  raw_score       Decimal  @default(0)
-  processed_score Decimal  @default(0)
-  /// JSONB in Postgres → Json in Prisma
+  raw_score       Json?
+  processed_score Json?
   tactic          Json?
 
   // Relations
-  student   User    @relation("StudentTrials", fields: [student_id], references: [user_id], onDelete: Cascade)
-  test      Test    @relation(fields: [test_id], references: [test_id], onDelete: Cascade)
+  student   User       @relation("StudentTrials", fields: [student_id], references: [user_id], onDelete: Cascade)
+  test      Test       @relation(fields: [test_id], references: [test_id], onDelete: Cascade)
   responses Response[]
 }
 
@@ -77,9 +77,24 @@ model Response {
 
   // Relations
   trial Trial @relation(fields: [trial_id], references: [trial_id], onDelete: Cascade)
-  // TODO: add Question and Option models when their design is finalized:
-  // question Question @relation(fields: [question_id], references: [question_id], onDelete: Cascade)
-  // option   Option?  @relation(fields: [chosen_option], references: [option_id])
+  // Relations to Question (questions table)
+  question Question @relation(fields: [question_id], references: [question_id], onDelete: Cascade)
 
   @@id([trial_id, question_id])
+}
+
+model Question {
+  /// PK: e.g. "00001_Q1" or any unique id
+  question_id    String  @id
+  /// relative weight/score for this question
+  relative_score Int
+  test_id        String
+  /// 'A' | 'B' | 'C' | 'D' etc
+  correct_option String?
+
+  // Relations
+  test Test @relation(fields: [test_id], references: [test_id], onDelete: Cascade)
+  responses Response[]
+
+  @@index([test_id])
 }

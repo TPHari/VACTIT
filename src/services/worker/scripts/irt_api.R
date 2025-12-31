@@ -30,6 +30,7 @@ find_project_script <- function(){
     file.path(getwd(), 'src', 'services', 'worker', 'scripts', 'irt_scoring.R'),
     file.path(getwd(), 'scripts', 'irt_run.R'),
     file.path(getwd(), 'scripts', 'irt_scoring.R'),
+    file.path(getwd(), 'services', 'worker', 'scripts', 'irt_run.R'), # Docker specific path
     file.path(getwd(), 'irt_run.R'),
     file.path(getwd(), 'irt_scoring.R')
   )

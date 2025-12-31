@@ -1,61 +1,83 @@
-import fs from "fs";
-import path from "path";
 import { NextResponse as Response } from "next/server";
+import { supabaseStorage } from "@/lib/supabase-storage";
 
+const BUCKET = "test_images";
+const EXTS = ["jpg", "png", "webp"];
 
-export async function GET(req: Request, { params }: any ) {
-  const { testId } = await params;
+export async function GET(req: Request, { params }: { params: Promise<{ testId: string }> }) {
+    const { testId } = await params;
+    const trial_id = testId;
 
-  // Validate testId
-  if (!testId) {
-    return Response.json(
-      { error: "Missing testId parameter" },
-      { status: 400 } // Bad Request
-    );
-  }
+    if (!trial_id) {
+        return Response.json(
+            { error: "Missing trial_id parameter" },
+            { status: 400 }
+        );
+    }
+    console.log("Fetching for trial_id:", trial_id);
+    const trial = await supabaseStorage
+        .from("trials")
+        .select("test_id")
+        .eq("trial_id", trial_id)
+        .single();
 
-  const baseFolder = "public\\uploads";
-  const base = path.join(process.cwd(), baseFolder, `exam-${testId}`);
+    const folderPath = `${trial.data?.test_id}`;
+    console.log("Derived folder path:", folderPath);
+    const { data: files, error } = await supabaseStorage.storage
+        .from(BUCKET)
+        .list(folderPath, { limit: 200 });
 
-  // Check folder existence
-  if (!fs.existsSync(base)) {
-    console.log(`Folder not found: ${base}`);
-    return Response.json(
-      { error: `Folder not found: ${base}` },
-      { status: 404 } // Not Found
-    );
-  }
-
-  const exts = ["png", "jpg", "webp"];
-  let pages: string[] = [];
-
-  for (const ext of exts) {
-    const possible: string[] = [];
-    let i = 1;
-
-    while (true) {
-      const file = path.join(base, `page-${i}.${ext}`);
-      if (!fs.existsSync(file)) break;
-
-      possible.push(`/uploads/exam-${testId}/page-${i}.${ext}`);
-      i++;
+    if (error) {
+        return Response.json(
+            { error: "Failed to read storage folder" },
+            { status: 500 }
+        );
     }
 
-    if (possible.length > 0) {
-      pages = possible;
-      break;
+    if (!files || files.length === 0) {
+        console.log("Listing folder:", folderPath);
+        console.log("Files:", files);
+        return Response.json(
+            { error: `Folder not found: ${folderPath}` },
+            { status: 404 }
+        );
     }
-  }
+    let pages: string[] = [];
 
-  if (pages.length === 0) {
+    for (const ext of EXTS) {
+        const matched = files
+            .filter((f: any) => f.name.match(new RegExp(`^page-\\d+\\.${ext}$`)))
+            .sort((a: any, b: any) => {
+                const ai = Number(a.name.match(/\d+/)?.[0]);
+                const bi = Number(b.name.match(/\d+/)?.[0]);
+                return ai - bi;
+            });
+
+        if (matched.length > 0) {
+            pages = await Promise.all(
+                matched.map(async (file: any) => {
+                    const fullPath = `${folderPath}/${file.name}`;
+
+                    const { data } = await supabaseStorage.storage
+                        .from(BUCKET)
+                        .createSignedUrl(fullPath, 60 * 5);
+
+                    return data!.signedUrl;
+                })
+            );
+            break;
+        }
+    }
+
+    if (pages.length === 0) {
+        return Response.json(
+            { error: "No pages found" },
+            { status: 204 }
+        );
+    }
+
     return Response.json(
-      { error: "No pages found" },
-      { status: 204 } // No Content
+        { pages, totalPages: pages.length },
+        { status: 200 }
     );
-  }
-
-  return Response.json(
-    { pages, totalPages: pages.length },
-    { status: 200 }
-  );
 }

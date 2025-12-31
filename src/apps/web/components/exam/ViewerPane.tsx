@@ -1,4 +1,4 @@
-import React from 'react';
+import Image from "next/image";
 
 export default function ViewerPane({ pages, zoom }: { pages: string[]; zoom: number }) {
   const baseHeight = "160vh"
@@ -12,20 +12,22 @@ export default function ViewerPane({ pages, zoom }: { pages: string[]; zoom: num
           <div className="text-gray-500">No pages found.</div>
         ) : (
           pages.map((src, idx) => (
-              <img
-                key = {idx}
-                src={src}
-                alt={`Exam page ${idx + 1}`}
-                loading="lazy"
-                style={{
-                  transform: `scale(100%)`,
-                  transformOrigin: 'top center',
-                }}
-                className = {`my-2 shadow-md bg-white lg:min-h-[160vh] sm:min-h-[120vh]`}
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).style.display = 'none';
-                }}
-              />
+            <Image
+              key={idx}
+              width={800}
+              height={1280}
+              src={src}
+              alt={`Exam page ${idx + 1}`}
+              loading="lazy"
+              style={{
+                transform: `scale(100%)`,
+                transformOrigin: 'top center',
+              }}
+              className={`my-2 shadow-md bg-white lg:min-h-[160vh] sm:min-h-[120vh]`}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+              }}
+            />
           ))
         )}
       </div>

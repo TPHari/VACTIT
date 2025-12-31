@@ -25,7 +25,7 @@ export default function AdminTestsPage() {
   const [showForm, setShowForm] = useState(false);
   const [showStats, setShowStats] = useState<Test | null>(null);
   const [editing, setEditing] = useState<Test | null>(null);
-  const [form, setForm] = useState<any>({ title: '', start_date: '', start_time: '', due_date: '', due_time: '', type: 'regular', status: 'regular', url: '', duration: '' });
+  const [form, setForm] = useState<any>({ title: '', start_date: '', start_time: '', due_date: '', due_time: '', type: 'practice', status: 'regular', url: '', duration: '', answers: '', num_questions: '' });
 
   // helpers for date/time conversion and display
   function isoToDateAndTime(iso?: string | null) {
@@ -84,7 +84,7 @@ export default function AdminTestsPage() {
   async function load() {
     setLoading(true);
     try {
-      const data = await api.admin.tests.getAll();
+      const data = await api.admin.tests.get();
       if (data.ok) {
         setTests(data.data || []);
       } else {
@@ -103,13 +103,13 @@ export default function AdminTestsPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm({ title: '', start_date: '', start_time: '', due_date: '', due_time: '', type: 'regular', status: 'regular', url: '', duration: '' });
+    setForm({ title: '', start_date: '', start_time: '', due_date: '', due_time: '', type: 'practice', status: 'regular', url: '', duration: '' });
     setShowForm(true);
   }
 
-  // derived validation state
+  // derived validation state: require start/due only for exams
   const isFormValid = Boolean(
-    form.title && form.start_date && form.start_time && form.due_date && form.due_time && form.duration && form.file
+    form.title && (form.type === 'exam' ? (form.start_date && form.start_time && form.due_date && form.due_time) : true) && form.duration && form.file
   );
 
   // enforce due date/time cannot be earlier than start date/time
@@ -168,17 +168,7 @@ export default function AdminTestsPage() {
       delete payload.due_date;
     }
 
-    // determine status from due_time: if due_time is in the future -> 'regular' (open), else 'practice' (closed)
-    try {
-      if (payload.due_time) {
-        const dueMs = new Date(payload.due_time).getTime();
-        payload.status = dueMs > Date.now() ? 'regular' : 'practice';
-      } else {
-        payload.status = 'practice';
-      }
-    } catch (e) {
-      payload.status = 'practice';
-    }
+    // keep `status` from the form (admin-selected). do not overwrite from due_time.
 
     // validation: ensure due is after start
     if (payload.start_time && payload.due_time) {
@@ -198,10 +188,25 @@ export default function AdminTestsPage() {
     if (editing) payload.test_id = editing.test_id;
     
     try {
-      const data = editing 
-        ? await api.admin.tests.update(payload)
-        : await api.admin.tests.create(payload);
-      
+      let data;
+      if (editing) {
+        data = await api.admin.tests.put(payload);
+      } else {
+        // create: send FormData including file and answers if available
+        const fd = new FormData();
+        // append fields
+        Object.keys(payload).forEach(k => {
+          const v = (payload as any)[k];
+          if (v === undefined || v === null) return;
+          fd.append(k, String(v));
+        });
+        if (form.file) fd.append('file', form.file);
+        if (form.answers) fd.append('answers', form.answers);
+        if (form.num_questions) fd.append('num_questions', String(form.num_questions));
+
+        data = await api.admin.tests.post(fd);
+      }
+
       if (data.ok) {
         setShowForm(false);
         await load();
@@ -274,15 +279,13 @@ export default function AdminTestsPage() {
               {filteredTests.map(t => (
                 <tr key={t.test_id} className="border-t align-middle">
                   <td className="p-3 align-middle">{t.title}</td>
-                  <td className="p-3">{t.type === 'premium' ? 'VIP' : 'Thường'}</td>
+                  <td className="p-3">{t.type === 'exam' ? 'Exam' : 'Practice'}</td>
                   <td className="p-3">{formatDisplayDate(t.start_time)}</td>
                   <td className="p-3">{formatDisplayDate(t.due_time)}</td>
                   <td className="p-3">
                     {(() => {
                       try {
-                        const status = t.due_time
-                          ? (new Date(t.due_time).getTime() > Date.now() ? 'regular' : 'practice')
-                          : (t.status ?? 'practice');
+                        const status = (t.status ?? 'practice');
                         return status === 'regular' ? <Badge>Đang mở</Badge> : <Badge>Tự luyện</Badge>;
                       } catch (e) {
                         return <Badge>{t.status}</Badge>;
@@ -320,12 +323,22 @@ export default function AdminTestsPage() {
                 <textarea value={form.description ?? ''} onChange={e => setForm((s:any)=>({...s, description: e.target.value}))} className="w-full border p-2 rounded h-20" />
               </div>
 
-              <div>
-                <label className="block text-sm">Loại đề thi</label>
-                <select value={form.type ?? 'regular'} onChange={e => setForm((s:any)=>({...s, type: e.target.value}))} className="w-full border p-2 rounded">
-                  <option value="regular">Regular</option>
-                  <option value="premium">Premium</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm">Loại đề thi</label>
+                  <select value={form.type ?? 'practice'} onChange={e => setForm((s:any)=>({...s, type: e.target.value}))} className="w-full border p-2 rounded">
+                    <option value="practice">Practice</option>
+                    <option value="exam">Exam</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm">Trạng thái</label>
+                  <select value={form.status ?? 'regular'} onChange={e => setForm((s:any)=>({...s, status: e.target.value}))} className="w-full border p-2 rounded">
+                    <option value="regular">Regular</option>
+                    <option value="premium">Premium</option>
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -386,6 +399,17 @@ export default function AdminTestsPage() {
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm">Số lượng câu hỏi</label>
+                  <input type="number" min={1} value={form.num_questions ?? ''} onChange={e=>setForm((s:any)=>({...s, num_questions: Number(e.target.value)}))} className="w-full border p-2 rounded" />
+                </div>
+                <div>
+                  <label className="block text-sm">Chuỗi đáp án đúng (ví dụ: ABCDABCD...)</label>
+                  <input type="text" value={form.answers ?? ''} onChange={e=>setForm((s:any)=>({...s, answers: e.target.value}))} className="w-full border p-2 rounded" />
                 </div>
               </div>
             </div>

@@ -4,7 +4,16 @@ const nextConfig = {
   transpilePackages: ['@vactit/ui', '@vactit/config', '@vactit/types'],
   eslint: {
     ignoreDuringBuilds: true,
-  }
+  },
+  images: {
+  remotePatterns: [
+    {
+      protocol: "https",
+      hostname: "mbfmmvhkqmdxqsqduqlz.supabase.co",
+      pathname: "/storage/v1/object/**",
+    },
+  ],
+},
 };
 
 module.exports = nextConfig;
