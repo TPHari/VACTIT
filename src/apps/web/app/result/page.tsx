@@ -7,138 +7,16 @@ import { api } from "@/lib/api-client";
 import Loading from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
 
-const TOTAL_QUESTIONS = 120;
-
-type TrialListItem = {
-  trial_id: string;
-  test_id: string;
-  start_time: string; // ISO
-  end_time: string;   // ISO
-  raw_score: any;
-  processed_score: any;
-  test?: {
-    test_id: string;
-    title: string;
-    type: string;
-    duration: number | null;
-  };
-  _count?: { responses: number };
-};
-
-type StudentTrialsRes = {
-  data: TrialListItem[];
-  count: number;
-};
-
-type TrialDetails = {
-  trial_id: string;
-  test: { test_id: string; title: string; duration: number | null, type: "practice" | "exam"; };
-  tactic: unknown | null; // use unknown for jsonb
-  responses: Array<{
-    question_id: string;
-    chosen_option: string | null;
-    response_time: number;
-    question?: {
-      question_id: string;
-      correct_option: string | null;
-      section: string | null;
-    };
-  }>;
-};
-
-type SubjectSummary = {
-  id: string;
-  title: string;
-  correct: number;
-  total: number;
-};
-
-function formatDateVN(iso: string) {
-  // you can adjust formatting freely
-  const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const hour = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${dd}.${mm}.${yyyy} ${hour}:${min}`;
-}
-
-function formatDurationMMSS(seconds: number | null | undefined) {
-  if (!seconds || seconds <= 0) return "-";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-function computeAllAnswers(
-  responses: TrialDetails["responses"],
-  totalQuestions: number,
-) {
-  // stable ordering by question_id (works best if question_id has sequence like Q001..)
-  const sorted = [...responses].sort((a, b) =>
-    String(a.question_id).localeCompare(String(b.question_id)),
-  );
-
-  // Map 1..N -> answer info (chosen + correct flag)
-  const base = sorted.map((r, idx) => {
-    const number = idx + 1;
-    const chosen = r.chosen_option ?? "-";
-    const correctOpt = r.question?.correct_option ?? null;
-
-    return {
-      number,
-      answer: chosen, // keep your old naming
-      correct: chosen !== "-" && correctOpt !== null && chosen === correctOpt,
-      section: r.question?.section ?? "Unknown",
-    };
-  });
-
-  // Fill up to totalQuestions with "-"
-  const filled = Array.from({ length: totalQuestions }, (_, idx) => {
-    const number = idx + 1;
-    const found = base.find((a) => a.number === number);
-    return (
-      found ?? {
-        number,
-        answer: "-",
-        correct: false,
-        section: "Unknown",
-      }
-    );
-  });
-
-  return filled;
-}
-
-function computeSubjects(allAnswers: Array<{ section: string; answer: string; correct: boolean }>): SubjectSummary[] {
-  // group by section
-  const map = new Map<string, { total: number; correct: number }>();
-
-  for (const a of allAnswers) {
-    const sec = a.section || "Unknown";
-    const cur = map.get(sec) ?? { total: 0, correct: 0 };
-    cur.total += 1;
-    if (a.answer !== "-" && a.correct) cur.correct += 1;
-    map.set(sec, cur);
-  }
-
-  // Turn into array; you can rename titles here if needed
-  return Array.from(map.entries()).map(([id, v]) => ({
-    id,
-    title: id, // if section values are "vietnamese/english/math/logic" you can map to VN labels
-    correct: v.correct,
-    total: v.total,
-  }));
-}
-
-function renderScore(score: any) {
-  if (score == null) return "0";
-  if (typeof score === "object") {
-    return score.total || JSON.stringify(score);
-  }
-  return String(score);
-}
+import type { TrialDetails, TrialListItem, StudentTrialsRes } from "./_types";
+import { TOTAL_QUESTIONS } from "./_types";
+import {
+  formatDateVN,
+  formatDurationMMSS,
+  computeAllAnswers,
+  inferSubjectsFromRawScore,
+  inferTotalCorrectFromRawScore,
+  renderOverallScore,
+} from "./_utils";
 
 
 export default function ResultsPage() {
@@ -291,16 +169,15 @@ export default function ResultsPage() {
     return computeAllAnswers(selectedTrialDetails.responses || [], TOTAL_QUESTIONS);
   }, [selectedTrialDetails]);
 
-  const totalCorrect = useMemo(
-    () => allAnswers.filter((a) => a.answer !== "-" && a.correct).length,
-    [allAnswers],
-  );
+  const subjects = useMemo(
+  () => inferSubjectsFromRawScore(selectedTrial?.raw_score),
+  [selectedTrial?.raw_score],
+);
 
-  const subjects = useMemo(() => {
-    const raw = computeSubjects(allAnswers);
-    // prettier titles
-    return raw.map((s) => ({ ...s, title: s.id }));
-  }, [allAnswers]);
+  const totalCorrect = useMemo(
+    () => inferTotalCorrectFromRawScore(selectedTrial?.raw_score),
+    [selectedTrial?.raw_score],
+  );
 
   // You can replace this with a real AI analysis later
   const analysisText = useMemo(() => {
@@ -358,7 +235,7 @@ export default function ResultsPage() {
                 {/* Subjects */}
                 <div className="w-1/2">
                   <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-muted">
-                    Môn thi
+                    Phần thi
                   </h2>
 
                   <ul className="space-y-2 text-sm">
@@ -371,7 +248,7 @@ export default function ResultsPage() {
                           {subject.title}
                         </span>
                         <span className="text-xs text-brand-muted">
-                          {subject.correct}/{subject.total} câu đúng
+                          {subject.correct}/30 câu đúng
                         </span>
                       </li>
                     ))}
@@ -386,8 +263,12 @@ export default function ResultsPage() {
                   </p>
 
                   <p className="mt-1 text-5xl font-bold text-brand-text text-center">
-                    {selectedTrialDetails?.test.type === "exam" ?
-                      renderScore(selectedTrial?.processed_score) : renderScore(selectedTrial?.raw_score)}
+                    {renderOverallScore(
+                      selectedTrialDetails?.test.type === "exam",
+                      selectedTrial?.raw_score,
+                      selectedTrial?.processed_score
+                    )}
+
                   </p>
 
                   <p className="mt-1 text-xs text-brand-muted text-center">
@@ -454,8 +335,8 @@ export default function ResultsPage() {
                             }`}
                         >
                           <div className="text-center">{t.test?.title ?? t.test_id}</div>
-                          <div className="text-center">{t.test?.type === "exam" ?
-                            renderScore(t?.processed_score) : renderScore(t?.raw_score)}
+                          <div className="text-center">
+                            {renderOverallScore(t.test?.type === "exam", t.raw_score, t.processed_score)}
                           </div>
                           <div className="text-center">
                             {t.test?.duration != null ? formatDurationMMSS(t.test.duration) : "-"}
