@@ -128,6 +128,33 @@ export async function testRoutes(server: FastifyInstance) {
     }
   });
 
+  // Trigger IRT Calculation -> /api/tests/:id/calculate-irt
+  server.post<{ Params: { id: string } }>('/api/tests/:id/calculate-irt', async (request, reply) => {
+    try {
+      const { id } = request.params;
+
+      // Instantiate queue locally (lightweight for producing)
+      const { Queue } = await import('bullmq');
+      const irtQueue = new Queue('irt-queue', {
+        connection: {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '6379'),
+        }
+      });
+
+      await irtQueue.add('calculate', { testId: id });
+
+      reply.status(202);
+      return { message: 'IRT calculation job queued', testId: id };
+    } catch (error) {
+      server.log.error(error);
+      reply.status(500);
+      return {
+        error: error instanceof Error ? error.message : 'Failed to queue IRT job'
+      };
+    }
+  });
+
   server.get<{ Params: { trial_id: string } }>('/api/exam/:trial_id/pages', async (request, reply) => {
     try {
       const { trial_id } = request.params;

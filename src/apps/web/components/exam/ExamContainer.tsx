@@ -209,7 +209,7 @@ export default function ExamContainer({
               className="w-full px-6 py-3 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all transform hover:scale-[1.02]"
               type="button"
             >
-              Về trang tổng quan
+              Về trang chính
             </button>
           </div>
         </div>

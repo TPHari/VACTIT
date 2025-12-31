@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
+    "axios": "^1.13.2",
     "bullmq": "^5.0.0",
     "ioredis": "^5.8.2"
   },

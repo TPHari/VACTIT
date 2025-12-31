@@ -1,5 +1,7 @@
 // BullMQ Worker Entry Point
+import 'dotenv/config';
 import './scoring.worker';
+import './irt.worker';
 
 console.log('Worker service started');
 console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
