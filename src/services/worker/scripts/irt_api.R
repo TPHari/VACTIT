@@ -120,14 +120,27 @@ function(req, res){
     message("DEBUG: Retrieved process_responses from .GlobalEnv")
     
     if (is.function(process_fn)){
+      # IMPORTANT: return() inside tryCatch returns from the handler, NOT the outer function!
+      # Must capture result and return after tryCatch completes
+      result <- NULL
+      error_msg <- NULL
+      
       tryCatch({
-        out <- process_fn(input)
-        res$status <- 200
-        return(out)
+        result <- process_fn(input)
       }, error = function(e){
-        res$status <- 500
-        return(list(error = 'processing_error', message = e$message))
+        # Use <<- to assign to outer scope
+        error_msg <<- e$message
       })
+      
+      # Now return based on what happened
+      if (!is.null(error_msg)) {
+        res$status <- 500
+        return(list(error = 'processing_error', message = error_msg))
+      }
+      
+      # Success!
+      res$status <- 200
+      return(result)
     }
   }
 
