@@ -32,5 +32,6 @@
   },
   "dependencies": {
     "mupdf": "^1.26.4"
+    "react-spinners": "^0.17.0"
   }
 }

@@ -21,27 +21,27 @@ model User {
   hash_password String
 
   // Relations
-  authoredTests Test[]   @relation("UserTests")
-  trials        Trial[]  @relation("StudentTrials")
+  authoredTests Test[]  @relation("UserTests")
+  trials        Trial[] @relation("StudentTrials")
 }
 
 model Test {
   /// PK: varchar(10), e.g. '00001'
   /// Note: autoincrement formatting (00001) is handled in app logic, not Prisma.
-  test_id   String   @id
-  author_id String
-  title     String
+  test_id    String    @id
+  author_id  String
+  title      String
   /// nullable for 'practice'
   start_time DateTime?
   /// 'exam' | 'practice'
-  type      String
+  type       String
   /// 'Premium' | 'Regular', default 'Regular'
-  status    String   @default("Regular")
+  status     String    @default("Regular")
   /// nullable for 'practice'
-  due_time  DateTime?
-  url       String
+  due_time   DateTime?
+  url        String
   /// duration in seconds, can be null if you want
-  duration  Int?
+  duration   Int?
 
   // Relations
   author User    @relation("UserTests", fields: [author_id], references: [user_id])
@@ -61,8 +61,8 @@ model Trial {
   tactic          Json?
 
   // Relations
-  student   User    @relation("StudentTrials", fields: [student_id], references: [user_id], onDelete: Cascade)
-  test      Test    @relation(fields: [test_id], references: [test_id], onDelete: Cascade)
+  student   User       @relation("StudentTrials", fields: [student_id], references: [user_id], onDelete: Cascade)
+  test      Test       @relation(fields: [test_id], references: [test_id], onDelete: Cascade)
   responses Response[]
 }
 
