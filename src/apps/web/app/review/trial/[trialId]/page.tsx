@@ -17,7 +17,7 @@ type TrialDetails = {
     question_id: string;
     chosen_option: string | null;
     response_time: number;
-    question?: { correct_option: string | null; section: string | null };
+    question?: { correct_option: string | null };
   }>;
 };
 
@@ -30,32 +30,44 @@ export default function ReviewPage({ params }: { params: Promise<{ trialId: stri
 
   const [pages, setPages] = useState<string[]>([]);
   const [zoom] = useState(1);
+  const BACKEND = process.env.NEXT_PUBLIC_API_URL!;
 
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
+    (async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // 1) Fetch trial details (trial + responses + question.correct_option)
-        const res = await api.trials.getDetails(trialId);
-        const data: TrialDetails | null = res?.data ?? null;
+        // 1) Fetch trial details + pages at the same time
+        const [trialRes, pagesRes] = await Promise.all([
+          api.trials.getDetails(trialId),                 
+          fetch(`${BACKEND}/api/exam/${trialId}/pages`),
+        ]);
 
         if (cancelled) return;
 
-        if (!data) {
+        const trialData: TrialDetails | null = trialRes?.data ?? null;
+        if (!trialData) {
           setTrial(null);
           setPages([]);
           return;
         }
+        setTrial(trialData);
 
-        setTrial(data);
+        // 2) Parse pages JSON safely
+        if (!pagesRes.ok) {
+          const txt = await pagesRes.text();
+          throw new Error(`Pages API ${pagesRes.status}: ${txt}`);
+        }
 
-        // 2) Load PDF pages for the test (you already had something like this)
-        const testId = data.test.test_id;
-        const pagesRes = await fetch(`/api/exam/${testId}/pages`);
+        const ct = pagesRes.headers.get("content-type") || "";
+        if (!ct.includes("application/json")) {
+          const txt = await pagesRes.text();
+          throw new Error(`Pages API non-JSON (${ct}): ${txt}`);
+        }
+
         const pagesJson = await pagesRes.json();
         setPages(pagesJson.pages || []);
       } catch (e: any) {
@@ -63,13 +75,14 @@ export default function ReviewPage({ params }: { params: Promise<{ trialId: stri
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
+    })();
 
-    load();
     return () => {
       cancelled = true;
     };
   }, [trialId]);
+
+
 
   if (loading) return <Loading />;
   if (error) return <div className="px-6 py-4 text-sm text-red-600">Lỗi: {error}</div>;
