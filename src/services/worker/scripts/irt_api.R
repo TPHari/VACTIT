@@ -59,20 +59,28 @@ find_project_script <- function(){
 
 proj_script <- find_project_script()
 if (!is.null(proj_script)){
-  message('Sourcing script...')
+  message('Sourcing script from: ', proj_script)
   tryCatch({ 
-      # Source into the GLOBAL environment so Plumber endpoints can access it
-      sys.source(proj_script, envir = .GlobalEnv) 
-  }, error = function(e) message('Failed to source project IRT script: ', e$message))
-  
-  if(exists("process_responses")){
-      message("DEBUG: SUCCCESS! process_responses is defined after source.")
-  } else {
-      message("DEBUG: FAILURE! process_responses is NOT defined after source.")
-      message("DEBUG: Objects in current env: ", paste(ls(), collapse=", "))
-  }
+      # Source DIRECTLY into .GlobalEnv - this is always accessible from any R context
+      source(proj_script, local = FALSE)  # local=FALSE means source into .GlobalEnv
+      message("DEBUG: Source completed successfully into .GlobalEnv")
+      
+      # Verify the function is available
+      if(exists("process_responses", envir = .GlobalEnv)){
+          message("DEBUG: SUCCESS! process_responses is available in .GlobalEnv")
+          message("DEBUG: .GlobalEnv objects: ", paste(ls(envir = .GlobalEnv), collapse=", "))
+      } else {
+          message("DEBUG: FAILURE! process_responses NOT found in .GlobalEnv after source")
+          message("DEBUG: .GlobalEnv objects: ", paste(ls(envir = .GlobalEnv), collapse=", "))
+      }
+  }, error = function(e) {
+      message('Failed to source project IRT script: ', e$message)
+      message('Error class: ', class(e))
+      message('Error traceback: ')
+      traceback()
+  })
 } else {
-  message('No external project IRT script found; using internal scoring logic')
+  message('No external project IRT script found; will return 501 for scoring requests')
 }
 
 #* @apiTitle IRT Scoring API
@@ -106,34 +114,30 @@ function(req, res){
     return(list(error = 'missing_responses'))
   }
 
-  # Debug: Check environment again inside request
-  if (!exists('process_responses')) {
-      message("DEBUG: process_responses missing inside endpoints. Env Content: ", paste(ls(envir = environment()), collapse=", "))
-      # Try falling back to global?
-      if (exists('process_responses', where = .GlobalEnv)) {
-          message("DEBUG: Found in GlobalEnv, copying...")
-          process_responses <<- get('process_responses', envir = .GlobalEnv)
-      }
-  }
-
-  if (exists('process_responses') && is.function(process_responses)){
-    tryCatch({
-      out <- process_responses(input)
-      res$status <- 200
-      return(out)
-    }, error = function(e){
-      res$status <- 500
-      return(list(error = 'processing_error', message = e$message))
-    })
+  # Get process_responses directly from .GlobalEnv (that's where we source it)
+  if (exists('process_responses', envir = .GlobalEnv)) {
+    process_fn <- get('process_responses', envir = .GlobalEnv)
+    message("DEBUG: Retrieved process_responses from .GlobalEnv")
+    
+    if (is.function(process_fn)){
+      tryCatch({
+        out <- process_fn(input)
+        res$status <- 200
+        return(out)
+      }, error = function(e){
+        res$status <- 500
+        return(list(error = 'processing_error', message = e$message))
+      })
+    }
   }
 
   # No project scoring implementation found
   res$status <- 501
-  env_vars <- paste(ls(), collapse=", ")
+  global_objs <- ls(envir = .GlobalEnv)
   return(list(
       error = 'no_scoring_impl', 
       message = 'No project scoring implementation found.',
-      debug_env = env_vars, 
+      debug_global_env = paste(global_objs, collapse=", "),
       debug_script_path = proj_script
   ))
 }
