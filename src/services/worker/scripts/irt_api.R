@@ -58,9 +58,18 @@ find_project_script <- function(){
 }
 
 proj_script <- find_project_script()
-if (!is.null(proj_script)){
-  message('Sourcing project IRT script from: ', proj_script)
-  tryCatch({ source(proj_script, local = TRUE) }, error = function(e) message('Failed to source project IRT script: ', e$message))
+  message('Sourcing script...')
+  tryCatch({ 
+      # Source into the current environment (local=TRUE)
+      sys.source(proj_script, envir = environment()) 
+  }, error = function(e) message('Failed to source project IRT script: ', e$message))
+  
+  if(exists("process_responses")){
+      message("DEBUG: SUCCCESS! process_responses is defined after source.")
+  } else {
+      message("DEBUG: FAILURE! process_responses is NOT defined after source.")
+      message("DEBUG: Objects in current env: ", paste(ls(), collapse=", "))
+  }
 } else {
   message('No external project IRT script found; using internal scoring logic')
 }
@@ -74,7 +83,7 @@ function(){ list(status = 'ok') }
 #* Calculate IRT scores from JSON input
 #* @post /calculate-irt
 function(req, res){
-  # Authorization: if IRT_API_KEY is set, require Bearer token
+  # Authorization
   required_key <- Sys.getenv('IRT_API_KEY', '')
   auth_header <- NULL
   if (!is.null(req$HTTP_AUTHORIZATION)) auth_header <- req$HTTP_AUTHORIZATION
@@ -96,7 +105,16 @@ function(req, res){
     return(list(error = 'missing_responses'))
   }
 
-  # If the project script exposes `process_responses`, delegate to it
+  # Debug: Check environment again inside request
+  if (!exists('process_responses')) {
+      message("DEBUG: process_responses missing inside endpoints. Env Content: ", paste(ls(envir = environment()), collapse=", "))
+      # Try falling back to global?
+      if (exists('process_responses', where = .GlobalEnv)) {
+          message("DEBUG: Found in GlobalEnv, copying...")
+          process_responses <<- get('process_responses', envir = .GlobalEnv)
+      }
+  }
+
   if (exists('process_responses') && is.function(process_responses)){
     tryCatch({
       out <- process_responses(input)
@@ -110,5 +128,11 @@ function(req, res){
 
   # No project scoring implementation found
   res$status <- 501
-  return(list(error = 'no_scoring_impl', message = 'No project scoring implementation found. Provide irt_run.R exposing process_responses().'))
+  env_vars <- paste(ls(), collapse=", ")
+  return(list(
+      error = 'no_scoring_impl', 
+      message = 'No project scoring implementation found.',
+      debug_env = env_vars, 
+      debug_script_path = proj_script
+  ))
 }
