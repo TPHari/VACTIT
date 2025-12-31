@@ -29,5 +29,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "mupdf": "^1.26.4"
   }
 }
