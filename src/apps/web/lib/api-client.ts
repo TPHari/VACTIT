@@ -119,15 +119,18 @@ export const api = {
     delete: (id: string) => apiClient.delete<any>(`/api/users/${id}`),
   },
   tests: {
-    getAll: (params?: { query?: string; type?: string; page?: number; limit?: number }) => {
-        const searchParams = new URLSearchParams();
-        if (params) {
-            if (params.query) searchParams.set('query', params.query);
-            if (params.type && params.type !== 'all') searchParams.set('type', params.type);
-            if (params.page) searchParams.set('page', params.page.toString());
-            if (params.limit) searchParams.set('limit', params.limit.toString());
-        }
-        return apiClient.get<any>(`/api/tests?${searchParams.toString()}`);
+    getAll: (params?: { query?: string; type?: string; category?: string; page?: number; limit?: number; userId?: string; sort?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params) {
+        if (params.query) searchParams.set('query', params.query);
+        if (params.type && params.type !== 'all') searchParams.set('type', params.type);
+        if (params.category && params.category !== 'all') searchParams.set('category', params.category);
+        if (params.page) searchParams.set('page', params.page.toString());
+        if (params.limit) searchParams.set('limit', params.limit.toString());
+        if (params.userId) searchParams.set('userId', params.userId);
+        if (params.sort) searchParams.set('sort', params.sort);
+      }
+      return apiClient.get<any>(`/api/tests?${searchParams.toString()}`);
     },
     getById: (id: string) => apiClient.get<any>(`/api/tests/${id}`),
     create: (data: any) => apiClient.post<any>('/api/tests', data),
@@ -151,7 +154,7 @@ export const api = {
     create: (data: any) => apiClient.post<any>('/api/responses', data),
   },
   jobs: {
-    scoreTest: (data: { trialId: string; userId: string }) => 
+    scoreTest: (data: { trialId: string; userId: string }) =>
       apiClient.post<any>('/api/jobs/score-test', data),
     getStatus: (jobId: string) => apiClient.get<any>(`/api/jobs/status/${jobId}`),
   },
