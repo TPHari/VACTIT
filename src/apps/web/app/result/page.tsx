@@ -295,10 +295,10 @@ export default function ResultsPage() {
 
   // You can replace this with a real AI analysis later
   const analysisText = useMemo(() => {
-  if (!selectedTrialDetails) return "Đang tải phân tích...";
-  const t = selectedTrialDetails.tactic as any;
-  return (t?.summary && String(t.summary).trim()) || "Chưa có dữ liệu phân tích.";
-}, [selectedTrialDetails]);
+    if (!selectedTrialDetails) return "Đang tải phân tích...";
+    const t = selectedTrialDetails.tactic as any;
+    return (t?.summary && String(t.summary).trim()) || "Chưa có dữ liệu phân tích.";
+  }, [selectedTrialDetails]);
 
 
   if (loading || detailsLoading) {
@@ -371,28 +371,28 @@ export default function ResultsPage() {
 
                 {/* Tổng điểm */}
                 <div className="flex flex-1 flex-col justify-between rounded-card rounded-xl bg-white p-4 shadow-card">
-                    <p className="text-xs font-medium text-brand-muted text-center">
-                      {selectedTrialDetails?.test.type === "exam" ? 
+                  <p className="text-xs font-medium text-brand-muted text-center">
+                    {selectedTrialDetails?.test.type === "exam" ?
                       "Tổng điểm (IRT)" : "Tổng điểm luyện tập"}
-                    </p>
+                  </p>
 
-                    <p className="mt-1 text-5xl font-bold text-brand-text text-center">
-                      {selectedTrialDetails?.test.type === "exam" ? 
+                  <p className="mt-1 text-5xl font-bold text-brand-text text-center">
+                    {selectedTrialDetails?.test.type === "exam" ?
                       selectedTrial?.processed_score : selectedTrial?.raw_score}
-                    </p>
+                  </p>
 
-                    <p className="mt-1 text-xs text-brand-muted text-center">
-                      Số câu đúng:{" "}
-                      <span className="font-semibold text-brand-text">
-                        {totalCorrect}/{TOTAL_QUESTIONS}
-                      </span>
-                    </p>
+                  <p className="mt-1 text-xs text-brand-muted text-center">
+                    Số câu đúng:{" "}
+                    <span className="font-semibold text-brand-text">
+                      {totalCorrect}/{TOTAL_QUESTIONS}
+                    </span>
+                  </p>
 
-                    {detailsLoading && (
-                      <p className="mt-2 text-xs text-brand-muted">
-                        Đang tải chi tiết bài làm...
-                      </p>
-                    )}
+                  {detailsLoading && (
+                    <p className="mt-2 text-xs text-brand-muted">
+                      Đang tải chi tiết bài làm...
+                    </p>
+                  )}
 
                 </div>
               </div>
@@ -439,14 +439,13 @@ export default function ResultsPage() {
                         <div
                           key={t.trial_id}
                           onClick={() => setSelectedTrialId(t.trial_id)}
-                          className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr] border-b border-slate-100 py-2 text-left transition cursor-pointer ${
-                            isActive
+                          className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr] border-b border-slate-100 py-2 text-left transition cursor-pointer ${isActive
                               ? "rounded-md bg-[#eef4ff] font-semibold"
                               : "bg-transparent"
-                          }`}
+                            }`}
                         >
                           <div className="text-center">{t.test?.title ?? t.test_id}</div>
-                          <div className="text-center">{t.test?.type === "exam" ? 
+                          <div className="text-center">{t.test?.type === "exam" ?
                             t?.processed_score : t?.raw_score}
                           </div>
                           <div className="text-center">
@@ -457,7 +456,7 @@ export default function ResultsPage() {
                             <div
                               onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/review/${t.trial_id}`);
+                                router.push(`/review/trial/${t.trial_id}`);
                               }}
                               className="text-xs font-semibold text-blue-600 hover:underline"
                             >
@@ -495,19 +494,18 @@ export default function ResultsPage() {
                         Câu {item.number}
                       </span>
                       <span
-                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${
-                          item.answer === "-"
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${item.answer === "-"
                             ? "bg-gray-200 text-gray-500"
                             : item.correct
-                            ? "bg-green-500 text-white"
-                            : "bg-red-500 text-white"
-                        }`}
+                              ? "bg-green-500 text-white"
+                              : "bg-red-500 text-white"
+                          }`}
                         title={
                           item.answer === "-"
                             ? "Chưa chọn"
                             : item.correct
-                            ? "Đúng"
-                            : "Sai"
+                              ? "Đúng"
+                              : "Sai"
                         }
                       >
                         {item.answer}
