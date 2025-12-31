@@ -58,6 +58,7 @@ find_project_script <- function(){
 }
 
 proj_script <- find_project_script()
+if (!is.null(proj_script)){
   message('Sourcing script...')
   tryCatch({ 
       # Source into the current environment (local=TRUE)
