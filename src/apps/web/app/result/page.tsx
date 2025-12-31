@@ -14,8 +14,8 @@ type TrialListItem = {
   test_id: string;
   start_time: string; // ISO
   end_time: string;   // ISO
-  raw_score: number;
-  processed_score: number;
+  raw_score: any;
+  processed_score: any;
   test?: {
     test_id: string;
     title: string;
@@ -131,6 +131,15 @@ function computeSubjects(allAnswers: Array<{ section: string; answer: string; co
     total: v.total,
   }));
 }
+
+function renderScore(score: any) {
+  if (score == null) return "0";
+  if (typeof score === "object") {
+    return score.total || JSON.stringify(score);
+  }
+  return String(score);
+}
+
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -378,7 +387,7 @@ export default function ResultsPage() {
 
                   <p className="mt-1 text-5xl font-bold text-brand-text text-center">
                     {selectedTrialDetails?.test.type === "exam" ?
-                      selectedTrial?.processed_score : selectedTrial?.raw_score}
+                      renderScore(selectedTrial?.processed_score) : renderScore(selectedTrial?.raw_score)}
                   </p>
 
                   <p className="mt-1 text-xs text-brand-muted text-center">
@@ -440,13 +449,13 @@ export default function ResultsPage() {
                           key={t.trial_id}
                           onClick={() => setSelectedTrialId(t.trial_id)}
                           className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr] border-b border-slate-100 py-2 text-left transition cursor-pointer ${isActive
-                              ? "rounded-md bg-[#eef4ff] font-semibold"
-                              : "bg-transparent"
+                            ? "rounded-md bg-[#eef4ff] font-semibold"
+                            : "bg-transparent"
                             }`}
                         >
                           <div className="text-center">{t.test?.title ?? t.test_id}</div>
                           <div className="text-center">{t.test?.type === "exam" ?
-                            t?.processed_score : t?.raw_score}
+                            renderScore(t?.processed_score) : renderScore(t?.raw_score)}
                           </div>
                           <div className="text-center">
                             {t.test?.duration != null ? formatDurationMMSS(t.test.duration) : "-"}
@@ -495,10 +504,10 @@ export default function ResultsPage() {
                       </span>
                       <span
                         className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${item.answer === "-"
-                            ? "bg-gray-200 text-gray-500"
-                            : item.correct
-                              ? "bg-green-500 text-white"
-                              : "bg-red-500 text-white"
+                          ? "bg-gray-200 text-gray-500"
+                          : item.correct
+                            ? "bg-green-500 text-white"
+                            : "bg-red-500 text-white"
                           }`}
                         title={
                           item.answer === "-"

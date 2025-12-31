@@ -21,7 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ testId: 
         .eq("trial_id", trial_id)
         .single();
 
-    const folderPath = `exam-${trial.data?.test_id}`;
+    const folderPath = `${trial.data?.test_id}`;
     console.log("Derived folder path:", folderPath);
     const { data: files, error } = await supabaseStorage.storage
         .from(BUCKET)

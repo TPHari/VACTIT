@@ -94,44 +94,43 @@ export async function trialRoutes(server: FastifyInstance) {
   );
 
   server.get<{ Params: { id: string } }>(
-  "/api/trials/:id/details",
-  async (request, reply) => {
-    try {
-      const trialId = request.params.id;
+    "/api/trials/:id/details",
+    async (request, reply) => {
+      try {
+        const trialId = request.params.id;
 
-      const trial = await server.prisma.trial.findUnique({
-        where: { trial_id: trialId },
-        include: {
-          test: { select: { test_id: true, title: true, duration: true, type: true } },
-          responses: {
-            select: {
-              question_id: true,
-              chosen_option: true,
-              response_time: true,
-              question: { // requires Prisma relation Response -> Question
-                select: {
-                  question_id: true,
-                  correct_option: true,
-                  section: true,
+        const trial = await server.prisma.trial.findUnique({
+          where: { trial_id: trialId },
+          include: {
+            test: { select: { test_id: true, title: true, duration: true, type: true } },
+            responses: {
+              select: {
+                question_id: true,
+                chosen_option: true,
+                response_time: true,
+                question: { // requires Prisma relation Response -> Question
+                  select: {
+                    question_id: true,
+                    correct_option: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
+        });
 
-      if (!trial) {
-        reply.status(404);
-        return { error: "Trial not found" };
+        if (!trial) {
+          reply.status(404);
+          return { error: "Trial not found" };
+        }
+
+        return { data: trial };
+      } catch (error) {
+        reply.status(500);
+        return { error: error instanceof Error ? error.message : "Failed to fetch trial details" };
       }
-
-      return { data: trial };
-    } catch (error) {
-      reply.status(500);
-      return { error: error instanceof Error ? error.message : "Failed to fetch trial details" };
     }
-  }
-);
+  );
 
 
 
