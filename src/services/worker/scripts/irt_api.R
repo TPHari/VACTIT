@@ -61,8 +61,8 @@ proj_script <- find_project_script()
 if (!is.null(proj_script)){
   message('Sourcing script...')
   tryCatch({ 
-      # Source into the current environment (local=TRUE)
-      sys.source(proj_script, envir = environment()) 
+      # Source into the GLOBAL environment so Plumber endpoints can access it
+      sys.source(proj_script, envir = .GlobalEnv) 
   }, error = function(e) message('Failed to source project IRT script: ', e$message))
   
   if(exists("process_responses")){
