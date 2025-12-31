@@ -60,7 +60,7 @@ find_project_script <- function(){
 proj_script <- find_project_script()
 if (!is.null(proj_script)){
   message('Sourcing project IRT script from: ', proj_script)
-  tryCatch({ source(proj_script) }, error = function(e) message('Failed to source project IRT script: ', e$message))
+  tryCatch({ source(proj_script, local = TRUE) }, error = function(e) message('Failed to source project IRT script: ', e$message))
 } else {
   message('No external project IRT script found; using internal scoring logic')
 }
