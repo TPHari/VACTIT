@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 import { generateTestId } from '@/lib/generateTestId';
 
 export async function POST(req: Request) {
@@ -19,6 +19,7 @@ export async function POST(req: Request) {
 
     const test_id = await generateTestId();
 
+    const prisma = await getPrisma();
     const test = await prisma.test.create({
       data: {
         test_id,
@@ -35,10 +36,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json(test, { status: 201 });
   } catch (error) {
-     console.error('CREATE TEST ERROR:', error);
-  return NextResponse.json(
-    { error: (error as Error).message },
-    { status: 500 }
-  );
+    console.error('CREATE TEST ERROR:', error);
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }

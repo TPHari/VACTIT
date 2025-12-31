@@ -22,14 +22,14 @@ export async function convertPdfAndUpload(supabaseUrl: string, serviceKey: strin
     const pdfPath = path.join(tmpDir, 'input.pdf');
     const res = await fetch(signedData.signedUrl);
     if (!res.ok || !res.body) return { error: 'failed_to_download_file', uploaded: [] };
-    await pipeline(res.body, createWriteStream(pdfPath));
+    await pipeline(res.body as any, createWriteStream(pdfPath));
 
     // attempt to import mupdf; if not available, skip conversion
     let mupdf: any = null;
     try {
       mupdf = (await import('mupdf')).default;
     } catch (e) {
-      console.warn('mupdf not available, skipping PDF->image conversion', e?.message ?? e);
+      console.warn('mupdf not available, skipping PDF->image conversion', (e as any)?.message ?? e);
       return { error: 'mupdf_not_available', uploaded: [] };
     }
 
@@ -84,7 +84,7 @@ export async function convertPdfAndUpload(supabaseUrl: string, serviceKey: strin
     doc.destroy();
     return { error: null, uploaded: uploadedUrls };
   } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => { });
   }
 }
 

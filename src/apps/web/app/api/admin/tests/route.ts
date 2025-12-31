@@ -62,8 +62,8 @@ async function checkAdmin(req: NextRequest) {
     const user = email
       ? await prisma.user.findUnique({ where: { email } })
       : id
-      ? await prisma.user.findUnique({ where: { user_id: id } })
-      : null;
+        ? await prisma.user.findUnique({ where: { user_id: id } })
+        : null;
 
     if (!user) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
     if (user.role !== 'Admin') return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
@@ -139,26 +139,26 @@ export async function POST(req: NextRequest) {
 
     try {
       if (file && (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_API) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-        const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_API).replace(/\/$/, '');
+        const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_API || '').replace(/\/$/, '');
         const bucket = 'pdf_files';
         const bucket_img = 'test_images';
         const objectPath = `${test_id}.pdf`;
-        
+
         // Prefer using the official Supabase JS client server-side for uploads
         try {
           const { createClient } = await import('@supabase/supabase-js');
           const supa = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
           // Convert File to Buffer for Node upload
-          const buf = Buffer.from(await file.arrayBuffer());
+          const buf = Buffer.from(await (file as any).arrayBuffer());
 
-          const uploadRes = await supa.storage.from(bucket).upload(objectPath, buf, { contentType: file.type || 'application/pdf', upsert: true });
-          console.log('Supabase client upload result:', { status: uploadRes?.status, error: uploadRes?.error });
-          if (uploadRes?.error) {
-            console.error('Supabase client upload error', uploadRes.error);
+          const uploadRes = await supa.storage.from(bucket).upload(objectPath, buf, { contentType: (file as any).type || 'application/pdf', upsert: true });
+          console.log('Supabase client upload result:', { status: (uploadRes as any)?.status, error: (uploadRes as any)?.error });
+          if ((uploadRes as any)?.error) {
+            console.error('Supabase client upload error', (uploadRes as any).error);
           } else {
             const publicRes = supa.storage.from(bucket).getPublicUrl(objectPath);
-            console.log('Supabase getPublicUrl result:', { data: publicRes?.data, error: publicRes?.error });
+            console.log('Supabase getPublicUrl result:', { data: publicRes?.data, error: (publicRes as any)?.error });
             publicUrl = publicRes?.data?.publicUrl ?? `${supabaseUrl}/storage/v1/object/public/${bucket}/${objectPath}`;
             console.log('Uploaded file to supabase (client), publicUrl=', publicUrl);
 
@@ -185,9 +185,9 @@ export async function POST(req: NextRequest) {
               Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
               apikey: `${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
               'x-upsert': 'true',
-              'Content-Type': file.type || 'application/pdf',
+              'Content-Type': (file as any).type || 'application/pdf',
             },
-            body: await file.arrayBuffer(),
+            body: await (file as any).arrayBuffer(),
           });
 
           const respText = await resp.text().catch(() => '<no-body>');
@@ -280,54 +280,54 @@ export async function POST(req: NextRequest) {
             correct_option: opt,
           });
         }
-            if (items.length) {
-                    const modelMap = (prisma as any)?._dmmf?.modelMap ?? {};
-                    console.log('Prisma delegates available:', Object.keys(modelMap));
-                    console.log('prisma.question exists?', typeof (prisma as any).question !== 'undefined');
-                    console.log('Upload debug: filePresent=', !!file, 'SUPABASE_URL=', !!process.env.SUPABASE_URL || !!process.env.NEXT_PUBLIC_API, 'SUPABASE_KEY=', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+        if (items.length) {
+          const modelMap = (prisma as any)?._dmmf?.modelMap ?? {};
+          console.log('Prisma delegates available:', Object.keys(modelMap));
+          console.log('prisma.question exists?', typeof (prisma as any).question !== 'undefined');
+          console.log('Upload debug: filePresent=', !!file, 'SUPABASE_URL=', !!process.env.SUPABASE_URL || !!process.env.NEXT_PUBLIC_API, 'SUPABASE_KEY=', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-              function esc(s: any) {
-                if (s === null || s === undefined) return null;
-                return String(s).replace(/'/g, "''");
-              }
+          function esc(s: any) {
+            if (s === null || s === undefined) return null;
+            return String(s).replace(/'/g, "''");
+          }
 
+          try {
+            if ((prisma as any).question) {
               try {
-                if ((prisma as any).question) {
+                const res = await (prisma as any).question.createMany({ data: items });
+                console.log('Created questions count:', (res as any).count ?? res);
+              } catch (qmErr) {
+                console.error('createMany questions error', qmErr);
+                for (const it of items) {
                   try {
-                    const res = await prisma.question.createMany({ data: items });
-                    console.log('Created questions count:', (res as any).count ?? res);
-                  } catch (qmErr) {
-                    console.error('createMany questions error', qmErr);
-                    for (const it of items) {
-                      try {
-                        await prisma.question.create({ data: it });
-                      } catch (iErr) {
-                        console.error('Failed creating question', it.question_id, iErr);
-                      }
-                    }
-                  }
-                } else {
-                  console.warn('Prisma Question delegate missing; inserting via raw SQL fallback');
-                  const vals = items
-                    .map((it) => {
-                      const qid = esc(it.question_id);
-                      const score = (it.relative_score ?? 0);
-                      const tid = esc(it.test_id);
-                      const opt = it.correct_option == null ? 'NULL' : `'${esc(it.correct_option)}'`;
-                      return `('${qid}', ${score}, '${tid}', ${opt})`;
-                    })
-                    .join(', ');
-
-                  if (vals.length > 0) {
-                    const sql = `INSERT INTO "Question" ("question_id","relative_score","test_id","correct_option") VALUES ${vals};`;
-                    await prisma.$executeRawUnsafe(sql);
-                    console.log('Inserted questions via raw SQL fallback:', items.length);
+                    await (prisma as any).question.create({ data: it });
+                  } catch (iErr) {
+                    console.error('Failed creating question', it.question_id, iErr);
                   }
                 }
-              } catch (e) {
-                console.error('questions creation overall error', e);
+              }
+            } else {
+              console.warn('Prisma Question delegate missing; inserting via raw SQL fallback');
+              const vals = items
+                .map((it) => {
+                  const qid = esc(it.question_id);
+                  const score = (it.relative_score ?? 0);
+                  const tid = esc(it.test_id);
+                  const opt = it.correct_option == null ? 'NULL' : `'${esc(it.correct_option)}'`;
+                  return `('${qid}', ${score}, '${tid}', ${opt})`;
+                })
+                .join(', ');
+
+              if (vals.length > 0) {
+                const sql = `INSERT INTO "Question" ("question_id","relative_score","test_id","correct_option") VALUES ${vals};`;
+                await prisma.$executeRawUnsafe(sql);
+                console.log('Inserted questions via raw SQL fallback:', items.length);
               }
             }
+          } catch (e) {
+            console.error('questions creation overall error', e);
+          }
+        }
       } catch (e) {
         console.error('Failed to create questions:', e);
       }
@@ -393,13 +393,13 @@ export async function DELETE(req: NextRequest) {
     // delete dependent questions first to avoid FK constraint violations
     try {
       await prisma.$transaction([
-        prisma.question.deleteMany({ where: { test_id } }),
+        (prisma as any).question.deleteMany({ where: { test_id } }),
         prisma.test.delete({ where: { test_id } }),
       ]);
     } catch (txErr) {
       // If transaction fails, try a safer sequence: delete questions then delete test
       try {
-        await prisma.question.deleteMany({ where: { test_id } });
+        await (prisma as any).question.deleteMany({ where: { test_id } });
       } catch (qErr) {
         console.error('Failed to delete questions for test', test_id, qErr);
       }

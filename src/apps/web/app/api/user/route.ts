@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { prisma } from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -9,11 +9,12 @@ export async function GET(req: NextRequest) {
   }
   const email = (token as any).email as string | undefined;
   const id = ((token as any).id ?? (token as any).sub) as string | undefined;
+  const prisma = await getPrisma();
   const user = email
     ? await prisma.user.findUnique({ where: { email } })
     : id
-    ? await prisma.user.findUnique({ where: { user_id: id } })
-    : null;
+      ? await prisma.user.findUnique({ where: { user_id: id } })
+      : null;
   if (!user) {
     return NextResponse.json({ ok: false, error: 'User not found' }, { status: 404 });
   }
