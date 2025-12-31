@@ -16,6 +16,7 @@ import {
   inferSubjectsFromRawScore,
   inferTotalCorrectFromRawScore,
   renderOverallScore,
+  attachIrtScores,
 } from "./_utils";
 
 
@@ -168,11 +169,14 @@ export default function ResultsPage() {
 
     return computeAllAnswers(selectedTrialDetails.responses || [], TOTAL_QUESTIONS);
   }, [selectedTrialDetails]);
+  
+  const isExam = selectedTrial?.test?.type === "exam";
 
-  const subjects = useMemo(
-  () => inferSubjectsFromRawScore(selectedTrial?.raw_score),
-  [selectedTrial?.raw_score],
-);
+  const subjects = useMemo(() => {
+    const base = inferSubjectsFromRawScore(selectedTrial?.raw_score);
+    if (!isExam) return base;
+    return attachIrtScores(base, selectedTrial?.processed_score);
+  }, [isExam, selectedTrial?.raw_score, selectedTrial?.processed_score]);
 
   const totalCorrect = useMemo(
     () => inferTotalCorrectFromRawScore(selectedTrial?.raw_score),
@@ -249,6 +253,9 @@ export default function ResultsPage() {
                         </span>
                         <span className="text-xs text-brand-muted">
                           {subject.correct}/30 câu đúng
+                          {isExam && subject.score0_300 != null && (
+                            <> · {subject.score0_300} điểm</>
+                          )}
                         </span>
                       </li>
                     ))}

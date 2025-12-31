@@ -86,8 +86,31 @@ export function renderOverallScore(isExam: boolean, rawScore: any, processedScor
   const keys = ["score0_300_en", "score0_300_vi", "score0_300_sci", "score0_300_math"];
   const sum = keys.reduce((acc, k) => {
     const v = Number(p[k]);
-    return Number.isFinite(v) ? acc + v : acc;
+    return Number.isFinite(v) ? acc + Math.round(v) : acc;
   }, 0);
 
-  return String(Math.round(sum));
+  return String(sum);
+}
+
+
+export function attachIrtScores(subjects: SubjectSummary[], processedScore: any) {
+  const p: any = safeJsonb(processedScore);
+  if (!p || typeof p !== "object") return subjects;
+
+  const map: Record<string, string> = {
+    vie: "score0_300_vi",
+    eng: "score0_300_en",
+    math: "score0_300_math",
+    sci: "score0_300_sci",
+  };
+
+  return subjects.map((s) => {
+    const key = map[s.id];
+    if (!key) return s;
+
+    const v = Number(p[key]);
+    if (!Number.isFinite(v)) return s;
+
+    return { ...s, score0_300: Math.round(v) }; 
+  });
 }
