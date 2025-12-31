@@ -7,38 +7,53 @@ suppressWarnings(suppressPackageStartupMessages({
 
 ## Try to locate project-level IRT script (prefer irt_run.R then irt_scoring.R)
 find_project_script <- function(){
+  # Debug: Print current state
+  message("DEBUG: Current working directory: ", getwd())
+  message("DEBUG: Listing files in current directory:")
+  try(print(list.files()))
+  
+  # 1. Try recursive search for irt_run.R
+  # Search in sensitive likely locations first to avoid scanning everything if possible
+  locations <- c(getwd(), '/src', '/app', '.')
+  
+  for(loc in locations){
+    if(dir.exists(loc)){
+      found <- list.files(loc, pattern = '^irt_run\\.R$', recursive = TRUE, full.names = TRUE)
+      if(length(found) > 0){
+        message("DEBUG: Found irt_run.R via search at: ", found[1])
+        return(found[1])
+      }
+    }
+  }
+
   script_dir <- NULL
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- args[grep('--file=', args)]
   if (length(file_arg) > 0) {
     script_dir <- dirname(sub('--file=', '', file_arg[1]))
-  } else {
-    of <- try(sys.frame(1)$ofile, silent = TRUE)
-    if (!inherits(of, 'try-error') && !is.null(of)) script_dir <- dirname(of)
   }
-
-  candidates <- c()
+  
   if (!is.null(script_dir)) {
-    candidates <- c(candidates,
-      file.path(script_dir, 'irt_run.R'),
-      file.path(script_dir, 'irt_scoring.R')
-    )
+     p <- file.path(script_dir, 'irt_run.R')
+     if(file.exists(p)) return(p)
   }
 
-  candidates <- c(candidates,
+  # Fallback to hardcoded candidates if search failed (though search should have caught them)
+  candidates <- c(
     file.path(getwd(), 'src', 'services', 'worker', 'scripts', 'irt_run.R'),
-    file.path(getwd(), 'src', 'services', 'worker', 'scripts', 'irt_scoring.R'),
-    file.path(getwd(), 'scripts', 'irt_run.R'),
-    file.path(getwd(), 'scripts', 'irt_scoring.R'),
-    file.path(getwd(), 'services', 'worker', 'scripts', 'irt_run.R'), # Docker specific path
-    file.path(getwd(), 'irt_run.R'),
-    file.path(getwd(), 'irt_scoring.R')
+    file.path(getwd(), 'services', 'worker', 'scripts', 'irt_run.R'),
+    file.path('/src/services/worker/scripts/irt_run.R'), # Absolute Docker path
+    'irt_run.R'
   )
 
-  candidates <- unique(candidates)
   for (p in candidates){
-    if (file.exists(p)) return(p)
+    if (file.exists(p)) {
+      message("DEBUG: Found irt_run.R via candidate: ", p)
+      return(p)
+    }
   }
+  
+  message("DEBUG: could not find irt_run.R in common locations.")
   return(NULL)
 }
 
