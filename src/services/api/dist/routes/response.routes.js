@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.responseRoutes = responseRoutes;
 const zod_1 = require("zod");
+const supabase_js_1 = require("@supabase/supabase-js");
 const createResponsesSchema = zod_1.z.object({
     trialId: zod_1.z.string().min(1),
     responses: zod_1.z.array(zod_1.z.object({
@@ -11,6 +12,7 @@ const createResponsesSchema = zod_1.z.object({
     })).min(1),
 });
 async function responseRoutes(server) {
+    const supabase = (0, supabase_js_1.createClient)(process.env.NEXT_PUBLIC_API, process.env.SUPABASE_SERVICE_ROLE_KEY);
     // Get all responses
     server.get('/api/responses', async (request, reply) => {
         try {
@@ -59,14 +61,71 @@ async function responseRoutes(server) {
                 chosen_option: r.chosenOption ?? null,
                 response_time: r.responseTime,
             }));
+            // SCORING LOGIC
+            // 1. Fetch correct answers via Supabase (skipping Prisma as model is not in schema)
+            const { data: questions, error: qError } = await supabase
+                .from('Question')
+                .select('*')
+                .eq('test_id', trial.test_id);
+            if (qError || !questions) {
+                console.error('Error fetching questions for scoring:', qError);
+                // Fallback or just log? For now proceed with 0 score if fail
+            }
+            // Map question_id -> correct_option
+            const questionMap = new Map();
+            (questions || []).forEach((q) => {
+                if (q.correct_option)
+                    questionMap.set(q.question_id, q.correct_option);
+            });
+            // 2. Calculate scores
+            let vie = 0, eng = 0, mth = 0, sci = 0;
+            for (const r of rows) {
+                const correct = questionMap.get(r.question_id);
+                if (correct && r.chosen_option === correct) {
+                    // Parse index from question_id (format: testId_index)
+                    const parts = r.question_id.split('_');
+                    const index = parseInt(parts[parts.length - 1], 10);
+                    if (!isNaN(index)) {
+                        if (index >= 1 && index <= 30)
+                            vie++;
+                        else if (index >= 31 && index <= 60)
+                            eng++;
+                        else if (index >= 61 && index <= 90)
+                            mth++;
+                        else if (index >= 91 && index <= 120)
+                            sci++;
+                    }
+                }
+            }
+            const totalScore = vie + eng + mth + sci;
+            const totalQuestions = questions ? questions.length : 120;
+            const tacticData = {
+                total: `${totalScore}/${totalQuestions}`,
+                Vie_score: vie,
+                Eng_score: eng,
+                Mth_score: mth,
+                Sci_score: sci
+            };
+            console.log(`Scoring result for trial ${trialId}:`, tacticData, `Total: ${totalScore}`);
             // insert all responses in a transaction
             //delete existing responses for the trial first
             await server.prisma.response.deleteMany({
                 where: { trial_id: trialId },
             });
-            const createdResponses = await server.prisma.$transaction(rows.map(row => server.prisma.response.create({ data: row })));
+            const [createdResponses] = await server.prisma.$transaction([
+                server.prisma.response.createMany({
+                    data: rows
+                }),
+                server.prisma.trial.update({
+                    where: { trial_id: trialId },
+                    data: {
+                        raw_score: tacticData, // Save JSON breakdown here
+                        // processed_score is reserved for IRT, not updated here
+                    }
+                })
+            ]);
             reply.status(201);
-            return { data: createdResponses };
+            return { data: { count: rows.length, scores: tacticData, total: totalScore } };
         }
         catch (error) {
             reply.status(500);

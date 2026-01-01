@@ -1,7 +1,8 @@
 // lib/generateTestId.ts
-import { prisma } from './prisma';
+import { getPrisma } from './prisma';
 
 export async function generateTestId(): Promise<string> {
+  const prisma = await getPrisma();
   const lastTest = await prisma.test.findFirst({
     orderBy: { test_id: 'desc' },
     select: { test_id: true },

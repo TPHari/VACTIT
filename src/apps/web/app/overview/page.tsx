@@ -1,9 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { api } from '@/lib/api-client';
 
 export default function OverviewTab() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [pendingTestsCount, setPendingTestsCount] = useState<number>(0);
+
   useEffect(() => {
     fetch('/api/user')
       .then(res => res.json())
@@ -11,6 +16,26 @@ export default function OverviewTab() {
         if (data.ok) setUser(data.user);
       });
   }, []);
+
+  // Fetch tests and count how many the user hasn't attended
+  useEffect(() => {
+    const fetchPendingTests = async () => {
+      try {
+        const response = await api.tests.getAll({ limit: 100 });
+        const tests = response.data || [];
+        // Count tests where user has no trials (not attended)
+        const pending = tests.filter((test: any) => {
+          const trials = test.trials || [];
+          return trials.length === 0;
+        });
+        setPendingTestsCount(pending.length);
+      } catch (error) {
+        console.error('Failed to fetch tests:', error);
+      }
+    };
+    fetchPendingTests();
+  }, []);
+
   return (
     <DashboardLayout>
       <div className="flex flex-row">
@@ -18,11 +43,14 @@ export default function OverviewTab() {
           <h1 className="page-title mb-6">Tổng quan</h1>
           <section className="card card--hero mb-6">
             <div className="card--hero__left">
-              <p className="hero__subtitle">Chào mừng đã trở lại, {user?.name || '...' }!</p>
+              <p className="hero__subtitle">Chào mừng đã trở lại, {user?.name || '...'}!</p>
               <p className="hero__text">
-                Tiếp tục làm bài thôi nào, bạn còn 10 bài chưa làm trong tuần vừa rồi
+                Tiếp tục làm bài thôi nào, bạn còn {pendingTestsCount} bài chưa làm trong tuần vừa rồi
               </p>
-              <button className="btn btn--primary hero__button">
+              <button
+                className="btn btn--primary hero__button"
+                onClick={() => router.push('/exam')}
+              >
                 Bắt đầu ngay
               </button>
             </div>
@@ -41,7 +69,7 @@ export default function OverviewTab() {
               <div className="card__title">Vào thi ngay</div>
               <div className="card--exam-now__body">
                 <div className="card--exam-now__text">
-                  <p>Hiện tại có 36 bạn đang làm bài thi ĐGNL hay cái gì đó</p>
+                  <p>Hiện tại có 36 bạn đang làm bài thi ĐGNL</p>
                 </div>
                 <div className="card--exam-now__illustration">
                   <img

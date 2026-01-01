@@ -1,3 +1,4 @@
+// (Admin tests helper removed here in favor of ApiClient-backed `api` below)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export class ApiClient {
@@ -118,15 +119,18 @@ export const api = {
     delete: (id: string) => apiClient.delete<any>(`/api/users/${id}`),
   },
   tests: {
-    getAll: (params?: { query?: string; type?: string; page?: number; limit?: number }) => {
-        const searchParams = new URLSearchParams();
-        if (params) {
-            if (params.query) searchParams.set('query', params.query);
-            if (params.type && params.type !== 'all') searchParams.set('type', params.type);
-            if (params.page) searchParams.set('page', params.page.toString());
-            if (params.limit) searchParams.set('limit', params.limit.toString());
-        }
-        return apiClient.get<any>(`/api/tests?${searchParams.toString()}`);
+    getAll: (params?: { query?: string; type?: string; category?: string; page?: number; limit?: number; userId?: string; sort?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params) {
+        if (params.query) searchParams.set('query', params.query);
+        if (params.type && params.type !== 'all') searchParams.set('type', params.type);
+        if (params.category && params.category !== 'all') searchParams.set('category', params.category);
+        if (params.page) searchParams.set('page', params.page.toString());
+        if (params.limit) searchParams.set('limit', params.limit.toString());
+        if (params.userId) searchParams.set('userId', params.userId);
+        if (params.sort) searchParams.set('sort', params.sort);
+      }
+      return apiClient.get<any>(`/api/tests?${searchParams.toString()}`);
     },
     getById: (id: string) => apiClient.get<any>(`/api/tests/${id}`),
     create: (data: any) => apiClient.post<any>('/api/tests', data),
@@ -139,6 +143,10 @@ export const api = {
     getById: (id: string) => apiClient.get<any>(`/api/trials/${id}`),
     create: (data: any) => apiClient.post<any>('/api/trials', data),
     update: (id: string, data: any) => apiClient.put<any>(`/api/trials/${id}`, data),
+    getByStudent: (studentId: string) =>
+      apiClient.get<any>(`/api/students/${encodeURIComponent(studentId)}/trials`),
+    getDetails: (trialId: string) =>
+      apiClient.get<any>(`/api/trials/${encodeURIComponent(trialId)}/details`),
   },
   responses: {
     getAll: () => apiClient.get<any[]>('/api/responses'),
@@ -146,7 +154,7 @@ export const api = {
     create: (data: any) => apiClient.post<any>('/api/responses', data),
   },
   jobs: {
-    scoreTest: (data: { trialId: string; userId: string }) => 
+    scoreTest: (data: { trialId: string; userId: string }) =>
       apiClient.post<any>('/api/jobs/score-test', data),
     getStatus: (jobId: string) => apiClient.get<any>(`/api/jobs/status/${jobId}`),
   },
@@ -164,10 +172,60 @@ export const api = {
   },
   admin: {
     tests: {
-      getAll: () => apiClient.get<any>('/api/admin/tests'),
-      create: (data: any) => apiClient.post<any>('/api/admin/tests', data),
-      update: (data: any) => apiClient.put<any>('/api/admin/tests', data),
-      delete: (testId: string) => apiClient.delete<any>(`/api/admin/tests?test_id=${encodeURIComponent(testId)}`),
+      // use relative fetch when running in browser so requests hit Next.js API routes
+      getAll: (params?: Record<string, any>) => {
+        if (typeof window !== 'undefined') {
+          const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+          return fetch('/api/admin/tests' + qs).then(r => r.json());
+        }
+        const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+        return apiClient.get<any>('/api/admin/tests' + qs);
+      },
+
+      create: (data: any) => {
+        if (typeof window !== 'undefined') {
+          // allow sending FormData directly from browser
+          if (data instanceof FormData) return fetch('/api/admin/tests', { method: 'POST', body: data }).then(r => r.json());
+          return fetch('/api/admin/tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
+        }
+        return apiClient.post<any>('/api/admin/tests', data);
+      },
+
+      update: (data: any) => {
+        if (typeof window !== 'undefined') {
+          return fetch('/api/admin/tests', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
+        }
+        return apiClient.put<any>('/api/admin/tests', data);
+      },
+
+      delete: (testId: string) => {
+        if (typeof window !== 'undefined') {
+          return fetch(`/api/admin/tests?test_id=${encodeURIComponent(testId)}`, { method: 'DELETE' }).then(r => r.json());
+        }
+        return apiClient.delete<any>(`/api/admin/tests?test_id=${encodeURIComponent(testId)}`);
+      },
+
+      // aliases using get/post/put/delete naming preferred by new code
+      get: (params?: Record<string, any>) => {
+        const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+        if (typeof window !== 'undefined') return fetch('/api/admin/tests' + qs).then(r => r.json());
+        return apiClient.get<any>('/api/admin/tests' + qs);
+      },
+      post: (data: any) => {
+        if (typeof window !== 'undefined') {
+          if (data instanceof FormData) return fetch('/api/admin/tests', { method: 'POST', body: data }).then(r => r.json());
+          return fetch('/api/admin/tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
+        }
+        return apiClient.post<any>('/api/admin/tests', data);
+      },
+      put: (data: any) => {
+        if (typeof window !== 'undefined') {
+          return fetch('/api/admin/tests', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
+        }
+        return apiClient.put<any>('/api/admin/tests', data);
+      },
     },
   },
 };
+
+export default api;

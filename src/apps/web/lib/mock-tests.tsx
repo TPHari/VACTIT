@@ -7,7 +7,7 @@ export type SubjectSummary = {
 
 export type AnswerSummary = {
   number: number;
-  answer: string; // "A" | "B" | "C" | "D" | "E" | "-"
+  answer: string; // "A" | "B" | "C" | "D" | "-"
   correct: boolean;
 };
 

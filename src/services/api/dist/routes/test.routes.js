@@ -146,6 +146,30 @@ async function testRoutes(server) {
             };
         }
     });
+    // Trigger IRT Calculation -> /api/tests/:id/calculate-irt
+    server.post('/api/tests/:id/calculate-irt', async (request, reply) => {
+        try {
+            const { id } = request.params;
+            // Instantiate queue locally (lightweight for producing)
+            const { Queue } = await Promise.resolve().then(() => __importStar(require('bullmq')));
+            const irtQueue = new Queue('irt-queue', {
+                connection: {
+                    host: process.env.REDIS_HOST || 'localhost',
+                    port: parseInt(process.env.REDIS_PORT || '6379'),
+                }
+            });
+            await irtQueue.add('calculate', { testId: id });
+            reply.status(202);
+            return { message: 'IRT calculation job queued', testId: id };
+        }
+        catch (error) {
+            server.log.error(error);
+            reply.status(500);
+            return {
+                error: error instanceof Error ? error.message : 'Failed to queue IRT job'
+            };
+        }
+    });
     server.get('/api/exam/:trial_id/pages', async (request, reply) => {
         try {
             const { trial_id } = request.params;
@@ -165,7 +189,7 @@ async function testRoutes(server) {
                 reply.status(404);
                 return { error: 'trial_not_found' };
             }
-            const folderPath = `exam-${trial.test_id}`;
+            const folderPath = `${trial.test_id}`;
             // 1️⃣ Read files from Supabase Storage
             const { data: files, error } = await supabase.storage
                 .from(BUCKET)

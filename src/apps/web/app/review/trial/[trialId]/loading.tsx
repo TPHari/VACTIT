@@ -1,5 +1,5 @@
 import React from 'react';
-import Loading from '../../../components/ui/LoadingSpinner'; // Import component loading đẹp mắt của bạn
+import Loading from '@/components/ui/LoadingSpinner';
 
 export default function LoadingExam() {
   return (
