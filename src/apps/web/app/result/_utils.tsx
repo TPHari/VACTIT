@@ -21,9 +21,13 @@ export function computeAllAnswers(
   responses: TrialDetails["responses"],
   totalQuestions: number,
 ) {
-  const sorted = [...responses].sort((a, b) =>
-    String(a.question_id).localeCompare(String(b.question_id)),
-  );
+  const sorted = [...responses].sort((a, b) => {
+    const getIndex = (id: string | number) => {
+      const parts = String(id).split("_");
+      return Number(parts[parts.length - 1]);
+    };
+    return getIndex(a.question_id) - getIndex(b.question_id);
+  });
 
   const base = sorted.map((r, idx) => {
     const number = idx + 1;
@@ -39,9 +43,16 @@ export function computeAllAnswers(
 
   return Array.from({ length: totalQuestions }, (_, idx) => {
     const number = idx + 1;
-    return base.find((a) => a.number === number) ?? { number, answer: "-", correct: false };
+    return (
+      base.find((a) => a.number === number) ?? {
+        number,
+        answer: "-",
+        correct: false,
+      }
+    );
   });
 }
+
 
 export function safeJsonb(x: any) {
   if (x == null) return null;
