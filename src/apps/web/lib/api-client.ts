@@ -147,6 +147,7 @@ export const api = {
       apiClient.get<any>(`/api/students/${encodeURIComponent(studentId)}/trials`),
     getDetails: (trialId: string) =>
       apiClient.get<any>(`/api/trials/${encodeURIComponent(trialId)}/details`),
+    cleanup: (trialId: string) => apiClient.post<any>('/api/trials/cleanup', { trialId }),
   },
   responses: {
     getAll: () => apiClient.get<any[]>('/api/responses'),
