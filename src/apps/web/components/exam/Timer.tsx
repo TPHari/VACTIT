@@ -20,17 +20,24 @@ export default function Timer({
   const [remaining, setRemaining] = useState<number>(durationSeconds);
   const expiredRef = useRef(false);
 
-  useEffect(() => {
-    const savedEndTime = localStorage.getItem(storageKey);
+useEffect(() => {
+  const clearedKey = `exam_cleared_${testId}`;
+  const cleared = sessionStorage.getItem(clearedKey);
+  if (cleared) {
+    sessionStorage.removeItem(clearedKey);
+    setEndTime(0);
+    return;
+  }
 
-    if (savedEndTime) {
-      setEndTime(Number(savedEndTime));
-    } else {
-      const newEndTime = startMs + durationSeconds * 1000;
-      localStorage.setItem(storageKey, String(newEndTime));
-      setEndTime(newEndTime);
-    }
-  }, [storageKey, startMs, durationSeconds]);
+  const savedEndTime = localStorage.getItem(storageKey);
+  if (savedEndTime) {
+    setEndTime(Number(savedEndTime));
+  } else {
+    const newEndTime = startMs + durationSeconds * 1000;
+    localStorage.setItem(storageKey, String(newEndTime));
+    setEndTime(newEndTime);
+  }
+}, [storageKey, startMs, durationSeconds, testId]);
 
   useEffect(() => {
     if (!endTime) return;
