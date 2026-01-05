@@ -1,12 +1,37 @@
 import React from 'react';
 import '../globals.css';
 import Sidebar from '../../components/admin/Sidebar';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/validations/auth';
+import { getPrisma } from '@/lib/prisma';
+import { redirect } from 'next/navigation';
 
 export const metadata = {
   title: 'Admin - VACTIT',
 };
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  try {
+    const session = await getServerSession(authOptions as any);
+    if (!session) {
+      return redirect('/auth/login');
+    }
+
+    console.log('Email from session:', session);
+    const email = (session as any).user?.email;
+    console.log('Extracted email:', email);
+    if (!email) return redirect('/auth/login');
+
+    const prisma = await getPrisma();
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || user.role !== 'Admin') {
+      return redirect('/');
+    }
+  } catch (err) {
+    console.error('AdminLayout auth check failed', err);
+    return redirect('/');
+  }
+
   return (
     <div className="app-root">
       <Sidebar />

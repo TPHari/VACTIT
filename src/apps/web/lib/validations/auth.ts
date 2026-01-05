@@ -36,7 +36,8 @@ export const authOptions: NextAuthOptions= {
               id: response.data.user.user_id,
               name: response.data.user.name ?? undefined,
               email: response.data.user.email,
-            };
+              role: response.data.user.role,
+            } as any;
           }
 
           return null;
@@ -88,6 +89,7 @@ export const authOptions: NextAuthOptions= {
           // But if your system uses email as user_id, keeping email works too.
           token.id = (user as any).id ?? email ?? token.id;
           if (email) (token as any).email = email;
+          if ((user as any).role) (token as any).role = (user as any).role;
         }
       }
 
@@ -101,7 +103,8 @@ export const authOptions: NextAuthOptions= {
 
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id as string;       
+        (session.user as any).id = token.id as string;
+        if ((token as any).role) (session.user as any).role = (token as any).role;
       }
       return session;
     },
