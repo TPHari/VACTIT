@@ -1,30 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Sidebar from "@/components/functionalBar/Sidebar";
-import Topbar from "@/components/functionalBar/Topbar";
+import React, { useEffect, useState } from "react";
 import ViewerPane from "@/components/exam/ViewerPane"; // reuse viewer
 import AnswerReviewPanel from "@/components/exam/AnswerReviewPanel";
 import { TESTS, TOTAL_QUESTIONS } from "@/lib/mock-tests";
-
-export default function ReviewPage({
-  params,
-}: {
-  params: { testId: string };
-}) {
-  const { testId } = params;
-
+import { api } from "@/lib/api-client";
+type Params = Promise<{ testId: string }>
+export default function ReviewPage(props: {
+  params : Params,}) {
+  const params = React.use(props.params)
+  const testId = params.testId
   const test = TESTS.find((t) => t.id === testId);
   const [pages, setPages] = useState<string[]>([]);
   const [zoom] = useState(1);
 
   useEffect(() => {
-    async function loadPages() {
-      const res = await fetch(`/api/exam/${testId}/pages`);
-      const data = await res.json();
-      setPages(data.pages || []);
-    }
-    loadPages();
+    try {
+      Promise.all([
+        api.tests.getPages(testId),
+      ]).then(([res]) => {
+        setPages(res.pages || []);
+      });
+    } catch (error) {
+      console.error('Error fetching data:', error);    }
   }, [testId]);
 
   if (!test) {

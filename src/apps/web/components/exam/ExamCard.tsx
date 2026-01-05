@@ -1,5 +1,10 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api-client';
 
 export interface ExamData {
   id: string;
@@ -21,16 +26,29 @@ interface ExamProps {
   exam: ExamData;
   onSelect: (exam: ExamData) => void;
   categoryContext?: string;
+  currentUserId?: string;
 }
 
-export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps) {
+export default function ExamCard({ exam, onSelect, categoryContext, currentUserId }: ExamProps) {
+  const router = useRouter();
   
+  // --- STATE UI ---
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isExamOpen, setIsExamOpen] = useState(false);
 
+  // --- STATE LOGIC ---
+  const [loading, setLoading] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
   const isCompleted = exam.status === 'completed';
   const isPractice = exam.type === 'practice';
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
+  // --- 1. LOGIC COUNTDOWN ---
   useEffect(() => {
     const checkStatus = () => {
       const now = new Date().getTime();
@@ -69,6 +87,57 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
     return () => clearInterval(timer);
   }, [exam.startTime, exam.dueTime, exam.type, isPractice]);
 
+  // --- 2. LOGIC GỌI API ---
+  const handleTakeTest = async () => {
+    if (loading) return;
+    
+    // Nếu đã làm rồi -> Chỉ xem kết quả
+    if (isCompleted) {
+        onSelect(exam);
+        return;
+    }
+
+    setLoading(true);
+    try {
+      const testId = exam.id;
+      // Fallback lấy userId nếu chưa được truyền vào
+      let userId = currentUserId;
+      if (!userId) {
+         // Thử lấy lại user nếu prop bị thiếu (Safety check)
+         try {
+            const res = await fetch('/api/user');
+            const data = await res.json();
+            userId = data?.user?.user_id || data?.user?.id;
+         } catch(e) {}
+      }
+
+      if (!userId) {
+          alert("Vui lòng đăng nhập để làm bài");
+          return;
+      }
+
+      console.log('Starting trial for testId:', testId, 'userId:', userId);
+      const payload = { testId, userId };
+      
+      // Gọi API create trial
+      const res = await api.trials.create(payload);
+      
+      const trial = res?.data;
+      const NotAllowed = res?.alreadyDone;
+
+      if (NotAllowed) {
+        setShowNotification(true);
+      } else if (trial && trial.trial_id) {
+        router.push(`/exam/${trial.trial_id}`);
+      }
+    } catch (err: any) {
+      console.error('Failed to start trial', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- RENDER HELPERS ---
   const renderStatusBadge = () => {
     if (timeLeft) {
       return (
@@ -77,31 +146,27 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
         </span>
       );
     }
-
     if (isCompleted) {
        return <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded border border-green-200">Đã làm</span>;
     }
-    
     if (categoryContext === 'in_progress' || (isExamOpen && !isPractice)) {
         return <span className="text-[10px] font-bold px-2 py-1 rounded bg-red-100 text-red-600 animate-pulse border border-red-200">● Đang diễn ra</span>;
     }
-
     if (categoryContext === 'locked' || (!isExamOpen && !isPractice && !timeLeft)) {
         const now = new Date().getTime();
         const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
         if (now < start) return <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-100 text-blue-600 border border-blue-200">📅 Sắp tới</span>;
         return <span className="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">🔒 Đã kết thúc</span>;
     }
-
     if (isPractice) {
         return <span className="text-[10px] font-bold px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-100">📖 Luyện tập</span>;
     }
-
     return null;
   };
 
   const getButtonText = () => {
-    if (isCompleted) return 'Thi lại';
+    if (loading) return 'Đang xử lý...';
+    if (isCompleted) return 'Thi Lại';
     if (!isExamOpen && !isPractice) {
         const now = new Date().getTime();
         const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
@@ -114,10 +179,11 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
   const isLockedVisual = !isExamOpen && !isPractice && !isCompleted;
 
   return (
-    <div className={`p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full border group relative ${
+    <>
+      <div className={`p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full border group relative ${
         isLockedVisual ? 'bg-gray-50/80 border-gray-200' : 
         isCompleted ? 'bg-green-50/40 border-green-200' : 'bg-white border-gray-100 hover:border-blue-300'
-    }`}>
+      }`}>
       
       <div className="flex justify-between items-start mb-3">
         <span className="text-[10px] text-gray-500 font-semibold bg-white/60 px-2 py-1 rounded border border-gray-100">
@@ -127,12 +193,12 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
         <div className="flex gap-1 items-center">
             {renderStatusBadge()}
             {exam.isVip && (
-                <span className="bg-gray-900 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500 shadow-sm ml-1">
+              <span className="bg-gray-900 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500 shadow-sm ml-1">
                 VIP
-                </span>
+              </span>
             )}
+          </div>
         </div>
-      </div>
 
       <h3
         className={`font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] transition-colors ${
@@ -173,6 +239,7 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
           {isCompleted ? 'Kết quả' : 'Chi tiết'}
         </button>
         
+        {/* NÚT THI */}
         {(!isExamOpen && !isPractice && !isCompleted) ? (
             <button disabled className={`flex-1 py-2 text-white text-xs font-medium rounded-lg cursor-not-allowed shadow-sm ${
                 timeLeft ? 'bg-orange-400' : 'bg-gray-400'
@@ -180,17 +247,46 @@ export default function ExamCard({ exam, onSelect, categoryContext }: ExamProps)
                 {timeLeft ? timeLeft : getButtonText()}
             </button>
         ) : (
-            <Link href={`/exam/${exam.id}`} className="flex-1">
-                <button className={`w-full h-full py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
-                    isCompleted
+            <button 
+                onClick={handleTakeTest}
+                disabled={loading}
+                className={`flex-1 py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
+                  isCompleted
                     ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300' 
                     : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
-                }`}>
+                } ${loading ? 'opacity-70 cursor-wait' : ''}`}>
                  {getButtonText()}
-                </button>
-            </Link>
+            </button>
         )}
       </div>
     </div>
+
+    {/* PORTAL THÔNG BÁO */}
+    {mounted && showNotification && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Thông báo</h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Bạn đã tham gia kỳ thi này rồi. <br /> Vui lòng không tham gia lại.
+              </p>
+              <button
+                onClick={() => setShowNotification(false)}
+                className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                type="button"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

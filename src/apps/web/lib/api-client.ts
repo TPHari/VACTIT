@@ -1,3 +1,4 @@
+// (Admin tests helper removed here in favor of ApiClient-backed `api` below)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export class ApiClient {
@@ -110,6 +111,7 @@ export const api = {
     create: (data: any) => apiClient.post<any>('/api/tests', data),
     update: (id: string, data: any) => apiClient.put<any>(`/api/tests/${id}`, data),
     delete: (id: string) => apiClient.delete<any>(`/api/tests/${id}`),
+    getPages: (trialId: string) => apiClient.get<any>(`/api/exam/${trialId}/pages`),
   },
   
   trials: {
@@ -117,6 +119,11 @@ export const api = {
     getById: (id: string) => apiClient.get<any>(`/api/trials/${id}`),
     create: (data: any) => apiClient.post<any>('/api/trials', data),
     update: (id: string, data: any) => apiClient.put<any>(`/api/trials/${id}`, data),
+    getByStudent: (studentId: string) =>
+      apiClient.get<any>(`/api/students/${encodeURIComponent(studentId)}/trials`),
+    getDetails: (trialId: string) =>
+      apiClient.get<any>(`/api/trials/${encodeURIComponent(trialId)}/details`),
+    cleanup: (trialId: string) => apiClient.post<any>('/api/trials/cleanup', { trialId }),
   },
   responses: {
     getAll: () => apiClient.get<any[]>('/api/responses'),
@@ -124,7 +131,7 @@ export const api = {
     create: (data: any) => apiClient.post<any>('/api/responses', data),
   },
   jobs: {
-    scoreTest: (data: { trialId: string; userId: string }) => 
+    scoreTest: (data: { trialId: string; userId: string }) =>
       apiClient.post<any>('/api/jobs/score-test', data),
     getStatus: (jobId: string) => apiClient.get<any>(`/api/jobs/status/${jobId}`),
   },
@@ -142,7 +149,14 @@ export const api = {
   },
   admin: {
     tests: {
-      getAll: () => apiClient.get<any>('/api/admin/tests'),
+      getAll: (params?: Record<string, any>) => {
+        if (typeof window !== 'undefined') {
+          const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+          return fetch('/api/admin/tests' + qs).then(r => r.json());
+        }
+        const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+        return apiClient.get<any>('/api/admin/tests' + qs);
+      },
       create: (data: any) => apiClient.post<any>('/api/admin/tests', data),
       update: (data: any) => apiClient.put<any>('/api/admin/tests', data),
       delete: (testId: string) => apiClient.delete<any>(`/api/admin/tests?test_id=${encodeURIComponent(testId)}`),
@@ -161,3 +175,5 @@ export const api = {
     getAll: () => apiClient.get<any>('/api/news'),
   },
 };
+
+export default api;

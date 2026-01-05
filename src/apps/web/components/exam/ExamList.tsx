@@ -7,9 +7,21 @@ import ExamCard, { ExamData } from './ExamCard';
 import ExamModal from './ExamModal';
 import Loading from '../ui/LoadingSpinner';
 
+interface ExamUI {
+    id: string;
+    title: string;
+    author: string;
+    questions: number; // Lưu ý: Biến này đang chứa số lượng trials (lượt làm bài)
+    duration: number;
+    date: string;
+    status: string;
+    type: string;
+    subject: string;
+}
+
 export default function ExamList() {
-  const searchParams = useSearchParams();
-  const searchQuery = searchParams.get('query')?.toLowerCase() || '';
+    const searchParams = useSearchParams();
+    const searchQuery = searchParams.get('query')?.toLowerCase() || '';
 
   // State lưu User ID
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
@@ -199,7 +211,7 @@ export default function ExamList() {
                 <span className="w-2 h-2 rounded-full bg-gray-400"></span>
                 <div className="text-xs">
                     <p className="font-bold text-gray-800">Đã kết thúc</p>
-                    <p className="text-gray-500">Chỉ xem lại</p>
+                    <p className="text-gray-500">Không thể thi lại</p>
                 </div>
             </div>
             <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
@@ -278,12 +290,12 @@ export default function ExamList() {
         )}
       </div>
 
-      {selectedExam && (
-        <ExamModal 
-          exam={selectedExam} 
-          onClose={() => setSelectedExam(null)} 
-        />
-      )}
-    </>
-  );
+            {selectedExam && (
+                <ExamModal
+                    exam={selectedExam}
+                    onClose={() => setSelectedExam(null)}
+                />
+            )}
+        </>
+    );
 }

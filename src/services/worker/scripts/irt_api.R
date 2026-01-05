@@ -7,46 +7,80 @@ suppressWarnings(suppressPackageStartupMessages({
 
 ## Try to locate project-level IRT script (prefer irt_run.R then irt_scoring.R)
 find_project_script <- function(){
+  # Debug: Print current state
+  message("DEBUG: Current working directory: ", getwd())
+  message("DEBUG: Listing files in current directory:")
+  try(print(list.files()))
+  
+  # 1. Try recursive search for irt_run.R
+  # Search in sensitive likely locations first to avoid scanning everything if possible
+  locations <- c(getwd(), '/src', '/app', '.')
+  
+  for(loc in locations){
+    if(dir.exists(loc)){
+      found <- list.files(loc, pattern = '^irt_run\\.R$', recursive = TRUE, full.names = TRUE)
+      if(length(found) > 0){
+        message("DEBUG: Found irt_run.R via search at: ", found[1])
+        return(found[1])
+      }
+    }
+  }
+
   script_dir <- NULL
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- args[grep('--file=', args)]
   if (length(file_arg) > 0) {
     script_dir <- dirname(sub('--file=', '', file_arg[1]))
-  } else {
-    of <- try(sys.frame(1)$ofile, silent = TRUE)
-    if (!inherits(of, 'try-error') && !is.null(of)) script_dir <- dirname(of)
   }
-
-  candidates <- c()
+  
   if (!is.null(script_dir)) {
-    candidates <- c(candidates,
-      file.path(script_dir, 'irt_run.R'),
-      file.path(script_dir, 'irt_scoring.R')
-    )
+     p <- file.path(script_dir, 'irt_run.R')
+     if(file.exists(p)) return(p)
   }
 
-  candidates <- c(candidates,
+  # Fallback to hardcoded candidates if search failed (though search should have caught them)
+  candidates <- c(
     file.path(getwd(), 'src', 'services', 'worker', 'scripts', 'irt_run.R'),
-    file.path(getwd(), 'src', 'services', 'worker', 'scripts', 'irt_scoring.R'),
-    file.path(getwd(), 'scripts', 'irt_run.R'),
-    file.path(getwd(), 'scripts', 'irt_scoring.R'),
-    file.path(getwd(), 'irt_run.R'),
-    file.path(getwd(), 'irt_scoring.R')
+    file.path(getwd(), 'services', 'worker', 'scripts', 'irt_run.R'),
+    file.path('/src/services/worker/scripts/irt_run.R'), # Absolute Docker path
+    'irt_run.R'
   )
 
-  candidates <- unique(candidates)
   for (p in candidates){
-    if (file.exists(p)) return(p)
+    if (file.exists(p)) {
+      message("DEBUG: Found irt_run.R via candidate: ", p)
+      return(p)
+    }
   }
+  
+  message("DEBUG: could not find irt_run.R in common locations.")
   return(NULL)
 }
 
 proj_script <- find_project_script()
 if (!is.null(proj_script)){
-  message('Sourcing project IRT script from: ', proj_script)
-  tryCatch({ source(proj_script) }, error = function(e) message('Failed to source project IRT script: ', e$message))
+  message('Sourcing script from: ', proj_script)
+  tryCatch({ 
+      # Source DIRECTLY into .GlobalEnv - this is always accessible from any R context
+      source(proj_script, local = FALSE)  # local=FALSE means source into .GlobalEnv
+      message("DEBUG: Source completed successfully into .GlobalEnv")
+      
+      # Verify the function is available
+      if(exists("process_responses", envir = .GlobalEnv)){
+          message("DEBUG: SUCCESS! process_responses is available in .GlobalEnv")
+          message("DEBUG: .GlobalEnv objects: ", paste(ls(envir = .GlobalEnv), collapse=", "))
+      } else {
+          message("DEBUG: FAILURE! process_responses NOT found in .GlobalEnv after source")
+          message("DEBUG: .GlobalEnv objects: ", paste(ls(envir = .GlobalEnv), collapse=", "))
+      }
+  }, error = function(e) {
+      message('Failed to source project IRT script: ', e$message)
+      message('Error class: ', class(e))
+      message('Error traceback: ')
+      traceback()
+  })
 } else {
-  message('No external project IRT script found; using internal scoring logic')
+  message('No external project IRT script found; will return 501 for scoring requests')
 }
 
 #* @apiTitle IRT Scoring API
@@ -58,7 +92,7 @@ function(){ list(status = 'ok') }
 #* Calculate IRT scores from JSON input
 #* @post /calculate-irt
 function(req, res){
-  # Authorization: if IRT_API_KEY is set, require Bearer token
+  # Authorization
   required_key <- Sys.getenv('IRT_API_KEY', '')
   auth_header <- NULL
   if (!is.null(req$HTTP_AUTHORIZATION)) auth_header <- req$HTTP_AUTHORIZATION
@@ -80,27 +114,43 @@ function(req, res){
     return(list(error = 'missing_responses'))
   }
 
-  # If the project script exposes `process_responses`, delegate to it
-  if (exists('process_responses') && is.function(process_responses)){
-    tryCatch({
-      out <- process_responses(input)
+  # Get process_responses directly from .GlobalEnv (that's where we source it)
+  if (exists('process_responses', envir = .GlobalEnv)) {
+    process_fn <- get('process_responses', envir = .GlobalEnv)
+    message("DEBUG: Retrieved process_responses from .GlobalEnv")
+    
+    if (is.function(process_fn)){
+      # IMPORTANT: return() inside tryCatch returns from the handler, NOT the outer function!
+      # Must capture result and return after tryCatch completes
+      result <- NULL
+      error_msg <- NULL
+      
+      tryCatch({
+        result <- process_fn(input)
+      }, error = function(e){
+        # Use <<- to assign to outer scope
+        error_msg <<- e$message
+      })
+      
+      # Now return based on what happened
+      if (!is.null(error_msg)) {
+        res$status <- 500
+        return(list(error = 'processing_error', message = error_msg))
+      }
+      
+      # Success!
       res$status <- 200
-      return(out)
-    }, error = function(e){
-      res$status <- 500
-      return(list(error = 'processing_error', message = e$message))
-    })
+      return(result)
+    }
   }
 
   # No project scoring implementation found
   res$status <- 501
-  return(list(error = 'no_scoring_impl', message = 'No project scoring implementation found. Provide irt_run.R exposing process_responses().'))
-}
-
-# Run plumber when executed directly
-safe_is_cli <- function(){ tryCatch({ identical(sys.call(1), quote(-1)) }, error = function(e) FALSE) }
-if (safe_is_cli()){
-  pr <- plumber::plumb(sys.frame(1)$ofile)
-  port <- as.integer(Sys.getenv('PORT', '8000'))
-  pr$run(host='0.0.0.0', port = port)
+  global_objs <- ls(envir = .GlobalEnv)
+  return(list(
+      error = 'no_scoring_impl', 
+      message = 'No project scoring implementation found.',
+      debug_global_env = paste(global_objs, collapse=", "),
+      debug_script_path = proj_script
+  ))
 }

@@ -23,6 +23,12 @@
     "prisma:migrate": "cd src/services/api/prisma && npx prisma migrate dev",
     "prisma:studio": "cd src/services/api/prisma && npx prisma studio"
   },
+  "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "@supabase/supabase-js": "^2.89.0",
+    "mupdf": "^1.26.4",
+    "react-spinners": "^0.17.0"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }

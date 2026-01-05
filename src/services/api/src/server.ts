@@ -30,36 +30,39 @@ const server = fastify({
 server.decorate('prisma', prisma);
 
 // Setup Redis connection (optional)
-const redisConnection = process.env.REDIS_URL 
+const redisConnection = process.env.REDIS_URL
   ? new IORedis(process.env.REDIS_URL, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      retryStrategy: (times) => Math.min(times * 50, 2000),
-    })
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    retryStrategy: (times) => Math.min(times * 50, 2000),
+  })
   : undefined;
 
 // Setup queues (optional - only if Redis is available)
-const scoringQueue = redisConnection 
+const scoringQueue = redisConnection
   ? new Queue('scoring-queue', { connection: redisConnection })
   : null;
 
 // Log Redis connection status
 if (redisConnection) {
   redisConnection.on('connect', () => {
-    console.log('✅ Redis connected');
+    console.log('Redis connected');
   });
   redisConnection.on('error', (err) => {
-    console.error('❌ Redis connection error:', err.message);
+    console.error('Redis connection error:', err.message);
   });
 } else {
-  console.warn('⚠️  Redis not configured - queue features disabled');
+  console.warn('Redis not configured - queue features disabled');
 }
+
+// Decorate server with redis for caching in routes
+server.decorate('redis', redisConnection);
 
 // ============ Plugins ============
 // CORS for frontend access
 server.register(require('@fastify/cors'), {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
     : true, // Allow all origins in development
   credentials: true,
 });
@@ -132,7 +135,7 @@ server.get('/health', async (request, reply) => {
 // Queue health check
 server.get('/health/queue', async (request, reply) => {
   if (!scoringQueue) {
-    return reply.code(503).send({ 
+    return reply.code(503).send({
       error: 'Queue not configured',
       redis: 'disconnected'
     });
@@ -140,16 +143,16 @@ server.get('/health/queue', async (request, reply) => {
 
   try {
     const jobCounts = await scoringQueue.getJobCounts();
-    
+
     return reply.send({
       status: 'ok',
       queue: 'scoring-queue',
       jobs: jobCounts,
     });
   } catch (error: any) {
-    return reply.code(500).send({ 
+    return reply.code(500).send({
       error: 'Failed to get queue status',
-      message: error.message 
+      message: error.message
     });
   }
 });
@@ -205,7 +208,7 @@ server.register(newsRoutes);
 // Submit scoring job
 server.post('/api/jobs/score-test', async (request, reply) => {
   if (!scoringQueue) {
-    return reply.code(503).send({ 
+    return reply.code(503).send({
       error: 'Queue service unavailable',
       message: 'Redis connection not configured'
     });
@@ -233,9 +236,9 @@ server.post('/api/jobs/score-test', async (request, reply) => {
       data: job.data,
     });
   } catch (error: any) {
-    return reply.code(500).send({ 
+    return reply.code(500).send({
       error: 'Failed to queue job',
-      message: error.message 
+      message: error.message
     });
   }
 });
@@ -247,16 +250,16 @@ server.get('/api/jobs/status/:jobId', async (request, reply) => {
   }
 
   const { jobId } = request.params as any;
-  
+
   try {
     const job = await scoringQueue.getJob(jobId);
-    
+
     if (!job) {
       return reply.code(404).send({ error: 'Job not found' });
     }
 
     const state = await job.getState();
-    
+
     return reply.send({
       jobId: job.id,
       state,
@@ -266,9 +269,9 @@ server.get('/api/jobs/status/:jobId', async (request, reply) => {
       failedReason: job.failedReason,
     });
   } catch (error: any) {
-    return reply.code(500).send({ 
+    return reply.code(500).send({
       error: 'Failed to get job status',
-      message: error.message 
+      message: error.message
     });
   }
 });
@@ -276,19 +279,19 @@ server.get('/api/jobs/status/:jobId', async (request, reply) => {
 // ============ Graceful Shutdown ============
 const closeGracefully = async (signal: string) => {
   console.log(`\n🛑 Received signal ${signal}, closing server gracefully...`);
-  
+
   try {
     await server.close();
     console.log('✅ Server closed');
-    
+
     await prisma.$disconnect();
     console.log('✅ Database disconnected');
-    
+
     if (redisConnection) {
       await redisConnection.quit();
       console.log('✅ Redis disconnected');
     }
-    
+
     process.exit(0);
   } catch (error) {
     console.error('❌ Error during shutdown:', error);
@@ -303,6 +306,7 @@ process.on('SIGTERM', () => closeGracefully('SIGTERM'));
 declare module 'fastify' {
   interface FastifyInstance {
     prisma: PrismaClient;
+    redis: IORedis | undefined;
   }
 }
 

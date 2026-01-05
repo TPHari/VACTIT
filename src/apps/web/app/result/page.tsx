@@ -1,38 +1,235 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TESTS, TOTAL_QUESTIONS } from "@/lib/mock-tests";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { api } from "@/lib/api-client";
+import Loading from "@/components/ui/LoadingSpinner";
+import Link from "next/link";
+
+import type { TrialDetails, TrialListItem, StudentTrialsRes } from "./_types";
+import { TOTAL_QUESTIONS } from "./_types";
+import {
+  formatDateVN,
+  formatDurationMMSS,
+  computeAllAnswers,
+  inferSubjectsFromRawScore,
+  inferTotalCorrectFromRawScore,
+  renderOverallScore,
+  attachIrtScores,
+} from "./_utils";
+
 
 export default function ResultsPage() {
   const router = useRouter();
-  const [selectedTestId, setSelectedTestId] = useState(TESTS[0].id);
-  const selectedTest = TESTS.find((t) => t.id === selectedTestId)!;
 
-  // build 120 answers
-  const allAnswers = Array.from({ length: TOTAL_QUESTIONS }, (_v, idx) => {
-    const number = idx + 1;
-    const found = selectedTest.answers.find((a) => a.number === number);
-    return (
-      found ?? {
-        number,
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [trials, setTrials] = useState<TrialListItem[]>([]);
+  const [selectedTrialId, setSelectedTrialId] = useState<string>("");
+
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [selectedTrialDetails, setSelectedTrialDetails] = useState<TrialDetails | null>(null);
+
+  // 0) Load user
+  const [user, setUser] = useState<any>(null);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUser() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch("/api/user");
+        const data = await res.json();
+
+        if (cancelled) return;
+
+        if (data?.ok) {
+          setUser(data.user);
+        } else {
+          setError(data?.message || "Failed to load user");
+          setLoading(false);
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setError(e?.message || "Failed to load user");
+          setLoading(false);
+        }
+      }
+    }
+
+    loadUser();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const studentId = user?.user_id;
+
+  // 1) Load trials list
+  useEffect(() => {
+    // don't fetch until we actually have a studentId
+    if (!studentId) return;
+
+    let cancelled = false;
+
+    async function load() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await api.trials.getByStudent(studentId);
+        const data: StudentTrialsRes = res;
+
+        if (cancelled) return;
+
+        const list = data?.data || [];
+        list.sort(
+          (a, b) =>
+            new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
+        );
+
+        setTrials(list);
+
+        if (list.length > 0) {
+          setSelectedTrialId(list[0].trial_id);
+          // do NOT setLoading(false) here; details effect will end loading after details fetch
+        } else {
+          // critical: if no trials, details effect won't run, so stop loading here
+          setSelectedTrialId("");
+          setSelectedTrialDetails(null);
+          setDetailsLoading(false);
+          setLoading(false);
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setError(e?.message || "Failed to load trials");
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [studentId]);
+
+  // 2) Load selected trial details (responses + question.correct_option + section)
+  useEffect(() => {
+    if (!selectedTrialId) return;
+
+    let cancelled = false;
+
+    async function loadDetails() {
+      try {
+        setDetailsLoading(true);
+        setLoading(true);
+        setError(null);
+
+        const res = await api.trials.getDetails(selectedTrialId);
+        const data: TrialDetails | null = res?.data ?? null;
+
+        if (cancelled) return;
+        setSelectedTrialDetails(data);
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message || "Failed to load trial details");
+      } finally {
+        if (!cancelled) {
+          setDetailsLoading(false);
+          setLoading(false);
+        }
+      }
+    }
+
+    loadDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTrialId]);
+
+
+  const selectedTrial = useMemo(
+    () => trials.find((t) => t.trial_id === selectedTrialId) ?? null,
+    [trials, selectedTrialId],
+  );
+
+  const allAnswers = useMemo(() => {
+    if (!selectedTrialDetails) {
+      return Array.from({ length: TOTAL_QUESTIONS }, (_, idx) => ({
+        number: idx + 1,
         answer: "-",
         correct: false,
-      }
-    );
-  });
+        section: "Unknown",
+      }));
+    }
 
-  const totalCorrect = allAnswers.filter(
-    (a) => a.answer !== "-" && a.correct
-  ).length;
+    return computeAllAnswers(selectedTrialDetails.responses || [], TOTAL_QUESTIONS);
+  }, [selectedTrialDetails]);
+  
+  const isExam = selectedTrial?.test?.type === "exam";
+
+  const subjects = useMemo(() => {
+    const base = inferSubjectsFromRawScore(selectedTrial?.raw_score);
+    if (!isExam) return base;
+    return attachIrtScores(base, selectedTrial?.processed_score);
+  }, [isExam, selectedTrial?.raw_score, selectedTrial?.processed_score]);
+
+  const totalCorrect = useMemo(
+    () => inferTotalCorrectFromRawScore(selectedTrial?.raw_score),
+    [selectedTrial?.raw_score],
+  );
+
+  // You can replace this with a real AI analysis later
+  const analysisText = useMemo(() => {
+    if (!selectedTrialDetails) return "Đang tải phân tích...";
+    const t = selectedTrialDetails.tactic as any;
+    return (t?.summary && String(t.summary).trim()) || "Chưa có dữ liệu phân tích.";
+  }, [selectedTrialDetails]);
+
+
+  if (loading || detailsLoading) {
+    return (
+      <Loading />
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen bg-brand-bg px-6 py-6 text-sm text-red-600">
+          Lỗi: {error}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!trials.length) {
+    return (
+      <DashboardLayout>
+        <div className="min-h-screen flex justify-center text-sm">
+          <p>
+            Không có dữ liệu, bạn vui lòng{" "}
+            <Link
+              href="/exam"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              vào thi
+            </Link>{" "}
+            để có kết quả.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
-    // PAGE: normal document scroll, sidebar + content share height naturally
     <DashboardLayout>
       <div className="flex min-h-screen bg-brand-bg">
         <div className="flex flex-1 flex-col">
-
           {/* Main 2-column layout */}
           <div className="flex px-6 pb-8 pt-4 lg:px-8">
             {/* ========== MIDDLE COLUMN ========== */}
@@ -42,10 +239,11 @@ export default function ResultsPage() {
                 {/* Subjects */}
                 <div className="w-1/2">
                   <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-muted">
-                    Môn thi
+                    Phần thi
                   </h2>
+
                   <ul className="space-y-2 text-sm">
-                    {selectedTest.subjects.map((subject) => (
+                    {subjects.map((subject) => (
                       <li
                         key={subject.id}
                         className="flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm"
@@ -54,7 +252,10 @@ export default function ResultsPage() {
                           {subject.title}
                         </span>
                         <span className="text-xs text-brand-muted">
-                          {subject.correct}/{subject.total} câu đúng
+                          {subject.correct}/30 câu đúng
+                          {isExam && subject.score0_300 != null && (
+                            <> · {subject.score0_300} điểm</>
+                          )}
                         </span>
                       </li>
                     ))}
@@ -62,44 +263,41 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Tổng điểm */}
-                <div className="flex flex-1 flex-col justify-between rounded-card bg-white p-4 shadow-card">
-                  <div>
-                    <p className="text-xs font-medium text-brand-muted">
-                      Tổng điểm
+                <div className="flex flex-1 flex-col justify-between rounded-card rounded-xl bg-white p-4 shadow-card">
+                  <p className="text-xs font-medium text-brand-muted text-center">
+                    {selectedTrialDetails?.test.type === "exam" ?
+                      "Tổng điểm (IRT)" : "Tổng điểm luyện tập"}
+                  </p>
+
+                  <p className="mt-1 text-5xl font-bold text-brand-text text-center">
+                    {renderOverallScore(
+                      selectedTrialDetails?.test.type === "exam",
+                      selectedTrial?.raw_score,
+                      selectedTrial?.processed_score
+                    )}
+
+                  </p>
+
+                  <p className="mt-1 text-xs text-brand-muted text-center">
+                    Số câu đúng:{" "}
+                    <span className="font-semibold text-brand-text">
+                      {totalCorrect}/{TOTAL_QUESTIONS}
+                    </span>
+                  </p>
+
+                  {detailsLoading && (
+                    <p className="mt-2 text-xs text-brand-muted">
+                      Đang tải chi tiết bài làm...
                     </p>
-                    <p className="mt-1 text-3xl font-bold text-brand-text">
-                      {selectedTest.score}
-                    </p>
-                    <p className="mt-1 text-xs text-brand-muted">
-                      Mục tiêu:{" "}
-                      <span className="font-semibold text-brand-primary">
-                        {selectedTest.targetScore}
-                      </span>
-                    </p>
-                    <p className="mt-1 text-xs text-brand-muted">
-                      Tỉ lệ đúng:{" "}
-                      <span className="font-semibold text-brand-text">
-                        {selectedTest.percent}%
-                      </span>
-                    </p>
-                    <p className="mt-1 text-xs text-brand-muted">
-                      Số câu đúng:{" "}
-                      <span className="font-semibold text-brand-text">
-                        {totalCorrect}/{TOTAL_QUESTIONS}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="mt-3 text-xs text-brand-muted">
-                    <p>Thời gian làm bài: {selectedTest.duration}</p>
-                    <p>Ngày thi: {selectedTest.date}</p>
-                  </div>
+                  )}
+
                 </div>
               </div>
 
               {/* Phân tích + Lịch sử thi */}
               <div className="mt-4 space-y-4">
                 {/* Phân tích */}
-                <section className="rounded-card bg-white p-4 shadow-card">
+                <section className="rounded-card bg-white p-4 shadow-card rounded-xl">
                   <header className="mb-2 flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff4d6] text-sm">
                       ★
@@ -108,13 +306,14 @@ export default function ResultsPage() {
                       Phân tích bài làm
                     </h2>
                   </header>
+
                   <p className="text-sm leading-relaxed text-brand-muted">
-                    {selectedTest.analysis}
+                    {analysisText}
                   </p>
                 </section>
 
                 {/* Lịch sử thi – max 4 rows visible, then scroll */}
-                <section className="rounded-card bg-white p-4 shadow-card">
+                <section className="rounded-card bg-white p-4 shadow-card rounded-xl">
                   <header className="mb-2 flex items-center justify-between">
                     <h2 className="text-sm-center font-semibold text-brand-text">
                       Lịch sử thi
@@ -122,7 +321,7 @@ export default function ResultsPage() {
                   </header>
 
                   <div className="mt-1 max-h-40 overflow-y-auto pr-1 text-xs">
-                    <div className="grid grid-cols-[2fr_0.5fr_0.7fr_1fr_1.2fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted">
+                    <div className="grid grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted">
                       <div className="text-center">Tên đề thi</div>
                       <div className="text-center">Điểm</div>
                       <div className="text-center">Thời gian</div>
@@ -130,28 +329,35 @@ export default function ResultsPage() {
                       <div className="text-center"></div>
                     </div>
 
-                    {TESTS.map((test) => {
-                      const isActive = test.id === selectedTestId;
+                    {trials.map((t) => {
+                      const isActive = t.trial_id === selectedTrialId;
 
                       return (
                         <div
-                          key={test.id}
-                          onClick={() => setSelectedTestId(test.id)}
-                          className={`grid w-full grid-cols-[2fr_0.5fr_0.7fr_1fr_1.2fr] border-b border-slate-100 py-2 text-left transition cursor-pointer ${
-                            isActive
-                              ? "rounded-md bg-[#eef4ff] font-semibold"
-                              : "bg-transparent"
+                          key={t.trial_id}
+                          onClick={() => setSelectedTrialId(t.trial_id)}
+                          className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr]
+                          items-center
+                          border-b border-slate-100 py-2 text-left transition cursor-pointer
+                          ${isActive
+                            ? "rounded-md bg-[#eef4ff] font-semibold"
+                            : "bg-transparent"
                           }`}
+
                         >
-                          <div className="text-center">{test.name}</div>
-                          <div className="text-center">{test.score}</div>
-                          <div className="text-center">{test.duration}</div>
-                          <div className="text-center">{test.date}</div>
+                          <div className="text-center">{t.test?.title ?? t.test_id}</div>
+                          <div className="text-center">
+                            {renderOverallScore(t.test?.type === "exam", t.raw_score, t.processed_score)}
+                          </div>
+                          <div className="text-center">
+                            {t.test?.duration != null ? formatDurationMMSS(t.test.duration) : "-"}
+                          </div>
+                          <div className="text-center">{formatDateVN(t.start_time)}</div>
                           <div className="text-center">
                             <div
                               onClick={(e) => {
-                                e.stopPropagation(); // don't override row selection
-                                router.push(`/review/${test.id}`);
+                                e.stopPropagation();
+                                router.push(`/review/trial/${t.trial_id}`);
                               }}
                               className="text-xs font-semibold text-blue-600 hover:underline"
                             >
@@ -178,11 +384,9 @@ export default function ResultsPage() {
                 </p>
               </header>
 
-              {/* Own scroll, but height is capped so it fits nicely in view */}
               <div className="mt-3 max-h-[460px] overflow-y-auto pr-1">
-                <div className="grid grid-cols-2 gap-2 text-xs ">
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   {allAnswers.map((item) => (
-                    
                     <div
                       key={item.number}
                       className="flex items-center justify-between rounded-full border border-slate-200 bg-white px-3 py-1.5"
@@ -191,13 +395,19 @@ export default function ResultsPage() {
                         Câu {item.number}
                       </span>
                       <span
-                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold  ${
-                          item.answer === "-"
-                            ? "bg-gray-200 text-gray-500" // Fix logic màu (chưa làm thì màu xám)
-                            : item.correct
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${item.answer === "-"
+                          ? "bg-gray-200 text-gray-500"
+                          : item.correct
                             ? "bg-green-500 text-white"
                             : "bg-red-500 text-white"
-                        }`}
+                          }`}
+                        title={
+                          item.answer === "-"
+                            ? "Chưa chọn"
+                            : item.correct
+                              ? "Đúng"
+                              : "Sai"
+                        }
                       >
                         {item.answer}
                       </span>
@@ -206,6 +416,7 @@ export default function ResultsPage() {
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

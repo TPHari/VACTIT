@@ -3,9 +3,47 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TeacherList from '@/components/teachers/TeacherList';
-// Import Modal vừa tách ra
-import TeacherDetailModal from '@/components/teachers/TeacherDetailModal'; 
-import { api } from '@/lib/api-client';
+
+const MOCK_TEACHERS = [
+  {
+    id: 't-tran-phuoc-hai',
+    name: 'Trần Phước Hải',
+    image: '/uploads/teachers-test/teacher1-test.jpg',
+    badges: [
+      'Phụ trách phần Toán học',
+      'Cựu chuyên Toán THPT Chuyên Lê Quý Đôn Đà Nẵng',
+      'Á khoa khối A00 TP Đà Nẵng',
+      '4 lần liên tiếp đều đạt mức điểm 1000+ ĐGNL HCM (300/300 phần Toán)',
+      'Hơn hai năm kinh nghiệm luyện thi ĐGNL HCM; nhiều học trò đạt 900+, 1000+',
+      'Sinh viên Khoa học máy tính — Trường ĐH Khoa học Tự nhiên, ĐHQG HCM'
+    ]
+  },
+  {
+    id: 't-phan-le-thuc-bao',
+    name: 'Phan Lê Thúc Bảo',
+    image: '/uploads/teachers-test/teacher2-test.jpg',
+    badges: [
+      'Phụ trách phần Tư duy Khoa học',
+      'Cựu chuyên Toán THPT Chuyên Quốc Học Huế',
+      'Sinh viên Khoa học máy tính — Trường ĐH KHTN, ĐHQG HCM',
+      'Thủ khoa toàn quốc ĐGNL HCM 2023 — kỷ lục 1133 điểm (300/300 Toán - Logic - PTSL)',
+      'Thủ khoa ĐGNL HCM đợt 1 năm 2025 — 1060 điểm (300/300 Tư duy Khoa học)',
+      'Sở hữu 5 điểm 1000+ ĐGNL HCM'
+    ]
+  },
+  {
+    id: 't-hoang-phuoc-nguyen',
+    name: 'Hoàng Phước Nguyên',
+    image: '/uploads/teachers-test/teacher3-test.jpg',
+    badges: [
+      'Phụ trách phần Ngôn ngữ',
+      'Cử nhân Xuất sắc, Khoa CNTT — Trường ĐH KHTN, ĐHQG TP.HCM',
+      'Sinh viên Ngôn ngữ học — Trường ĐH Khoa học Xã hội & Nhân văn, ĐHQG TP.HCM',
+      'CTV Hội Văn học Nghệ thuật Đồng Nai; đồng tác giả sách IELTS Writing',
+      'Sinh viên ngành ngôn ngữ Anh, trường đại học mở Hà Nội'
+    ]
+  }
+];
 
 export default function TeachersPage() {
   const [teachers, setTeachers] = useState<Array<any>>([]);
@@ -55,38 +93,14 @@ export default function TeachersPage() {
         <div className="flex-1 flex flex-col">
           <div className="flex-1 overflow-hidden">
             <main
-              className="p-6 h-full overflow-auto custom-scrollbar"
-              style={{ maxHeight: 'calc(100vh - 72px)' }}
+              className="p-6 h-full overflow-auto"
+              style={{ maxHeight: 'calc(100vh - 72px)' }} // adjust if Topbar height differs
             >
-              {/* --- BANNER --- */}
-              <div className="card card-blue w-full mb-8 relative overflow-hidden flex-shrink-0 group shadow-lg rounded-2xl">
-                <div className="relative z-10 max-w-3xl p-8">
-                  <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
-                    Đội Ngũ Giảng Viên <br /> Uy Tín & Tận Tâm
-                  </h1>
-                  <p className="text-blue-100 text-sm md:text-base font-medium max-w-xl">
-                    Danh sách các thầy cô, chuyên gia giáo dục đóng góp đề thi chất lượng, giúp bạn chinh phục mọi kỳ thi quan trọng.
-                  </p>
-                </div>
-                <div className="absolute right-0 top-0 bottom-0 w-64 pointer-events-none">
-                  <div className="absolute top-[-20px] right-[40px] w-24 h-24 bg-yellow-400 rounded-full opacity-90 group-hover:scale-125 transition-transform duration-500 shadow-lg shadow-blue-900/20"></div>
-                  <div className="absolute bottom-[-10px] right-[100px] w-20 h-20 bg-yellow-400 rounded-full opacity-80 group-hover:scale-110 transition-transform duration-700 shadow-lg shadow-blue-900/20"></div>
-                  <div className="absolute top-[40px] right-[-30px] w-40 h-40 bg-yellow-400 rounded-full opacity-100 group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-blue-900/20"></div>
-                </div>
-              </div>
+              <header className="mb-6">
+                <h1 className="text-2xl sm:text-3xl font-semibold text-brand-text">Đội ngũ giảng dạy</h1>
+              </header>
 
-              {/* --- LIST --- */}
-              {loading ? (
-                <div className="flex justify-center items-center h-64">
-                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                   <span className="ml-3 text-gray-500 font-medium">Đang tải dữ liệu giảng viên...</span>
-                </div>
-              ) : (
-                <TeacherList 
-                  items={teachers} 
-                  onSelect={(t) => setSelectedTeacher(t)} 
-                />
-              )}
+              <TeacherList items={MOCK_TEACHERS} />
             </main>
           </div>
         </div>
