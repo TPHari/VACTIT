@@ -166,7 +166,7 @@ export default function ExamCard({ exam, onSelect, currentUserId }: ExamProps) {
               : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
               } ${loading ? 'opacity-60 pointer-events-none' : ''}`}
           >
-            {loading ? 'Đang khởi tạo...' : (exam.status === 'completed' ? 'Thi lại' : (exam.status === 'in_progress' ? 'Tiếp tục' : 'Thi ngay'))}
+            {loading ? 'Đang tạo đề...' : (exam.status === 'completed' ? 'Thi lại' : (exam.status === 'in_progress' ? 'Tiếp tục' : 'Thi ngay'))}
           </button>
         </div>
       </div>
