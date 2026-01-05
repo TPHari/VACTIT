@@ -165,6 +165,7 @@ export async function testRoutes(server: FastifyInstance) {
 
       const BUCKET = 'test_images';
       const EXTS = ['jpg', 'png', 'webp'];
+      const CACHE_TTL = 300; // 5 minutes (matches signed URL validity)
 
       // 0️⃣ Lấy test_id từ trial_id
       const trial = await server.prisma.trial.findUnique({
@@ -175,6 +176,23 @@ export async function testRoutes(server: FastifyInstance) {
       if (!trial) {
         reply.status(404);
         return { error: 'trial_not_found' };
+      }
+
+      const cacheKey = `exam-pages:${trial.test_id}`;
+
+      // 🔍 Check Redis cache first
+      if (server.redis) {
+        try {
+          const cached = await server.redis.get(cacheKey);
+          if (cached) {
+            console.log(`Cache HIT for ${cacheKey}`);
+            return JSON.parse(cached);
+          }
+          console.log(`Cache MISS for ${cacheKey}`);
+        } catch (cacheErr) {
+          console.error('Cache read error:', cacheErr);
+          // Continue without cache on error
+        }
       }
 
       const folderPath = `${trial.test_id}`;
@@ -225,8 +243,22 @@ export async function testRoutes(server: FastifyInstance) {
         reply.status(204);
         return { error: 'No pages found' };
       }
+
+      const result = { pages, totalPages: pages.length };
+
+      // 💾 Store in Redis cache
+      if (server.redis) {
+        try {
+          await server.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(result));
+          console.log(`💾 Cached ${cacheKey} for ${CACHE_TTL}s`);
+        } catch (cacheErr) {
+          console.error('Cache write error:', cacheErr);
+          // Continue without caching on error
+        }
+      }
+
       console.log('Found pages:', pages.length);
-      return { pages, totalPages: pages.length };
+      return result;
     } catch (err) {
       server.log.error(err);
       reply.status(500);
