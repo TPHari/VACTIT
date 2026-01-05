@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api-client';
 
@@ -48,7 +47,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
     setMounted(true);
   }, []);
   
-  // --- 1. LOGIC COUNTDOWN ---
+  // --- LOGIC COUNTDOWN ---
   useEffect(() => {
     const checkStatus = () => {
       const now = new Date().getTime();
@@ -87,23 +86,20 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
     return () => clearInterval(timer);
   }, [exam.startTime, exam.dueTime, exam.type, isPractice]);
 
-  // --- 2. LOGIC GỌI API ---
+  // --- XỬ LÝ NÚT PHẢI (Thi ngay / Thi lại) ---
   const handleTakeTest = async () => {
     if (loading) return;
     
-    // Nếu đã làm rồi -> Chỉ xem kết quả
-    if (isCompleted) {
-        onSelect(exam);
-        return;
-    }
+    // Nếu nút bị disable về mặt hiển thị thì chặn click
+    if (!isExamOpen && !isPractice && !isCompleted) return;
 
     setLoading(true);
     try {
       const testId = exam.id;
-      // Fallback lấy userId nếu chưa được truyền vào
       let userId = currentUserId;
+      
+      // Fallback lấy userId
       if (!userId) {
-         // Thử lấy lại user nếu prop bị thiếu (Safety check)
          try {
             const res = await fetch('/api/user');
             const data = await res.json();
@@ -117,17 +113,18 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
       }
 
       console.log('Starting trial for testId:', testId, 'userId:', userId);
-      const payload = { testId, userId };
       
-      // Gọi API create trial
-      const res = await api.trials.create(payload);
+      // Gọi API tạo lượt thi
+      const res = await api.trials.create({ testId, userId });
       
       const trial = res?.data;
-      const NotAllowed = res?.alreadyDone;
+      const isAlreadyDone = res?.alreadyDone;
 
-      if (NotAllowed) {
+      if (isAlreadyDone) {
+        // Nếu Backend bảo đã làm rồi (với bài thi Exam 1 lần) -> Hiện thông báo
         setShowNotification(true);
       } else if (trial && trial.trial_id) {
+        // Nếu tạo được (hoặc là Practice) -> Chuyển trang
         router.push(`/exam/${trial.trial_id}`);
       }
     } catch (err: any) {
@@ -137,7 +134,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
     }
   };
 
-  // --- RENDER HELPERS ---
+  // --- UI HELPERS ---
   const renderStatusBadge = () => {
     if (timeLeft) {
       return (
@@ -166,7 +163,8 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
 
   const getButtonText = () => {
     if (loading) return 'Đang xử lý...';
-    if (isCompleted) return 'Thi Lại';
+    if (isCompleted) return 'Thi lại';
+    
     if (!isExamOpen && !isPractice) {
         const now = new Date().getTime();
         const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
@@ -185,21 +183,20 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
         isCompleted ? 'bg-green-50/40 border-green-200' : 'bg-white border-gray-100 hover:border-blue-300'
       }`}>
       
+      {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <span className="text-[10px] text-gray-500 font-semibold bg-white/60 px-2 py-1 rounded border border-gray-100">
           {new Date(exam.date).toLocaleDateString('vi-VN')}
         </span>
-        
         <div className="flex gap-1 items-center">
             {renderStatusBadge()}
             {exam.isVip && (
-              <span className="bg-gray-900 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500 shadow-sm ml-1">
-                VIP
-              </span>
+              <span className="bg-gray-900 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500 shadow-sm ml-1">VIP</span>
             )}
-          </div>
         </div>
+      </div>
 
+      {/* Title */}
       <h3
         className={`font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] transition-colors ${
             isLockedVisual ? 'text-gray-500 cursor-not-allowed' : 'text-gray-800 group-hover:text-blue-600 cursor-pointer'
@@ -210,6 +207,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
         {exam.title}
       </h3>
 
+      {/* Info Stats */}
       <div className="space-y-2 mb-4 border-t border-gray-100/50 pt-3">
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -218,14 +216,16 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
           </svg>
           <span>Bạn đã thi: {exam.totalTrials} lần</span>
         </div>
-        
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <span>{exam.duration} phút</span>
         </div>
       </div>
 
+      {/* Buttons */}
       <div className="flex gap-2 mt-auto">
+        
+        {/* NÚT TRÁI: CHI TIẾT */}
         <button
           onClick={() => onSelect(exam)}
           disabled={isLockedVisual}
@@ -236,10 +236,10 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
               : 'text-gray-600 bg-white hover:bg-gray-50 border-gray-200'
           }`}
         >
-          {isCompleted ? 'Kết quả' : 'Chi tiết'}
+          Chi tiết
         </button>
         
-        {/* NÚT THI */}
+        {/* NÚT PHẢI: THI NGAY / THI LẠI */}
         {(!isExamOpen && !isPractice && !isCompleted) ? (
             <button disabled className={`flex-1 py-2 text-white text-xs font-medium rounded-lg cursor-not-allowed shadow-sm ${
                 timeLeft ? 'bg-orange-400' : 'bg-gray-400'
@@ -252,7 +252,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
                 disabled={loading}
                 className={`flex-1 py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${
                   isCompleted
-                    ? 'bg-green-600 hover:bg-green-700 shadow-green-200 hover:shadow-green-300' 
+                    ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300' 
                     : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
                 } ${loading ? 'opacity-70 cursor-wait' : ''}`}>
                  {getButtonText()}
@@ -261,7 +261,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
       </div>
     </div>
 
-    {/* PORTAL THÔNG BÁO */}
+    {/* Notification: Đã thi rồi */}
     {mounted && showNotification && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200">
@@ -273,7 +273,8 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Thông báo</h3>
               <p className="text-sm text-gray-600 mb-6">
-                Bạn đã tham gia kỳ thi này rồi. <br /> Vui lòng không tham gia lại.
+                Bạn đã hoàn thành kỳ thi này. <br/> 
+                Bài thi này chỉ được phép làm 1 lần.
               </p>
               <button
                 onClick={() => setShowNotification(false)}

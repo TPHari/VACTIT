@@ -7,21 +7,9 @@ import ExamCard, { ExamData } from './ExamCard';
 import ExamModal from './ExamModal';
 import Loading from '../ui/LoadingSpinner';
 
-interface ExamUI {
-    id: string;
-    title: string;
-    author: string;
-    questions: number; // Lưu ý: Biến này đang chứa số lượng trials (lượt làm bài)
-    duration: number;
-    date: string;
-    status: string;
-    type: string;
-    subject: string;
-}
-
 export default function ExamList() {
-    const searchParams = useSearchParams();
-    const searchQuery = searchParams.get('query')?.toLowerCase() || '';
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('query')?.toLowerCase() || '';
 
   // State lưu User ID
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
@@ -44,34 +32,38 @@ export default function ExamList() {
   const [loading, setLoading] = useState(true);
   const [selectedExam, setSelectedExam] = useState<ExamData | null>(null);
   
-  // [KHÔI PHỤC] State sắp xếp
+  // State sắp xếp
   const [sortOrder, setSortOrder] = useState('newest'); 
 
-  // 1. Fetch User Info
+  // --- LOGIC FETCH DATA ---
   useEffect(() => {
-    fetch('/api/user')
-      .then(res => res.json())
-      .then(data => {
-        const userObj = data.user || data.data?.user || data;
-        if (userObj) {
-           const uid = userObj.user_id || userObj.id || userObj.email;
-           if (uid) setCurrentUserId(uid);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    const initData = async () => {
+      setLoading(true); // Bắt đầu load
+      
+      let fetchedUserId = undefined;
 
-  // 2. Fetch Exams & Grouping Logic
-  useEffect(() => {
-    const fetchAndGroupExams = async () => {
-      setLoading(true);
+      // BƯỚC 1: Lấy User Info trước
+      try {
+        const userRes = await fetch('/api/user');
+        const userData = await userRes.json();
+        const userObj = userData.user || userData.data?.user || userData;
+        
+        if (userObj) {
+           fetchedUserId = userObj.user_id || userObj.id || userObj.email;
+           setCurrentUserId(fetchedUserId); // Lưu vào state để dùng cho UI
+        }
+      } catch (e) {
+        console.error("Failed to fetch user (guest mode)", e);
+      }
+
+      // BƯỚC 2: Lấy Exams (Dùng fetchedUserId vừa lấy được ngay lập tức)
       try {
         const response = await api.tests.getAll({
           query: searchQuery,
           category: 'all', 
           limit: 100, 
-          userId: currentUserId,
-          sort: sortOrder, // [QUAN TRỌNG] Truyền tham số sort xuống backend
+          userId: fetchedUserId, // Truyền trực tiếp biến, không đợi state
+          sort: sortOrder, 
         });
 
         const rawData = response.data || [];
@@ -130,13 +122,15 @@ export default function ExamList() {
       } catch (error) {
         console.error("Failed to fetch exams:", error);
       } finally {
+        // BƯỚC 3: Chỉ tắt loading khi CẢ 2 bước trên đã xong
         setLoading(false);
       }
     };
 
-    fetchAndGroupExams();
-  // Thêm sortOrder vào dependency để khi đổi sort thì fetch lại
-  }, [searchQuery, currentUserId, sortOrder]); 
+    initData();
+  
+  // Bỏ currentUserId khỏi dependency để tránh loop, chỉ chạy lại khi search/sort đổi
+  }, [searchQuery, sortOrder]); 
 
   // Component hiển thị Section Header
   const SectionHeader = ({ title, icon, colorClass, count }: any) => {
@@ -152,7 +146,7 @@ export default function ExamList() {
 
   return (
     <>
-      {/* --- PHẦN 0: HEADER & SORT CONTROL (Đã khôi phục) --- */}
+      {/* --- PHẦN 0: HEADER & SORT CONTROL --- */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
          <div>
             <h1 className="text-2xl font-bold text-gray-800">Danh sách kỳ thi</h1>
@@ -211,7 +205,7 @@ export default function ExamList() {
                 <span className="w-2 h-2 rounded-full bg-gray-400"></span>
                 <div className="text-xs">
                     <p className="font-bold text-gray-800">Đã kết thúc</p>
-                    <p className="text-gray-500">Không thể thi lại</p>
+                    <p className="text-gray-500">Chỉ xem lại</p>
                 </div>
             </div>
             <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
@@ -235,7 +229,12 @@ export default function ExamList() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {groupedExams.inProgress.map(exam => (
                         <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
-                            <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="in_progress" />
+                            <ExamCard 
+                                exam={exam} 
+                                onSelect={() => setSelectedExam(exam)} 
+                                categoryContext="in_progress"
+                                currentUserId={currentUserId}
+                            />
                         </div>
                     ))}
                 </div>
@@ -245,7 +244,12 @@ export default function ExamList() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {groupedExams.countdown.map(exam => (
                         <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
-                            <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="countdown" />
+                            <ExamCard 
+                                exam={exam} 
+                                onSelect={() => setSelectedExam(exam)} 
+                                categoryContext="countdown"
+                                currentUserId={currentUserId}
+                            />
                         </div>
                     ))}
                 </div>
@@ -255,7 +259,12 @@ export default function ExamList() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {groupedExams.upcoming.map(exam => (
                         <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
-                            <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="upcoming" />
+                            <ExamCard 
+                                exam={exam} 
+                                onSelect={() => setSelectedExam(exam)} 
+                                categoryContext="upcoming"
+                                currentUserId={currentUserId}
+                            />
                         </div>
                     ))}
                 </div>
@@ -265,7 +274,12 @@ export default function ExamList() {
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {groupedExams.locked.map(exam => (
                         <div key={exam.id} className="h-full opacity-90 hover:opacity-100 transition-opacity">
-                            <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="locked" />
+                            <ExamCard 
+                                exam={exam} 
+                                onSelect={() => setSelectedExam(exam)} 
+                                categoryContext="locked"
+                                currentUserId={currentUserId}
+                            />
                         </div>
                     ))}
                 </div>
@@ -275,7 +289,12 @@ export default function ExamList() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {groupedExams.practice.map(exam => (
                         <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
-                            <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="practice" />
+                            <ExamCard 
+                                exam={exam} 
+                                onSelect={() => setSelectedExam(exam)} 
+                                categoryContext="practice"
+                                currentUserId={currentUserId}
+                            />
                         </div>
                     ))}
                 </div>
@@ -290,12 +309,12 @@ export default function ExamList() {
         )}
       </div>
 
-            {selectedExam && (
-                <ExamModal
-                    exam={selectedExam}
-                    onClose={() => setSelectedExam(null)}
-                />
-            )}
-        </>
-    );
+      {selectedExam && (
+        <ExamModal
+            exam={selectedExam}
+            onClose={() => setSelectedExam(null)}
+        />
+      )}
+    </>
+  );
 }

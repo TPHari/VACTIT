@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TeacherList from '@/components/teachers/TeacherList';
+import TeacherDetailModal from '@/components/teachers/TeacherDetailModal'; 
 
 const MOCK_TEACHERS = [
   {
     id: 't-tran-phuoc-hai',
-    name: 'Trần Phước Hải',
+    name: 'Trần Phước Hải',
     image: '/uploads/teachers-test/teacher1-test.jpg',
     badges: [
       'Phụ trách phần Toán học',
@@ -46,46 +47,7 @@ const MOCK_TEACHERS = [
 ];
 
 export default function TeachersPage() {
-  const [teachers, setTeachers] = useState<Array<any>>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      setLoading(true);
-      try {
-        const response = await api.teachers.getAll();
-        const rawData = response.data || [];
-
-        const formattedData = rawData.map((t: any) => {
-          const badges = ['Giảng viên'];
-          
-          const testCount = t._count?.authoredTests || 0;
-          if (testCount > 0) {
-            badges.push(`${testCount} đề thi`);
-          }
-
-          return {
-            id: t.user_id,
-            name: t.name,
-            email: t.email,
-            phone: t.phone,
-            role: t.role || 'Author',
-            image: '/uploads/teachers-test/teachers-test.jpg',
-            badges: badges,
-          };
-        });
-
-        setTeachers(formattedData);
-      } catch (error) {
-        console.error("Failed to fetch teachers:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTeachers();
-  }, []);
 
   return (
     <DashboardLayout>
@@ -94,13 +56,17 @@ export default function TeachersPage() {
           <div className="flex-1 overflow-hidden">
             <main
               className="p-6 h-full overflow-auto"
-              style={{ maxHeight: 'calc(100vh - 72px)' }} // adjust if Topbar height differs
+              style={{ maxHeight: 'calc(100vh - 72px)' }}
             >
               <header className="mb-6">
                 <h1 className="text-2xl sm:text-3xl font-semibold text-brand-text">Đội ngũ giảng dạy</h1>
               </header>
 
-              <TeacherList items={MOCK_TEACHERS} />
+              {/* Truyền mock data vào và xử lý sự kiện click để mở modal */}
+              <TeacherList 
+                items={MOCK_TEACHERS} 
+                onSelect={(teacher) => setSelectedTeacher(teacher)} 
+              />
             </main>
           </div>
         </div>
