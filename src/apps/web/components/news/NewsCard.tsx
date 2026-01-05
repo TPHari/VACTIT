@@ -23,13 +23,12 @@ export default function NewsCard({ item }: { item: any }) {
 
         {/* footer always at bottom */}
         <div className="mt-3">
-          <Link
-            href={`/news/${item.id}`}
-            className="inline-flex items-center text-blue-600 font-medium"
+          <button
+            className="inline-flex items-center text-blue-600 font-medium hover:cursor-pointer hover:underline"
           >
             Đọc thêm
             <span className="ml-2 text-blue-600">→</span>
-          </Link>
+          </button>
         </div>
       </div>
     </article>

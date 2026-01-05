@@ -6,36 +6,17 @@ import TeacherList from '@/components/teachers/TeacherList';
 
 const MOCK_TEACHERS = [
   {
-    id: 't-phan-thi-dieu',
-    name: 'TS. Phạm Thị Diệu',
-    image: '/uploads/teachers-test/teachers-test.jpg',
-    badges: ['Giảng viên chính', 'Khoa Ngoại ngữ', 'Tiến sĩ - University of Oxford'],
-  },
-  {
-    id: 't-hoang-van-em',
-    name: 'TS. Hoàng Văn Em',
-    image: '/uploads/teachers-test/teachers-test.jpg',
-    badges: ['Giảng viên', 'Khoa Kinh tế', 'Tiến sĩ - Đại học Kinh tế TP.HCM'],
-  },
-  {
-    id: 't-vu-thi-phuong',
-    name: 'ThS. Vũ Thị Phương',
-    image: '/uploads/teachers-test/teachers-test.jpg',
-    badges: ['Giảng viên', 'Khoa Thiết kế Đồ họa', 'Thạc sĩ - Đại học Mỹ thuật Công nghiệp'],
-  },
-  // more examples
-  {
-    id: 't-nguyen-thi-a',
-    name: 'PGS.TS. Nguyễn Thị A',
-    image: '/uploads/teachers-test/teachers-test.jpg',
-    badges: ['Phó giáo sư', 'Khoa Toán', 'Tiến sĩ - University of Cambridge'],
-  },
-  {
-    id: 't-tran-van-b',
-    name: 'TS. Trần Văn B',
-    image: '/uploads/teachers-test/teachers-test.jpg',
-    badges: ['Giảng viên', 'Khoa Vật lý', 'Tiến sĩ - Đại học Quốc gia Hà Nội'],
-  },
+    id: 't-tran-phuoc-hai',
+    name: 'Trần Phước Hải',
+    image: '/uploads/teachers-test/teacher1-test.jpg',
+    badges: ["Cựu chuyên Toán THPT Chuyên Lê Quý Đôn Đà Nẵng",
+             "Giải Nhất HSG Toán Quốc gia 2022-2023",
+             "Á Khoa TP Đà Nẵng năm 2023",
+              "Sở hữu 4 điểm 1000+ ĐGNL HCM",
+              "Hơn hai năm kinh nghiệm dạy luyện thi ĐGNL HCM, có nhiều học trò đạt 900+, 1000+",
+              "Đang theo học ngành Khoa học máy tính - Trường ĐH Khoa học Tự nhiên - ĐHQG HCM"
+            ],
+  }
 ];
 
 export default function TeachersPage() {

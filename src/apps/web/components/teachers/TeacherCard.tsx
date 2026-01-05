@@ -15,24 +15,24 @@ export default function TeacherCard({ teacher }: { teacher: any }) {
 <div className="flex flex-col flex-1 p-4">
         <h3 className="text-sm font-semibold mb-2">{teacher.name}</h3>
 
-        <ul className="text-xs text-gray-600 space-y-2 mb-3">
+        <ul className="text-sm text-gray-600 space-y-2 mb-3">
           {teacher.badges?.map((b: string, i: number) => (
             <li key={i} className="flex items-start gap-3">
-              <span className="mt-1 inline-block w-2 h-2 rounded-full bg-yellow-500" />
-              <span className="text-sm">{b}</span>
+              <span className="flex-shrink-0 mt-1.5 inline-block w-2 h-2 rounded-full bg-yellow-500" />
+              <span className="">{b}</span>
             </li>
           ))}
         </ul>
 
         {/* ensure button stays at bottom */}
-        <div className="mt-auto">
+        {/* <div className="mt-auto">
           <Link
             href={`/teachers/${teacher.id}`}
             className="block text-center w-full bg-blue-600 text-white py-2 rounded-full text-sm font-medium hover:bg-blue-700 transition"
           >
             Tìm hiểu thêm
           </Link>
-        </div>
+        </div> */}
       </div>
     </article>
   );
