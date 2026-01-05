@@ -1,13 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TeacherList from '@/components/teachers/TeacherList';
+import TeacherDetailModal from '@/components/teachers/TeacherDetailModal'; 
 
 const MOCK_TEACHERS = [
   {
     id: 't-tran-phuoc-hai',
-    name: 'Trần Phước Hải',
+    name: 'Trần Phước Hải',
     image: '/uploads/teachers-test/teacher1-test.jpg',
     badges: [
       'Phụ trách phần Toán học',
@@ -46,28 +47,38 @@ const MOCK_TEACHERS = [
 ];
 
 export default function TeachersPage() {
-  const [teachers, setTeachers] = React.useState<Array<any>>([]);
+  const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
+
   return (
     <DashboardLayout>
       <div className="min-h-screen flex bg-gray-50">
-
         <div className="flex-1 flex flex-col">
-
-          {/* content area: keep topbar fixed and make list scrollable */}
           <div className="flex-1 overflow-hidden">
             <main
               className="p-6 h-full overflow-auto"
-              style={{ maxHeight: 'calc(100vh - 72px)' }} // adjust if Topbar height differs
+              style={{ maxHeight: 'calc(100vh - 72px)' }}
             >
               <header className="mb-6">
                 <h1 className="text-2xl sm:text-3xl font-semibold text-brand-text">Đội ngũ giảng dạy</h1>
               </header>
 
-              <TeacherList items={MOCK_TEACHERS} />
+              {/* Truyền mock data vào và xử lý sự kiện click để mở modal */}
+              <TeacherList 
+                items={MOCK_TEACHERS} 
+                onSelect={(teacher) => setSelectedTeacher(teacher)} 
+              />
             </main>
           </div>
         </div>
       </div>
+
+      {/* Hiển thị Modal khi có SelectedTeacher */}
+      {selectedTeacher && (
+        <TeacherDetailModal 
+          teacher={selectedTeacher} 
+          onClose={() => setSelectedTeacher(null)} 
+        />
+      )}
     </DashboardLayout>
   );
 }

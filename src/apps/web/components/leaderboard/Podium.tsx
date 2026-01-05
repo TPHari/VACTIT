@@ -1,6 +1,16 @@
+'use client';
+
 import React from 'react';
-import Image from 'next/image';
-import { LeaderboardUser } from '../../mockData/mockLeaderboard';
+// import Image from 'next/image'; // Tạm thời dùng thẻ <img> thường để tránh lỗi domain config nếu avatar từ nguồn ngoài (Google/UI Avatars)
+
+// 1. Định nghĩa lại Interface tại đây (hoặc chuyển vào file types chung)
+// Để khớp với dữ liệu từ API
+export interface LeaderboardUser {
+  id: string;
+  name: string;
+  avatar: string;
+  score: number;
+}
 
 // Component hiển thị 1 người trên bục
 const PodiumStep = ({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) => {
@@ -14,11 +24,19 @@ const PodiumStep = ({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) 
   const style = config[rank];
 
   return (
-    <div className="flex flex-col items-center justify-end group">
+    <div className="flex flex-col items-center justify-end group w-full">
       {/* Avatar bay lên bay xuống animation nhẹ */}
       <div className={`relative mb-2 transition-transform duration-300 group-hover:-translate-y-2`}>
-        <div className={`w-16 h-16 rounded-full border-4 ${style.ring} overflow-hidden shadow-lg`}>
-           <Image src={user.avatar} alt={user.name} width={64} height={64} className="object-cover" />
+        <div className={`w-16 h-16 rounded-full border-4 ${style.ring} overflow-hidden shadow-lg bg-white`}>
+            {/* Sử dụng img thường để tránh lỗi Next.js Image Domain config với ảnh external */}
+            <img 
+              src={user.avatar || '/default-avatar.png'} 
+              alt={user.name} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${user.name}&background=random`;
+              }} 
+            />
         </div>
         <div className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md text-lg">
            {style.icon}
@@ -26,9 +44,13 @@ const PodiumStep = ({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) 
       </div>
 
       {/* Info */}
-      <div className="text-center mb-2">
-        <p className="font-bold text-gray-800 text-sm truncate max-w-[100px]">{user.name}</p>
-        <p className="font-extrabold text-blue-600 text-lg">{user.score}</p>
+      <div className="text-center mb-2 w-full px-1">
+        <p className="font-bold text-gray-800 text-sm truncate w-full" title={user.name}>
+            {user.name}
+        </p>
+        <p className="font-extrabold text-blue-600 text-lg">
+            {user.score}
+        </p>
       </div>
 
       {/* Cái bục */}
@@ -42,20 +64,40 @@ const PodiumStep = ({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) 
 
 export default function Podium({ top3 }: { top3: LeaderboardUser[] }) {
   // Logic sắp xếp: Hạng 2 (Trái) - Hạng 1 (Giữa) - Hạng 3 (Phải)
-  // top3 đầu vào đang là [1, 2, 3]
   
-  if (top3.length < 3) return null;
+  // Nếu không có ai thì ẩn luôn
+  if (!top3 || top3.length === 0) return null;
+
+  // An toàn lấy user từng hạng (có thể undefined nếu chưa đủ 3 người)
+  const first = top3[0];
+  const second = top3[1];
+  const third = top3[2];
 
   return (
-    <div className="flex items-end justify-center gap-4 w-full max-w-lg mx-auto mb-10 pt-8 px-4">
-      <div className="w-1/3 order-1">
-         <PodiumStep user={top3[1]} rank={2} />
+    <div className="flex items-end justify-center gap-4 w-full max-w-lg mx-auto mb-10 pt-8 px-4 h-64">
+      
+      {/* Cột Hạng 2 (Bên trái) */}
+      <div className="w-1/3 order-1 flex justify-center">
+         {second ? (
+            <PodiumStep user={second} rank={2} />
+         ) : (
+            // Placeholder rỗng để giữ layout nếu chưa có hạng 2
+            <div className="w-full h-32"></div> 
+         )}
       </div>
-      <div className="w-1/3 order-2 -mt-8"> {/* Hạng 1 cao hơn chút */}
-         <PodiumStep user={top3[0]} rank={1} />
+
+      {/* Cột Hạng 1 (Ở giữa - Cao nhất) */}
+      <div className="w-1/3 order-2 -mt-8 flex justify-center z-10"> 
+         {first && <PodiumStep user={first} rank={1} />}
       </div>
-      <div className="w-1/3 order-3">
-         <PodiumStep user={top3[2]} rank={3} />
+
+      {/* Cột Hạng 3 (Bên phải) */}
+      <div className="w-1/3 order-3 flex justify-center">
+         {third ? (
+            <PodiumStep user={third} rank={3} />
+         ) : (
+            <div className="w-full h-24"></div>
+         )}
       </div>
     </div>
   );

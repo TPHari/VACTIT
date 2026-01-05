@@ -1,6 +1,11 @@
-import Link from 'next/link';
+import React from 'react';
 
-export default function TeacherCard({ teacher }: { teacher: any }) {
+interface TeacherCardProps {
+  teacher: any;
+  onSelect: (teacher: any) => void; // Thêm prop để báo cho cha biết khi được click
+}
+
+export default function TeacherCard({ teacher, onSelect }: TeacherCardProps) {
   return (
     <article className="bg-white rounded-2x1 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col h-full">
       <div className="w-full overflow-hidden rounded-t-2xl bg-gray-100 relative" style={{ paddingTop: '100%' }}>
@@ -9,6 +14,8 @@ export default function TeacherCard({ teacher }: { teacher: any }) {
           alt={teacher.name}
           className="absolute top-0 left-0 w-full h-full object-cover object-center"
         />
+        {/* Overlay effect on hover */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
       </div>
 
       <div className="flex flex-col flex-1 p-6">
