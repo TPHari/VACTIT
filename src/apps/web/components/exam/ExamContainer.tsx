@@ -215,7 +215,7 @@ export default function ExamContainer({
     setShowExitModal(false);
   }
   return (
-    <div className="bg-white rounded-lg shadow px-4 h-full flex flex-col relative">
+    <div className="bg-white shadow px-4 h-full flex flex-col relative">
       <Controls
         startAt={Date.now()}
         testData={testData}
@@ -317,7 +317,7 @@ export default function ExamContainer({
 
       {/* Exit Modal */}
       {showExitModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 rounded-lg">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-[420px] bg-white rounded-xl shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Thoát khỏi bài thi</h3>
             <p className="text-sm text-gray-600 mb-6">Bạn chưa nộp bài, nếu rời đi bạn sẽ mất tất cả các câu trả lời đã điền.</p>
