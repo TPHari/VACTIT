@@ -1,72 +1,119 @@
 import { FastifyInstance } from 'fastify';
 
+// Hàm tính điểm từ JSONB (an toàn với dữ liệu null/undefined)
+const calculateTotalScore = (processedScore: any): number => {
+  if (!processedScore || typeof processedScore !== 'object') return 0;
+
+  // Lấy giá trị, nếu không có thì mặc định là 0, sau đó làm tròn
+  const s1 = Math.round(Number(processedScore.score0_300_en) || 0);
+  const s2 = Math.round(Number(processedScore.score0_300_vi) || 0);
+  const s3 = Math.round(Number(processedScore.score0_300_sci) || 0);
+  const s4 = Math.round(Number(processedScore.score0_300_math) || 0);
+
+  // Tổng điểm cuối cùng
+  return s1 + s2 + s3 + s4;
+};
+
 export async function leaderboardRoutes(server: FastifyInstance) {
-  server.get('/api/leaderboard', async (request, reply) => {
+  
+  // 1. Lấy danh sách các bài thi thật (Exam) để hiển thị lên Dropdown
+  server.get('/api/leaderboard/exams', async (request, reply) => {
     try {
-      // 1. Lấy user và trials của họ (chỉ lấy Author/Student có làm bài)
-      // Lưu ý: Với dữ liệu lớn, nên dùng Raw SQL hoặc Aggregation. 
-      // Với quy mô nhỏ/vừa, cách này ổn và dễ hiểu.
-      const users = await server.prisma.user.findMany({
-        where: {
-          // Chỉ lấy những user đã từng làm bài thi
-          trials: {
-            some: {} 
-          }
+      const exams = await server.prisma.test.findMany({
+        where: { type: 'exam' },
+        select: { test_id: true, title: true },
+        orderBy: { start_time: 'desc' }
+      });
+      return { data: exams };
+    } catch (error) {
+      server.log.error(error);
+      return reply.status(500).send({ error: 'Failed to fetch exams' });
+    }
+  });
+
+  // 2. Lấy Leaderboard của 1 bài thi cụ thể
+  server.get<{ Querystring: { testId: string } }>('/api/leaderboard', async (request, reply) => {
+    try {
+      const { testId } = request.query;
+
+      if (!testId) {
+        return { data: [] }; // Không có testId thì trả về rỗng để tránh lỗi
+      }
+
+      // Lấy tất cả các lượt thi (trial) của bài thi này
+      const trials = await server.prisma.trial.findMany({
+        where: { 
+          test_id: testId,
+          test: { type: 'exam' } // Chỉ lấy bài thi thật
         },
-        select: {
-          user_id: true,
-          name: true,
-          trials: {
-            select: {
-              processed_score: true,
-              start_time: true,
-              end_time: true,
-            }
+        include: {
+          student: {
+            select: { user_id: true, name: true } // Lấy thông tin sinh viên
           }
         }
       });
 
-      // 2. Tính toán điểm số cho từng user
-      const leaderboardData = users.map(user => {
-        let totalScore = 0;
-        let totalTime = 0; // milliseconds
-
-        user.trials.forEach(trial => {
-          // Cộng điểm (chuyển Decimal sang Number)
-          totalScore += Number(trial.processed_score) || 0;
-          
-          // Tính thời gian làm bài
-          const start = new Date(trial.start_time).getTime();
-          const end = new Date(trial.end_time).getTime();
-          totalTime += (end - start);
-        });
-
-        const examCount = user.trials.length;
-        // Thời gian trung bình (phút)
-        const avgTimeMinutes = examCount > 0 
-          ? Math.floor((totalTime / examCount) / 60000) 
-          : 0;
+      // Map dữ liệu và tính điểm
+      const results = trials.map(trial => {
+        // Tính điểm từ processed_score (JSON)
+        const totalScore = calculateTotalScore(trial.processed_score);
+        
+        // Tính thời gian làm bài (phút)
+        const start = new Date(trial.start_time).getTime();
+        const end = trial.end_time ? new Date(trial.end_time).getTime() : new Date().getTime();
+        const durationMinutes = Math.floor((end - start) / 60000);
 
         return {
-          id: user.user_id,
-          name: user.name,
-          avatar:'/default-avatar.png', // Fallback ảnh
-          score: totalScore.toFixed(2), // Làm tròn 2 số thập phân
-          examCount: examCount,
-          time: `${avgTimeMinutes}p`, // Format: 30p
-          trend: 'same', // Logic trend cần lịch sử, tạm thời để 'same'
+          userId: trial.student_id,
+          name: trial.student?.name || 'Ẩn danh',
+          avatar: null, // Có thể bổ sung avatar nếu DB có
+          score: totalScore,
+          time: durationMinutes,
+          trialId: trial.trial_id
         };
       });
 
-      // 3. Sắp xếp: Điểm cao nhất lên đầu
-      leaderboardData.sort((a, b) => Number(b.score) - Number(a.score));
+      // Lọc kết quả tốt nhất của mỗi User (nếu thi lại)
+      // Logic: Điểm cao hơn lấy -> Nếu bằng điểm, lấy bài làm nhanh hơn
+      const bestResultsByUser = new Map<string, typeof results[0]>();
 
-      // 4. Trả về Top 100 (hoặc limit tùy ý)
-      return { data: leaderboardData.slice(0, 100) };
+      results.forEach(record => {
+        const currentBest = bestResultsByUser.get(record.userId);
+        
+        if (!currentBest) {
+          bestResultsByUser.set(record.userId, record);
+        } else {
+          if (record.score > currentBest.score) {
+            bestResultsByUser.set(record.userId, record);
+          } else if (record.score === currentBest.score && record.time < currentBest.time) {
+            bestResultsByUser.set(record.userId, record);
+          }
+        }
+      });
+
+      // Chuyển về mảng và sắp xếp
+      const leaderboard = Array.from(bestResultsByUser.values())
+        .sort((a, b) => {
+          // Ưu tiên điểm cao
+          if (b.score !== a.score) return b.score - a.score;
+          // Nếu điểm bằng nhau, ưu tiên thời gian ngắn
+          return a.time - b.time;
+        })
+        .map((item) => ({
+          id: item.userId,
+          name: item.name,
+          avatar: item.avatar,
+          score: item.score,
+          examCount: 1, 
+          time: `${item.time}p`,
+          trend: 'same'
+        }));
+
+      return { data: leaderboard };
 
     } catch (error) {
       server.log.error(error);
-      return reply.code(500).send({ error: 'Failed to fetch leaderboard' });
+      return reply.status(500).send({ error: 'Failed to fetch leaderboard' });
     }
   });
 }

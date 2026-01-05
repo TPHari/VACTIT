@@ -169,7 +169,11 @@ export const api = {
       delete: (teacherId: string) => apiClient.delete<any>(`/api/teachers?teacher_id=${encodeURIComponent(teacherId)}`),
   },
   leaderboard: {
-    get: () => apiClient.get<any>('/api/leaderboard'),
+    get: (testId?: string) => {
+        const query = testId ? `?testId=${testId}` : '';
+        return apiClient.get<any>(`/api/leaderboard${query}`);
+    },
+    getExams: () => apiClient.get<any>('/api/leaderboard/exams'),
   },
   news: {
     getAll: () => apiClient.get<any>('/api/news'),
