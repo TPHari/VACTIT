@@ -88,7 +88,7 @@ export default function ExamList() {
             author: item.author?.name || 'Unknown',
             questions: item._count?.questions || 0, 
             totalTrials: userTrials.length, 
-            duration: item.duration ? Math.floor(item.duration / 60) : 0,
+            duration: item.duration ? Number(item.duration) : 0,
             date: item.start_time || item.created_at || new Date().toISOString(),
             startTime: item.start_time,
             dueTime: item.due_time,
