@@ -1,7 +1,7 @@
 services:
   # Main Backend API (Node.js)
   - type: web
-    name: vactit-api
+    name: VACTIT 
     runtime: node
     region: singapore
     plan: free
