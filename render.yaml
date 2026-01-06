@@ -1,7 +1,7 @@
 services:
   # Main Backend API (Node.js)
   - type: web
-    name: VACTIT 
+    name: VACTIT
     runtime: node
     region: singapore
     plan: free
@@ -12,10 +12,7 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: vactit-redis
-          property: connectionString
+        sync: false  # Set manually from Upstash
       - key: FRONTEND_URL
         sync: false
       - key: NODE_ENV
@@ -42,11 +39,3 @@ services:
       - key: IRT_API_KEY
         sync: false
     autoDeploy: true
-
-  # Redis Cache
-  - type: redis
-    name: vactit-redis
-    region: singapore
-    plan: free
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
