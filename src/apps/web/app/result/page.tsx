@@ -17,6 +17,7 @@ import {
   inferTotalCorrectFromRawScore,
   renderOverallScore,
   attachIrtScores,
+  pickSubjectAdvice,
 } from "./_utils";
 
 
@@ -183,12 +184,32 @@ export default function ResultsPage() {
     [selectedTrial?.raw_score],
   );
 
+  const subjectAnalyses = useMemo(() => {
+    return subjects.map((subject) => {
+      const rawScore = subject.score0_300 ?? subject.correct * 10;
+      const score = Number.isFinite(rawScore) ? Math.round(Number(rawScore)) : null;
+      return {
+        id: subject.id,
+        title: subject.title,
+        correct: subject.correct,
+        score,
+        advice: pickSubjectAdvice(subject.id, score),
+        hasIrtScore: subject.score0_300 != null,
+      };
+    });
+  }, [subjects]);
+
   // You can replace this with a real AI analysis later
-  const analysisText = useMemo(() => {
+  const tacticSummary = useMemo(() => {
     if (!selectedTrialDetails) return "Đang tải phân tích...";
     const t = selectedTrialDetails.tactic as any;
     return (t?.summary && String(t.summary).trim()) || "Chưa có dữ liệu phân tích.";
   }, [selectedTrialDetails]);
+
+  const hasAdditionalSummary = useMemo(
+    () => tacticSummary && !["Đang tải phân tích...", "Chưa có dữ liệu phân tích."].includes(tacticSummary),
+    [tacticSummary],
+  );
 
 
   if (loading || detailsLoading) {
@@ -307,9 +328,47 @@ export default function ResultsPage() {
                     </h2>
                   </header>
 
-                  <p className="text-sm leading-relaxed text-brand-muted">
-                    {analysisText}
-                  </p>
+                  <div className="space-y-3 text-sm">
+                    {subjectAnalyses.map((subject) => (
+                      <div
+                        key={subject.id}
+                        className="rounded-lg border border-slate-200 bg-[#f8fafc] px-3 py-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-brand-text">
+                            {subject.title}
+                          </span>
+                          <span className="text-xs text-brand-muted">
+                            {subject.score != null
+                              ? subject.hasIrtScore
+                                ? `${subject.score} điểm`
+                                : `${subject.correct}/30 câu · ${subject.score} điểm quy đổi`
+                              : "Chưa có điểm"}
+                          </span>
+                        </div>
+                        <p className="mt-1 leading-relaxed text-brand-muted">
+                          {subject.advice ?? "Chưa có dữ liệu lời khuyên cho phần thi này."}
+                        </p>
+                      </div>
+                    ))}
+
+                    {hasAdditionalSummary && (
+                      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                          Ghi chú thêm
+                        </p>
+                        <p className="mt-1 leading-relaxed text-brand-muted">
+                          {tacticSummary}
+                        </p>
+                      </div>
+                    )}
+
+                    {!subjectAnalyses.length && !hasAdditionalSummary && (
+                      <p className="leading-relaxed text-brand-muted">
+                        Chưa có dữ liệu phân tích.
+                      </p>
+                    )}
+                  </div>
                 </section>
 
                 {/* Lịch sử thi – max 4 rows visible, then scroll */}

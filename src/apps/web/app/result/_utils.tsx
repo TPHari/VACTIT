@@ -1,4 +1,5 @@
 import type { SubjectSummary, TrialDetails } from "./_types";
+import { SUBJECT_TACTICS } from "./_tactics";
 
 export function formatDateVN(iso: string) {
   const d = new Date(iso);
@@ -124,4 +125,17 @@ export function attachIrtScores(subjects: SubjectSummary[], processedScore: any)
 
     return { ...s, score0_300: Math.round(v) }; 
   });
+}
+
+export function pickSubjectAdvice(subjectId: string, score: number | null | undefined) {
+  if (!Number.isFinite(score)) return null;
+  const bands = SUBJECT_TACTICS[subjectId];
+  if (!bands || !bands.length) return null;
+
+  const numericScore = Number(score);
+  const matched = bands.find((band) =>
+    numericScore >= band.min && numericScore <= band.max,
+  );
+
+  return matched?.message ?? null;
 }
