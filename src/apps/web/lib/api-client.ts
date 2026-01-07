@@ -57,6 +57,21 @@ export class ApiClient {
     return response.json();
   }
 
+  async patch<T>(endpoint: string, data: any): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+         let errorMessage = `API Error: ${response.status}`;
+         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
+         throw new Error(errorMessage);
+    }
+    return response.json();
+  }
+
   async delete<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'DELETE',
@@ -200,6 +215,25 @@ export const api = {
           return fetch('/api/admin/tests', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json());
         }
         return apiClient.put<any>('/api/admin/tests', data);
+      },
+    },
+    users: {
+      list: () => {
+        if (typeof window !== 'undefined') {
+          return fetch('/api/admin/users').then(r => r.json());
+        }
+        return apiClient.get<any>('/api/admin/users');
+      },
+      updateRole: (userId: string, role: 'Student' | 'Admin') => {
+        const payload = { userId, role };
+        if (typeof window !== 'undefined') {
+          return fetch('/api/admin/users', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }).then(r => r.json());
+        }
+        return apiClient.patch<any>('/api/admin/users', payload);
       },
     },
   },
