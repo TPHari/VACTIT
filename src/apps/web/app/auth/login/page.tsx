@@ -49,13 +49,13 @@ export default function LoginPage() {
     <div className="min-h-screen flex font-sans">
       {/* --- LEFT PANEL --- */}
       <div className="hidden md:flex w-1/2 bg-[#2563EB] text-white flex-col items-center px-12 py-10 relative overflow-hidden">
-        
+
         {/* 1. Logo Section (Logo + Text) */}
         <div className="flex flex-col items-center gap-2 mt-8 z-10">
           <div className="w-20 h-20 relative">
-             {/* Sử dụng file logo.png và ép màu vàng bằng CSS Filter */}
-            <img 
-              src="/assets/logos/logo.png" 
+            {/* Sử dụng file logo.png và ép màu vàng bằng CSS Filter */}
+            <img
+              src="/assets/logos/logo.png"
               alt="BAILEARN Logo"
               className="w-full h-full object-contain"
               // Filter này chuyển đổi màu gốc của ảnh (thường là đen/trắng) sang màu Vàng (#FFD700)
@@ -71,37 +71,37 @@ export default function LoginPage() {
         {/* 2. Main Illustration (vaothingay.png) */}
         {/* Đẩy hình lên một chút bằng pb-20 để không đè vào chữ Chào bạn ở dưới */}
         <div className="flex-1 flex items-center justify-center w-full z-10 pb-20">
-           <div className="relative w-full max-w-md h-64 md:h-80 flex items-center justify-center">
-              <img 
-                src="/assets/logos/vaothingay.png"
-                alt="Illustration"
-                className="w-full h-full object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-500"
-              />
-           </div>
+          <div className="relative w-full max-w-md h-64 md:h-80 flex items-center justify-center">
+            <img
+              src="/assets/logos/vaothingay.png"
+              alt="Illustration"
+              className="w-full h-full object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-500"
+            />
+          </div>
         </div>
 
         {/* 3. Text 'Chào bạn!' - Nằm góc dưới bên trái */}
         <div className="absolute bottom-28 left-12 z-10">
-           <h2 className="text-4xl font-normal">Chào bạn!</h2>
+          <h2 className="text-4xl font-normal">Chào bạn!</h2>
         </div>
 
         {/* 4. Pagination Dots - CĂN GIỮA VÀ NẰM DƯỚI CÙNG */}
         <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10 flex gap-4">
-             <div className="w-3 h-3 rounded-full bg-white cursor-pointer hover:bg-gray-200 transition-colors" />
-             <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors rounded-sm" />
-             <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors transform rotate-45 rounded-sm" />
+          <div className="w-3 h-3 rounded-full bg-white cursor-pointer hover:bg-gray-200 transition-colors" />
+          <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors rounded-sm" />
+          <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors transform rotate-45 rounded-sm" />
         </div>
       </div>
 
       {/* --- RIGHT PANEL --- */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
-          
+
           {/* Header */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h1>
             <p className="text-sm text-gray-500 max-w-xs mx-auto">
-              Câu này có thể là tagline hoặc mục đích của app này nha
+              Chào bạn đã đến với web thi thử ĐGNL HCM của BaiLearn !
             </p>
           </div>
 
@@ -128,8 +128,8 @@ export default function LoginPage() {
                 aria-invalid={!!errors.password}
               />
               {/* Eye Icon Button */}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)} // Thêm sự kiện click
                 className="absolute right-5 top-3.5 text-gray-400 hover:text-gray-600 focus:outline-none"
               >
@@ -152,11 +152,11 @@ export default function LoginPage() {
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between text-sm px-2">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={remember} 
-                  onChange={() => setRemember((s) => !s)} 
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={() => setRemember((s) => !s)}
+                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-gray-500">Ghi nhớ tôi khi đăng nhập</span>
               </label>
