@@ -6,6 +6,8 @@ import { authOptions } from '@/lib/validations/auth';
 import { getPrisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'Admin - VACTIT',
 };
