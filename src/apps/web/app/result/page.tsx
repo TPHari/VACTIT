@@ -20,7 +20,6 @@ import {
   pickSubjectAdvice,
 } from "./_utils";
 
-
 export default function ResultsPage() {
   const router = useRouter();
 
@@ -31,7 +30,8 @@ export default function ResultsPage() {
   const [selectedTrialId, setSelectedTrialId] = useState<string>("");
 
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [selectedTrialDetails, setSelectedTrialDetails] = useState<TrialDetails | null>(null);
+  const [selectedTrialDetails, setSelectedTrialDetails] =
+    useState<TrialDetails | null>(null);
 
   // 0) Load user
   const [user, setUser] = useState<any>(null);
@@ -152,7 +152,6 @@ export default function ResultsPage() {
     };
   }, [selectedTrialId]);
 
-
   const selectedTrial = useMemo(
     () => trials.find((t) => t.trial_id === selectedTrialId) ?? null,
     [trials, selectedTrialId],
@@ -168,9 +167,12 @@ export default function ResultsPage() {
       }));
     }
 
-    return computeAllAnswers(selectedTrialDetails.responses || [], TOTAL_QUESTIONS);
+    return computeAllAnswers(
+      selectedTrialDetails.responses || [],
+      TOTAL_QUESTIONS,
+    );
   }, [selectedTrialDetails]);
-  
+
   const isExam = selectedTrial?.test?.type === "exam";
 
   const subjects = useMemo(() => {
@@ -187,7 +189,9 @@ export default function ResultsPage() {
   const subjectAnalyses = useMemo(() => {
     return subjects.map((subject) => {
       const rawScore = subject.score0_300 ?? subject.correct * 10;
-      const score = Number.isFinite(rawScore) ? Math.round(Number(rawScore)) : null;
+      const score = Number.isFinite(rawScore)
+        ? Math.round(Number(rawScore))
+        : null;
       return {
         id: subject.id,
         title: subject.title,
@@ -203,19 +207,22 @@ export default function ResultsPage() {
   const tacticSummary = useMemo(() => {
     if (!selectedTrialDetails) return "Đang tải phân tích...";
     const t = selectedTrialDetails.tactic as any;
-    return (t?.summary && String(t.summary).trim()) || "Chưa có dữ liệu phân tích.";
+    return (
+      (t?.summary && String(t.summary).trim()) || "Chưa có dữ liệu phân tích."
+    );
   }, [selectedTrialDetails]);
 
   const hasAdditionalSummary = useMemo(
-    () => tacticSummary && !["Đang tải phân tích...", "Chưa có dữ liệu phân tích."].includes(tacticSummary),
+    () =>
+      tacticSummary &&
+      !["Đang tải phân tích...", "Chưa có dữ liệu phân tích."].includes(
+        tacticSummary,
+      ),
     [tacticSummary],
   );
 
-
   if (loading || detailsLoading) {
-    return (
-      <Loading />
-    );
+    return <Loading />;
   }
 
   if (error) {
@@ -286,17 +293,17 @@ export default function ResultsPage() {
                 {/* Tổng điểm */}
                 <div className="flex flex-1 flex-col justify-between rounded-card rounded-xl bg-white p-4 shadow-card">
                   <p className="text-xs font-medium text-brand-muted text-center">
-                    {selectedTrialDetails?.test.type === "exam" ?
-                      "Tổng điểm (IRT)" : "Tổng điểm luyện tập"}
+                    {selectedTrialDetails?.test.type === "exam"
+                      ? "Tổng điểm (IRT)"
+                      : "Tổng điểm luyện tập"}
                   </p>
 
                   <p className="mt-1 text-5xl font-bold text-brand-text text-center">
                     {renderOverallScore(
                       selectedTrialDetails?.test.type === "exam",
                       selectedTrial?.raw_score,
-                      selectedTrial?.processed_score
+                      selectedTrial?.processed_score,
                     )}
-
                   </p>
 
                   <p className="mt-1 text-xs text-brand-muted text-center">
@@ -311,7 +318,6 @@ export default function ResultsPage() {
                       Đang tải chi tiết bài làm...
                     </p>
                   )}
-
                 </div>
               </div>
 
@@ -347,7 +353,16 @@ export default function ResultsPage() {
                           </span>
                         </div>
                         <p className="mt-1 leading-relaxed text-brand-muted">
-                          {subject.advice ?? "Chưa có dữ liệu lời khuyên cho phần thi này."}
+                          {subject.advice
+                            ? subject.advice
+                                .split("\n")
+                                .map((line, idx, arr) => (
+                                  <span key={idx}>
+                                    {line}
+                                    {idx < arr.length - 1 && <br />}
+                                  </span>
+                                ))
+                            : "Chưa có dữ liệu lời khuyên cho phần thi này."}
                         </p>
                       </div>
                     ))}
@@ -398,20 +413,30 @@ export default function ResultsPage() {
                           className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr]
                           items-center
                           border-b border-slate-100 py-2 text-left transition cursor-pointer
-                          ${isActive
-                            ? "rounded-md bg-[#eef4ff] font-semibold"
-                            : "bg-transparent"
+                          ${
+                            isActive
+                              ? "rounded-md bg-[#eef4ff] font-semibold"
+                              : "bg-transparent"
                           }`}
-
                         >
-                          <div className="text-center">{t.test?.title ?? t.test_id}</div>
                           <div className="text-center">
-                            {renderOverallScore(t.test?.type === "exam", t.raw_score, t.processed_score)}
+                            {t.test?.title ?? t.test_id}
                           </div>
                           <div className="text-center">
-                            {t.test?.duration != null ? formatDurationMMSS(t.test.duration) : "-"}
+                            {renderOverallScore(
+                              t.test?.type === "exam",
+                              t.raw_score,
+                              t.processed_score,
+                            )}
                           </div>
-                          <div className="text-center">{formatDateVN(t.start_time)}</div>
+                          <div className="text-center">
+                            {t.test?.duration != null
+                              ? formatDurationMMSS(t.test.duration)
+                              : "-"}
+                          </div>
+                          <div className="text-center">
+                            {formatDateVN(t.start_time)}
+                          </div>
                           <div className="text-center">
                             <div
                               onClick={(e) => {
@@ -454,12 +479,13 @@ export default function ResultsPage() {
                         Câu {item.number}
                       </span>
                       <span
-                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${item.answer === "-"
-                          ? "bg-gray-200 text-gray-500"
-                          : item.correct
-                            ? "bg-green-500 text-white"
-                            : "bg-red-500 text-white"
-                          }`}
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${
+                          item.answer === "-"
+                            ? "bg-gray-200 text-gray-500"
+                            : item.correct
+                              ? "bg-green-500 text-white"
+                              : "bg-red-500 text-white"
+                        }`}
                         title={
                           item.answer === "-"
                             ? "Chưa chọn"
@@ -475,7 +501,6 @@ export default function ResultsPage() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>

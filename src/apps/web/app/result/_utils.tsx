@@ -136,6 +136,8 @@ export function pickSubjectAdvice(subjectId: string, score: number | null | unde
   const matched = bands.find((band) =>
     numericScore >= band.min && numericScore <= band.max,
   );
+  if (!matched || !matched.messages?.length) return null;
 
-  return matched?.message ?? null;
+  const idx = ((Math.floor(numericScore) % matched.messages.length) + matched.messages.length) % matched.messages.length;
+  return matched.messages[idx] ?? null;
 }
