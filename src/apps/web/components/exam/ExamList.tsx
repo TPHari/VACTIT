@@ -98,22 +98,32 @@ export default function ExamList() {
             isVip: item.status === 'Premium',
           };
 
+          // --- [LOGIC PHÂN NHÓM] ---
           if (exam.type === 'practice') {
+              // 1. Nếu là Practice: Luôn vào nhóm Practice (được thi lại thoải mái)
               groups.practice.push(exam);
           } else {
-              const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
-              const due = exam.dueTime ? new Date(exam.dueTime).getTime() : Infinity;
-
-              if (now >= start && now <= due) {
-                  groups.inProgress.push(exam);
-              } else if (now < start) {
-                  if (start - now <= oneDayMs) {
-                      groups.countdown.push(exam); 
-                  } else {
-                      groups.upcoming.push(exam);  
-                  }
-              } else if (now > due) {
+              // 2. Nếu là Exam (Bài thi thật)
+              if (isTaken) {
+                  // Nếu đã làm rồi -> Đẩy thẳng vào Locked (Coi như đã kết thúc với user này)
+                  // Điều này ngăn việc bài thi hiện ở "Đang diễn ra" gây hiểu nhầm là được thi tiếp
                   groups.locked.push(exam);
+              } else {
+                  // Nếu chưa làm -> Xét thời gian như bình thường
+                  const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
+                  const due = exam.dueTime ? new Date(exam.dueTime).getTime() : Infinity;
+
+                  if (now >= start && now <= due) {
+                      groups.inProgress.push(exam);
+                  } else if (now < start) {
+                      if (start - now <= oneDayMs) {
+                          groups.countdown.push(exam); 
+                      } else {
+                          groups.upcoming.push(exam);  
+                      }
+                  } else if (now > due) {
+                      groups.locked.push(exam);
+                  }
               }
           }
         });
@@ -299,7 +309,6 @@ export default function ExamList() {
                     ))}
                 </div>
 
-                {/* Empty State */}
                 {Object.values(groupedExams).every(arr => arr.length === 0) && (
                     <div className="flex flex-col items-center justify-center h-64 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200 mt-8">
                         <p className="font-medium">Chưa có bài thi nào phù hợp.</p>
