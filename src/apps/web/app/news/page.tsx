@@ -32,9 +32,8 @@ export default function NewsPage() {
         const formattedData: NewsItem[] = rawData.map((item: any) => ({
           id: item.news_id,
           title: item.title,
-          author: item.author || 'Empire Team',
+          author: item.author || 'Bailearn',
           date: new Date(item.created_at).toLocaleDateString('vi-VN'),
-          // [SỬA 2]: Xóa dòng views
           excerpt: item.excerpt || '',
           content: item.content || '',
           image: item.image || '/uploads/news-test/news-test.png', 

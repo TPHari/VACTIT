@@ -24,19 +24,16 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
   
-  // State quản lý danh sách bài thi và bài thi đang chọn
   const [exams, setExams] = useState<ExamOption[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string>('');
 
-  // 1. Load danh sách Exam khi vào trang
+  // 1. Load Exam List
   useEffect(() => {
     const fetchExams = async () => {
       try {
         const res = await api.leaderboard.getExams();
         const examList = res.data || [];
         setExams(examList);
-        
-        // Mặc định chọn bài thi mới nhất nếu có danh sách
         if (examList.length > 0) {
           setSelectedExamId(examList[0].test_id);
         }
@@ -47,14 +44,13 @@ export default function LeaderboardPage() {
     fetchExams();
   }, []);
 
-  // 2. Load Leaderboard khi selectedExamId thay đổi
+  // 2. Load Leaderboard Data
   useEffect(() => {
-    if (!selectedExamId) return; // Chưa chọn bài thi thì chưa load
+    if (!selectedExamId) return;
 
     const fetchLeaderboard = async () => {
       setLoading(true);
       try {
-        // Gọi API kèm testId
         const response = await api.leaderboard.get(selectedExamId);
         const rawData = response.data || [];
 
@@ -80,9 +76,12 @@ export default function LeaderboardPage() {
     fetchLeaderboard();
   }, [selectedExamId]);
 
-  // Tách Top 3 và phần còn lại
+  // --- Giới hạn Top 10 ---
+  // Lấy Top 3 cho Podium
   const top3 = leaderboardData.slice(0, 3);
-  const restOfList = leaderboardData.slice(3);
+  
+  // Lấy từ hạng 4 đến hạng 10 cho List (slice từ index 3 đến 10)
+  const restOfList = leaderboardData.slice(3, 10); 
 
   return (
     <DashboardLayout>
@@ -96,10 +95,10 @@ export default function LeaderboardPage() {
                   Bảng Xếp Hạng 🏆
                 </h1>
                 <p className="text-blue-100 text-sm font-medium opacity-90 mb-4">
-                  Vinh danh những chiến thần xuất sắc nhất.
+                  Vinh danh Top 10 chiến thần xuất sắc nhất.
                 </p>
 
-                {/* --- DROPDOWN CHỌN BÀI THI --- */}
+                {/* Dropdown */}
                 <div className="relative w-full max-w-md">
                     <label className="text-xs text-blue-200 font-bold uppercase mb-1 block">Chọn kỳ thi:</label>
                     <select 
@@ -118,7 +117,7 @@ export default function LeaderboardPage() {
                 </div>
               </div>
 
-              {/* Decorative Background Elements */}
+              {/* Background Decoration */}
               <div className="absolute top-0 right-0 h-full w-40 pointer-events-none">
                  <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-yellow-500 rounded-full opacity-90 group-hover:scale-125 transition-transform duration-700 ease-out shadow-lg shadow-black/10"></div>
                  <div className="absolute bottom-[-10px] right-[40px] w-12 h-12 bg-yellow-500 rounded-full opacity-80 group-hover:-translate-y-4 transition-transform duration-500 shadow-md"></div>
@@ -126,7 +125,7 @@ export default function LeaderboardPage() {
            </div>
         </div>
 
-        {/* LOADING & CONTENT STATE */}
+        {/* Content */}
         {loading ? (
            <div className="flex flex-col items-center justify-center h-64">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
@@ -142,7 +141,7 @@ export default function LeaderboardPage() {
            </div>
         ) : (
           <>
-            {/* Podium Section */}
+            {/* Podium (Top 3) */}
             {top3.length > 0 && (
               <div className="card bg-white border border-gray-100 bg-gradient-to-b from-blue-50/30 to-white pt-8 pb-2 px-6">
                   <div className="text-center mb-6">
@@ -153,7 +152,7 @@ export default function LeaderboardPage() {
               </div>
             )}
 
-            {/* List Section */}
+            {/* List (Rank 4-10) */}
             {restOfList.length > 0 && (
               <div className="card p-0 overflow-hidden border border-gray-100">
                  <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">

@@ -82,7 +82,7 @@ export default function Topbar() {
                 handleSearch();
               }
             }}
-            placeholder="Tìm kiếm đề thi, giáo viên..."
+            placeholder="Tìm kiếm đề thi..."
             className="block w-full p-2.5 pl-10 text-sm text-slate-800 border border-slate-200 rounded-full bg-slate-50 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
           />
           {searchTerm && (
