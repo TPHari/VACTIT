@@ -43,8 +43,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
   const isCompleted = exam.status === 'completed';
   const isPractice = exam.type === 'practice';
 
-  // Kiểm tra xem đây có phải là bài thi thật đã làm rồi hay không
-  // Nếu đúng -> Sẽ bị khóa vĩnh viễn
+  // [LOGIC]: Bài thi thật (Exam) và Đã làm (Completed) -> Khóa hoàn toàn
   const isRealExamDone = !isPractice && isCompleted;
 
   useEffect(() => {
@@ -94,16 +93,14 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
   const handleTakeTest = async () => {
     if (loading) return;
     
-    // Nếu nút bị disable về mặt hiển thị thì chặn click
-    // Thêm điều kiện: Nếu là bài thi thật đã làm rồi thì cũng chặn luôn
-    if ((!isExamOpen && !isPractice && !isCompleted) || isRealExamDone) return;
+    // Nếu nút bị khóa hiển thị -> Chặn click
+    if (isLockedVisual) return;
 
     setLoading(true);
     try {
       const testId = exam.id;
       let userId = currentUserId;
       
-      // Fallback lấy userId
       if (!userId) {
          try {
             const res = await fetch('/api/user');
@@ -118,10 +115,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
       }
 
       console.log('Starting trial for testId:', testId, 'userId:', userId);
-      
-      // Gọi API tạo lượt thi
       const res = await api.trials.create({ testId, userId });
-      
       const trial = res?.data;
       const isAlreadyDone = res?.alreadyDone;
 
@@ -146,6 +140,10 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
         </span>
       );
     }
+    // [Badge Màu Xám]: Cho trường hợp Exam đã hoàn thành
+    if (isRealExamDone) {
+       return <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded border border-gray-200">Đã hoàn thành</span>;
+    }
     if (isCompleted) {
        return <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded border border-green-200">Đã làm</span>;
     }
@@ -167,13 +165,13 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
   const getButtonText = () => {
     if (loading) return 'Đang xử lý...';
     
-    // 1. Nếu là Practice + Đã làm -> Hiện "Thi lại"
+    // 1. Ưu tiên: Exam đã làm -> "Đã hoàn thành" (nhưng nút sẽ bị disable và màu xám)
+    if (isRealExamDone) return 'Đã hoàn thành';
+
+    // 2. Practice đã làm -> "Thi lại"
     if (isPractice && isCompleted) return 'Thi lại';
     
-    // 2. Nếu là Exam + Đã làm -> Hiện "Đã hoàn thành"
-    if (isCompleted) return 'Đã hoàn thành'; 
-    
-    // 3. Các trường hợp chưa làm
+    // 3. Chưa làm nhưng hết giờ/chưa mở
     if (!isExamOpen && !isPractice) {
         const now = new Date().getTime();
         const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
@@ -183,16 +181,19 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
     return 'Thi ngay';
   }
 
-  // Khóa nút nếu: 
-  // 1. Chưa mở/Đã đóng (như cũ)
-  // 2. HOẶC là bài thi thật đã làm rồi (isRealExamDone)
+  // Logic xác định trạng thái KHÓA (Visual + Interaction)
+  // Khóa khi:
+  // 1. Hết giờ hoặc chưa mở (Time locked)
+  // 2. HOẶC Là bài thi thật VÀ Đã làm rồi (Completion locked)
   const isLockedVisual = (!isExamOpen && !isPractice && !isCompleted) || isRealExamDone;
 
   return (
     <>
       <div className={`p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full border group relative ${
+        // Nếu bị khóa (bất kể lý do gì) -> Màu xám
         isLockedVisual ? 'bg-gray-50/80 border-gray-200' : 
-        isCompleted ? 'bg-green-50/40 border-green-200' : 'bg-white border-gray-100 hover:border-blue-300'
+        // Mặc định -> Màu trắng
+        'bg-white border-gray-100 hover:border-blue-300'
       }`}>
       
       {/* Header */}
@@ -211,7 +212,10 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
       {/* Title */}
       <h3
         className={`font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] transition-colors ${
-            isLockedVisual ? 'text-gray-500 cursor-not-allowed' : 'text-gray-800 group-hover:text-blue-600 cursor-pointer'
+            // Nếu bị khóa -> Title màu xám và không click được
+            isLockedVisual 
+                ? 'text-gray-500 cursor-not-allowed'
+                : 'text-gray-800 group-hover:text-blue-600 cursor-pointer'
         }`}
         title={exam.title}
         onClick={() => !isLockedVisual && onSelect(exam)}
@@ -240,26 +244,23 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
         {/* NÚT TRÁI: CHI TIẾT */}
         <button
           onClick={() => onSelect(exam)}
-          // Nút chi tiết vẫn cho phép bấm nếu đã làm rồi (để xem kết quả)
-          // Chỉ disable nếu chưa mở hoặc đã đóng mà chưa làm
-          disabled={!isExamOpen && !isPractice && !isCompleted}
+          disabled={isLockedVisual}
           className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors border ${
-            (!isExamOpen && !isPractice && !isCompleted) ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed' :
-            isCompleted 
-              ? 'text-green-700 bg-white border-green-200 hover:bg-green-50' 
-              : 'text-gray-600 bg-white hover:bg-gray-50 border-gray-200'
+            isLockedVisual 
+                ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed' // Luôn xám nếu bị khóa
+                : isCompleted 
+                    ? 'text-green-700 bg-white border-green-200 hover:bg-green-50' 
+                    : 'text-gray-600 bg-white hover:bg-gray-50 border-gray-200'
           }`}
         >
           Chi tiết
         </button>
         
-        {/* NÚT PHẢI: THI NGAY / THI LẠI */}
-        {/* Điều kiện hiển thị nút Disable: */}
-        {/* 1. Chưa mở / Đã đóng (Thời gian) */}
-        {/* 2. HOẶC Bài thi thật đã làm rồi (isRealExamDone) */}
-        {((!isExamOpen && !isPractice && !isCompleted) || isRealExamDone) ? (
+        {/* NÚT PHẢI: THI NGAY / THI LẠI / ĐÃ HOÀN THÀNH */}
+        {isLockedVisual ? (
             <button disabled className={`flex-1 py-2 text-white text-xs font-medium rounded-lg cursor-not-allowed shadow-sm ${
-                // Nếu bị lock do thời gian mà có đếm ngược -> màu cam, còn lại xám
+                // Nếu bị khóa nhưng có đếm ngược -> màu cam
+                // Còn lại (bao gồm Exam đã hoàn thành) -> màu xám
                 timeLeft ? 'bg-orange-400' : 'bg-gray-400'
             }`}>
                 {timeLeft ? timeLeft : getButtonText()}
@@ -279,7 +280,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
       </div>
     </div>
 
-    {/* Notification: Đã thi rồi */}
+    {/* Notification */}
     {mounted && showNotification && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in duration-200">
