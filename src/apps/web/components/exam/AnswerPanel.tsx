@@ -42,8 +42,8 @@ export default function AnswerPanel({
         </div>
       </div>
 
-      <div className="px-4">
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+      <div className="px-4 flex-1 min-h-0">
+        <div className="overflow-y-auto h-full">
           {questions.map((q, idx) => (
             <div
              key={q.id}

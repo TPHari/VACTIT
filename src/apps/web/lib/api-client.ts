@@ -11,105 +11,84 @@ export class ApiClient {
   async get<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
 
     if (!response.ok) {
-      let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+      let errorMessage = `API Error: ${response.status}`;
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-      } catch (e) {
-        // Fallback
-      }
+      } catch (e) {}
       console.error(`GET ${endpoint} failed:`, errorMessage);
       throw new Error(errorMessage);
     }
-
     return response.json();
   }
 
   async post<T>(endpoint: string, data: any): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(data),
     });
-
     if (!response.ok) {
-      let errorMessage = `API Error: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-      } catch (e) {
-        // Fallback
-      }
-      console.error(`POST ${endpoint} failed:`, errorMessage);
-      throw new Error(errorMessage);
+         let errorMessage = `API Error: ${response.status}`;
+         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
+         throw new Error(errorMessage);
     }
-
     return response.json();
   }
-
+  
   async put<T>(endpoint: string, data: any): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(data),
     });
-
     if (!response.ok) {
-      let errorMessage = `API Error: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-      } catch (e) {
-        // Fallback
-      }
-      console.error(`PUT ${endpoint} failed:`, errorMessage);
-      throw new Error(errorMessage);
+         let errorMessage = `API Error: ${response.status}`;
+         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
+         throw new Error(errorMessage);
     }
+    return response.json();
+  }
 
+  async patch<T>(endpoint: string, data: any): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+         let errorMessage = `API Error: ${response.status}`;
+         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
+         throw new Error(errorMessage);
+    }
     return response.json();
   }
 
   async delete<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
     });
-
     if (!response.ok) {
-      let errorMessage = `API Error: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-      } catch (e) {
-        // Fallback
-      }
-      console.error(`DELETE ${endpoint} failed:`, errorMessage);
-      throw new Error(errorMessage);
+         let errorMessage = `API Error: ${response.status}`;
+         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
+         throw new Error(errorMessage);
     }
-
     return response.json();
   }
 }
 
 export const apiClient = new ApiClient();
 
-// Convenience methods for different resources
 export const api = {
   users: {
     getAll: () => apiClient.get<any[]>('/api/users'),
@@ -118,12 +97,26 @@ export const api = {
     update: (id: string, data: any) => apiClient.put<any>(`/api/users/${id}`, data),
     delete: (id: string) => apiClient.delete<any>(`/api/users/${id}`),
   },
+
   tests: {
-    getAll: (params?: { query?: string; type?: string; page?: number; limit?: number }) => {
+    getAll: (params?: { 
+        query?: string; 
+        type?: string; 
+        category?: string; 
+        status?: string;
+        sort?: string;
+        page?: number; 
+        limit?: number;
+        userId?: string;
+    }) => {
         const searchParams = new URLSearchParams();
         if (params) {
             if (params.query) searchParams.set('query', params.query);
-            if (params.type && params.type !== 'all') searchParams.set('type', params.type);
+            if (params.category && params.category !== 'all') searchParams.set('category', params.category);
+            if (params.status && params.status !== 'all') searchParams.set('status', params.status);
+            if (params.sort) searchParams.set('sort', params.sort);
+            if (params.userId) searchParams.set('userId', params.userId); // <--- THÊM
+            
             if (params.page) searchParams.set('page', params.page.toString());
             if (params.limit) searchParams.set('limit', params.limit.toString());
         }
@@ -135,6 +128,7 @@ export const api = {
     delete: (id: string) => apiClient.delete<any>(`/api/tests/${id}`),
     getPages: (trialId: string) => apiClient.get<any>(`/api/exam/${trialId}/pages`),
   },
+  
   trials: {
     getAll: () => apiClient.get<any[]>('/api/trials'),
     getById: (id: string) => apiClient.get<any>(`/api/trials/${id}`),
@@ -144,6 +138,7 @@ export const api = {
       apiClient.get<any>(`/api/students/${encodeURIComponent(studentId)}/trials`),
     getDetails: (trialId: string) =>
       apiClient.get<any>(`/api/trials/${encodeURIComponent(trialId)}/details`),
+    cleanup: (trialId: string) => apiClient.post<any>('/api/trials/cleanup', { trialId }),
   },
   responses: {
     getAll: () => apiClient.get<any[]>('/api/responses'),
@@ -151,7 +146,7 @@ export const api = {
     create: (data: any) => apiClient.post<any>('/api/responses', data),
   },
   jobs: {
-    scoreTest: (data: { trialId: string; userId: string }) => 
+    scoreTest: (data: { trialId: string; userId: string }) =>
       apiClient.post<any>('/api/jobs/score-test', data),
     getStatus: (jobId: string) => apiClient.get<any>(`/api/jobs/status/${jobId}`),
   },
@@ -222,6 +217,41 @@ export const api = {
         return apiClient.put<any>('/api/admin/tests', data);
       },
     },
+    users: {
+      list: () => {
+        if (typeof window !== 'undefined') {
+          return fetch('/api/admin/users').then(r => r.json());
+        }
+        return apiClient.get<any>('/api/admin/users');
+      },
+      updateRole: (userId: string, role: 'Student' | 'Admin') => {
+        const payload = { userId, role };
+        if (typeof window !== 'undefined') {
+          return fetch('/api/admin/users', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }).then(r => r.json());
+        }
+        return apiClient.patch<any>('/api/admin/users', payload);
+      },
+    },
+  },
+  teachers: {
+      getAll: () => apiClient.get<any>('/api/teachers'),
+      create: (data: any) => apiClient.post<any>('/api/teachers', data),
+      update: (data: any) => apiClient.put<any>('/api/teachers', data),
+      delete: (teacherId: string) => apiClient.delete<any>(`/api/teachers?teacher_id=${encodeURIComponent(teacherId)}`),
+  },
+  leaderboard: {
+    get: (testId?: string) => {
+        const query = testId ? `?testId=${testId}` : '';
+        return apiClient.get<any>(`/api/leaderboard${query}`);
+    },
+    getExams: () => apiClient.get<any>('/api/leaderboard/exams'),
+  },
+  news: {
+    getAll: () => apiClient.get<any>('/api/news'),
   },
 };
 

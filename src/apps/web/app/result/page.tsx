@@ -7,139 +7,18 @@ import { api } from "@/lib/api-client";
 import Loading from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
 
-const TOTAL_QUESTIONS = 120;
-
-type TrialListItem = {
-  trial_id: string;
-  test_id: string;
-  start_time: string; // ISO
-  end_time: string;   // ISO
-  raw_score: any;
-  processed_score: any;
-  test?: {
-    test_id: string;
-    title: string;
-    type: string;
-    duration: number | null;
-  };
-  _count?: { responses: number };
-};
-
-type StudentTrialsRes = {
-  data: TrialListItem[];
-  count: number;
-};
-
-type TrialDetails = {
-  trial_id: string;
-  test: { test_id: string; title: string; duration: number | null, type: "practice" | "exam"; };
-  tactic: unknown | null; // use unknown for jsonb
-  responses: Array<{
-    question_id: string;
-    chosen_option: string | null;
-    response_time: number;
-    question?: {
-      question_id: string;
-      correct_option: string | null;
-      section: string | null;
-    };
-  }>;
-};
-
-type SubjectSummary = {
-  id: string;
-  title: string;
-  correct: number;
-  total: number;
-};
-
-function formatDateVN(iso: string) {
-  // you can adjust formatting freely
-  const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const hour = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  return `${dd}.${mm}.${yyyy} ${hour}:${min}`;
-}
-
-function formatDurationMMSS(seconds: number | null | undefined) {
-  if (!seconds || seconds <= 0) return "-";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-function computeAllAnswers(
-  responses: TrialDetails["responses"],
-  totalQuestions: number,
-) {
-  // stable ordering by question_id (works best if question_id has sequence like Q001..)
-  const sorted = [...responses].sort((a, b) =>
-    String(a.question_id).localeCompare(String(b.question_id)),
-  );
-
-  // Map 1..N -> answer info (chosen + correct flag)
-  const base = sorted.map((r, idx) => {
-    const number = idx + 1;
-    const chosen = r.chosen_option ?? "-";
-    const correctOpt = r.question?.correct_option ?? null;
-
-    return {
-      number,
-      answer: chosen, // keep your old naming
-      correct: chosen !== "-" && correctOpt !== null && chosen === correctOpt,
-      section: r.question?.section ?? "Unknown",
-    };
-  });
-
-  // Fill up to totalQuestions with "-"
-  const filled = Array.from({ length: totalQuestions }, (_, idx) => {
-    const number = idx + 1;
-    const found = base.find((a) => a.number === number);
-    return (
-      found ?? {
-        number,
-        answer: "-",
-        correct: false,
-        section: "Unknown",
-      }
-    );
-  });
-
-  return filled;
-}
-
-function computeSubjects(allAnswers: Array<{ section: string; answer: string; correct: boolean }>): SubjectSummary[] {
-  // group by section
-  const map = new Map<string, { total: number; correct: number }>();
-
-  for (const a of allAnswers) {
-    const sec = a.section || "Unknown";
-    const cur = map.get(sec) ?? { total: 0, correct: 0 };
-    cur.total += 1;
-    if (a.answer !== "-" && a.correct) cur.correct += 1;
-    map.set(sec, cur);
-  }
-
-  // Turn into array; you can rename titles here if needed
-  return Array.from(map.entries()).map(([id, v]) => ({
-    id,
-    title: id, // if section values are "vietnamese/english/math/logic" you can map to VN labels
-    correct: v.correct,
-    total: v.total,
-  }));
-}
-
-function renderScore(score: any) {
-  if (score == null) return "0";
-  if (typeof score === "object") {
-    return score.total || JSON.stringify(score);
-  }
-  return String(score);
-}
-
+import type { TrialDetails, TrialListItem, StudentTrialsRes } from "./_types";
+import { TOTAL_QUESTIONS } from "./_types";
+import {
+  formatDateVN,
+  formatDurationMMSS,
+  computeAllAnswers,
+  inferSubjectsFromRawScore,
+  inferTotalCorrectFromRawScore,
+  renderOverallScore,
+  attachIrtScores,
+  pickSubjectAdvice,
+} from "./_utils";
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -151,7 +30,8 @@ export default function ResultsPage() {
   const [selectedTrialId, setSelectedTrialId] = useState<string>("");
 
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [selectedTrialDetails, setSelectedTrialDetails] = useState<TrialDetails | null>(null);
+  const [selectedTrialDetails, setSelectedTrialDetails] =
+    useState<TrialDetails | null>(null);
 
   // 0) Load user
   const [user, setUser] = useState<any>(null);
@@ -272,7 +152,6 @@ export default function ResultsPage() {
     };
   }, [selectedTrialId]);
 
-
   const selectedTrial = useMemo(
     () => trials.find((t) => t.trial_id === selectedTrialId) ?? null,
     [trials, selectedTrialId],
@@ -288,32 +167,62 @@ export default function ResultsPage() {
       }));
     }
 
-    return computeAllAnswers(selectedTrialDetails.responses || [], TOTAL_QUESTIONS);
+    return computeAllAnswers(
+      selectedTrialDetails.responses || [],
+      TOTAL_QUESTIONS,
+    );
   }, [selectedTrialDetails]);
 
-  const totalCorrect = useMemo(
-    () => allAnswers.filter((a) => a.answer !== "-" && a.correct).length,
-    [allAnswers],
-  );
+  const isExam = selectedTrial?.test?.type === "exam";
 
   const subjects = useMemo(() => {
-    const raw = computeSubjects(allAnswers);
-    // prettier titles
-    return raw.map((s) => ({ ...s, title: s.id }));
-  }, [allAnswers]);
+    const base = inferSubjectsFromRawScore(selectedTrial?.raw_score);
+    if (!isExam) return base;
+    return attachIrtScores(base, selectedTrial?.processed_score);
+  }, [isExam, selectedTrial?.raw_score, selectedTrial?.processed_score]);
+
+  const totalCorrect = useMemo(
+    () => inferTotalCorrectFromRawScore(selectedTrial?.raw_score),
+    [selectedTrial?.raw_score],
+  );
+
+  const subjectAnalyses = useMemo(() => {
+    return subjects.map((subject) => {
+      const rawScore = subject.score0_300 ?? subject.correct * 10;
+      const score = Number.isFinite(rawScore)
+        ? Math.round(Number(rawScore))
+        : null;
+      return {
+        id: subject.id,
+        title: subject.title,
+        correct: subject.correct,
+        score,
+        advice: pickSubjectAdvice(subject.id, score),
+        hasIrtScore: subject.score0_300 != null,
+      };
+    });
+  }, [subjects]);
 
   // You can replace this with a real AI analysis later
-  const analysisText = useMemo(() => {
+  const tacticSummary = useMemo(() => {
     if (!selectedTrialDetails) return "Đang tải phân tích...";
     const t = selectedTrialDetails.tactic as any;
-    return (t?.summary && String(t.summary).trim()) || "Chưa có dữ liệu phân tích.";
+    return (
+      (t?.summary && String(t.summary).trim()) || "Chưa có dữ liệu phân tích."
+    );
   }, [selectedTrialDetails]);
 
+  const hasAdditionalSummary = useMemo(
+    () =>
+      tacticSummary &&
+      !["Đang tải phân tích...", "Chưa có dữ liệu phân tích."].includes(
+        tacticSummary,
+      ),
+    [tacticSummary],
+  );
 
   if (loading || detailsLoading) {
-    return (
-      <Loading />
-    );
+    return <Loading />;
   }
 
   if (error) {
@@ -358,7 +267,7 @@ export default function ResultsPage() {
                 {/* Subjects */}
                 <div className="w-1/2">
                   <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-muted">
-                    Môn thi
+                    Phần thi
                   </h2>
 
                   <ul className="space-y-2 text-sm">
@@ -371,7 +280,10 @@ export default function ResultsPage() {
                           {subject.title}
                         </span>
                         <span className="text-xs text-brand-muted">
-                          {subject.correct}/{subject.total} câu đúng
+                          {subject.correct}/30 câu đúng
+                          {isExam && subject.score0_300 != null && (
+                            <> · {subject.score0_300} điểm</>
+                          )}
                         </span>
                       </li>
                     ))}
@@ -381,13 +293,17 @@ export default function ResultsPage() {
                 {/* Tổng điểm */}
                 <div className="flex flex-1 flex-col justify-between rounded-card rounded-xl bg-white p-4 shadow-card">
                   <p className="text-xs font-medium text-brand-muted text-center">
-                    {selectedTrialDetails?.test.type === "exam" ?
-                      "Tổng điểm (IRT)" : "Tổng điểm luyện tập"}
+                    {selectedTrialDetails?.test.type === "exam"
+                      ? "Tổng điểm (IRT)"
+                      : "Tổng điểm luyện tập"}
                   </p>
 
                   <p className="mt-1 text-5xl font-bold text-brand-text text-center">
-                    {selectedTrialDetails?.test.type === "exam" ?
-                      renderScore(selectedTrial?.processed_score) : renderScore(selectedTrial?.raw_score)}
+                    {renderOverallScore(
+                      selectedTrialDetails?.test.type === "exam",
+                      selectedTrial?.raw_score,
+                      selectedTrial?.processed_score,
+                    )}
                   </p>
 
                   <p className="mt-1 text-xs text-brand-muted text-center">
@@ -402,7 +318,6 @@ export default function ResultsPage() {
                       Đang tải chi tiết bài làm...
                     </p>
                   )}
-
                 </div>
               </div>
 
@@ -419,9 +334,56 @@ export default function ResultsPage() {
                     </h2>
                   </header>
 
-                  <p className="text-sm leading-relaxed text-brand-muted">
-                    {analysisText}
-                  </p>
+                  <div className="space-y-3 text-sm">
+                    {subjectAnalyses.map((subject) => (
+                      <div
+                        key={subject.id}
+                        className="rounded-lg border border-slate-200 bg-[#f8fafc] px-3 py-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-brand-text">
+                            {subject.title}
+                          </span>
+                          <span className="text-xs text-brand-muted">
+                            {subject.score != null
+                              ? subject.hasIrtScore
+                                ? `${subject.score} điểm`
+                                : `${subject.correct}/30 câu · ${subject.score} điểm quy đổi`
+                              : "Chưa có điểm"}
+                          </span>
+                        </div>
+                        <p className="mt-1 leading-relaxed text-brand-muted">
+                          {subject.advice
+                            ? subject.advice
+                                .split("\n")
+                                .map((line, idx, arr) => (
+                                  <span key={idx}>
+                                    {line}
+                                    {idx < arr.length - 1 && <br />}
+                                  </span>
+                                ))
+                            : "Chưa có dữ liệu lời khuyên cho phần thi này."}
+                        </p>
+                      </div>
+                    ))}
+
+                    {hasAdditionalSummary && (
+                      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                          Ghi chú thêm
+                        </p>
+                        <p className="mt-1 leading-relaxed text-brand-muted">
+                          {tacticSummary}
+                        </p>
+                      </div>
+                    )}
+
+                    {!subjectAnalyses.length && !hasAdditionalSummary && (
+                      <p className="leading-relaxed text-brand-muted">
+                        Chưa có dữ liệu phân tích.
+                      </p>
+                    )}
+                  </div>
                 </section>
 
                 {/* Lịch sử thi – max 4 rows visible, then scroll */}
@@ -448,19 +410,33 @@ export default function ResultsPage() {
                         <div
                           key={t.trial_id}
                           onClick={() => setSelectedTrialId(t.trial_id)}
-                          className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr] border-b border-slate-100 py-2 text-left transition cursor-pointer ${isActive
-                            ? "rounded-md bg-[#eef4ff] font-semibold"
-                            : "bg-transparent"
-                            }`}
+                          className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr]
+                          items-center
+                          border-b border-slate-100 py-2 text-left transition cursor-pointer
+                          ${
+                            isActive
+                              ? "rounded-md bg-[#eef4ff] font-semibold"
+                              : "bg-transparent"
+                          }`}
                         >
-                          <div className="text-center">{t.test?.title ?? t.test_id}</div>
-                          <div className="text-center">{t.test?.type === "exam" ?
-                            renderScore(t?.processed_score) : renderScore(t?.raw_score)}
+                          <div className="text-center">
+                            {t.test?.title ?? t.test_id}
                           </div>
                           <div className="text-center">
-                            {t.test?.duration != null ? formatDurationMMSS(t.test.duration) : "-"}
+                            {renderOverallScore(
+                              t.test?.type === "exam",
+                              t.raw_score,
+                              t.processed_score,
+                            )}
                           </div>
-                          <div className="text-center">{formatDateVN(t.start_time)}</div>
+                          <div className="text-center">
+                            {t.test?.duration != null
+                              ? formatDurationMMSS(t.test.duration)
+                              : "-"}
+                          </div>
+                          <div className="text-center">
+                            {formatDateVN(t.start_time)}
+                          </div>
                           <div className="text-center">
                             <div
                               onClick={(e) => {
@@ -503,12 +479,13 @@ export default function ResultsPage() {
                         Câu {item.number}
                       </span>
                       <span
-                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${item.answer === "-"
-                          ? "bg-gray-200 text-gray-500"
-                          : item.correct
-                            ? "bg-green-500 text-white"
-                            : "bg-red-500 text-white"
-                          }`}
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${
+                          item.answer === "-"
+                            ? "bg-gray-200 text-gray-500"
+                            : item.correct
+                              ? "bg-green-500 text-white"
+                              : "bg-red-500 text-white"
+                        }`}
                         title={
                           item.answer === "-"
                             ? "Chưa chọn"
@@ -524,7 +501,6 @@ export default function ResultsPage() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>

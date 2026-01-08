@@ -8,11 +8,16 @@ type TrialResponse = {
   };
 };
 
-export function buildAnswerReviewRows(responses: TrialResponse[]): AnswerReviewRow[] {
-  // stable numbering (1..N) based on sorted question_id
-  const sorted = [...responses].sort((a, b) =>
-    String(a.question_id).localeCompare(String(b.question_id)),
-  );
+export function buildAnswerReviewRows(
+  responses: TrialResponse[],
+): AnswerReviewRow[] {
+  const sorted = [...responses].sort((a, b) => {
+    const getIndex = (id: string | number) => {
+      const parts = String(id).split("_");
+      return Number(parts[parts.length - 1]);
+    };
+    return getIndex(a.question_id) - getIndex(b.question_id);
+  });
 
   return sorted.map((r, idx) => {
     const chosen = r.chosen_option ?? "-";
@@ -27,3 +32,4 @@ export function buildAnswerReviewRows(responses: TrialResponse[]): AnswerReviewR
     };
   });
 }
+

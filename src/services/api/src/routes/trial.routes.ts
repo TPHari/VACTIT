@@ -202,7 +202,7 @@ export async function trialRoutes(server: FastifyInstance) {
 
       const start = new Date();
       // duration is in minutes, default to 0 if null
-      const end = new Date(start.getTime() + (test.duration || 0) * 60000);
+      const end = new Date();
       const trialId = generateTrialId();
 
       const trial = await server.prisma.trial.create({
@@ -233,4 +233,46 @@ export async function trialRoutes(server: FastifyInstance) {
       };
     }
   });
+
+  server.post('/api/trials/cleanup', async (request, reply) => {
+    try {
+      let payload: any = request.body;
+      // navigator.sendBeacon often sends a string body; try to parse if needed
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch {
+          // leave as string -> not usable
+        }
+      }
+
+      const trialId = payload?.trialId;
+      if (!trialId) {
+        reply.status(400);
+        return { error: 'missing_trialId' };
+      }
+
+      const trial = await server.prisma.trial.findUnique({
+        where: { trial_id: trialId },
+        include: { test: true },
+      });
+
+      if (!trial) {
+        reply.status(404);
+        return { error: 'trial_not_found' };
+      }
+
+      if (trial.test?.type !== 'practice') {
+        // do nothing for exam trials
+        return { data: { deleted: false, reason: 'not_practice' } };
+      }
+
+      await server.prisma.trial.delete({ where: { trial_id: trialId } });
+      return { data: { deleted: true } };
+    } catch (error) {
+      reply.status(500);
+      return { error: error instanceof Error ? error.message : 'Failed to cleanup trial' };
+    }
+  });
+
 }

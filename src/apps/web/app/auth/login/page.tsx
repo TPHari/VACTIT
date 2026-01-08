@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,7 +38,11 @@ export default function LoginPage() {
       setServerError(res.error);
       return;
     }
-    router.push('/');
+    // fetch session to determine role and redirect accordingly
+    const session = await getSession();
+    const role = (session?.user as any)?.role;
+    if (role === 'Admin') router.push('/admin');
+    else router.push('/');
   }
 
   return (
