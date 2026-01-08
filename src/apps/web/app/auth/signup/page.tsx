@@ -27,7 +27,7 @@ export default function SignupPage() {
         email: username,
         password,
       });
-      
+
       // Redirect to login after successful signup
       router.push('/auth/login');
     } catch (err: any) {
@@ -38,16 +38,16 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex font-sans">
-      
+
       {/* --- LEFT PANEL (Copy hệt từ Login) --- */}
       <div className="hidden md:flex w-1/2 bg-[#2563EB] text-white flex-col items-center px-12 py-10 relative overflow-hidden">
-        
+
         {/* 1. Logo Section (Logo + Text) */}
         <div className="flex flex-col items-center gap-2 mt-8 z-10">
           <div className="w-20 h-20 relative">
-             {/* Logo vàng */}
-            <img 
-              src="/assets/logos/logo.png" 
+            {/* Logo vàng */}
+            <img
+              src="/assets/logos/logo.png"
               alt="BAILEARN Logo"
               className="w-full h-full object-contain"
               style={{ filter: 'brightness(0) saturate(100%) invert(75%) sepia(56%) saturate(3006%) hue-rotate(1deg) brightness(106%) contrast(104%)' }}
@@ -60,26 +60,26 @@ export default function SignupPage() {
 
         {/* 2. Main Illustration */}
         <div className="flex-1 flex items-center justify-center w-full z-10 pb-20">
-           <div className="relative w-full max-w-md h-64 md:h-80 flex items-center justify-center">
-              <img 
-                src="/assets/logos/vaothingay.png"
-                alt="Illustration"
-                className="w-full h-full object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-500"
-              />
-           </div>
+          <div className="relative w-full max-w-md h-64 md:h-80 flex items-center justify-center">
+            <img
+              src="/assets/logos/vaothingay.png"
+              alt="Illustration"
+              className="w-full h-full object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-500"
+            />
+          </div>
         </div>
 
         {/* 3. Text 'Chào bạn!' */}
         <div className="absolute bottom-28 left-12 z-10">
-           <h2 className="text-4xl font-normal">Chào bạn!</h2>
-           <p className="opacity-90 max-w-xs mt-2 text-lg font-light">Xin chào — đăng ký để tiếp tục.</p>
+          <h2 className="text-4xl font-normal">Chào bạn!</h2>
+          <p className="opacity-90 max-w-xs mt-2 text-lg font-light">Xin chào — đăng ký để tiếp tục.</p>
         </div>
 
         {/* 4. Pagination Dots (Centered Bottom) */}
         <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10 flex gap-4">
-             <div className="w-3 h-3 rounded-full bg-white cursor-pointer hover:bg-gray-200 transition-colors" />
-             <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors rounded-sm" />
-             <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors transform rotate-45 rounded-sm" />
+          <div className="w-3 h-3 rounded-full bg-white cursor-pointer hover:bg-gray-200 transition-colors" />
+          <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors rounded-sm" />
+          <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors transform rotate-45 rounded-sm" />
         </div>
       </div>
 
@@ -87,13 +87,13 @@ export default function SignupPage() {
       {/* --- RIGHT PANEL (Form Đăng Ký) --- */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
-          
+
           {/* Header */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng ký tài khoản mới</h1>
-            <p className="text-sm text-gray-500 mb-6">Câu này có thể là tagline hoặc mục đích của app này nha</p>
+            <p className="text-sm text-gray-500 mb-6">Chào bạn đã đến với web thi thử ĐGNL HCM của BaiLearn !</p>
           </div>
-          
+
           {/* Google Sign-in */}
           <button
             type="button"
@@ -128,7 +128,7 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
-            
+
             {/* Tên & Họ */}
             <div className="grid grid-cols-2 gap-4">
               <input
@@ -186,10 +186,10 @@ export default function SignupPage() {
             </div>
 
             <div className="flex items-start gap-2 mt-2">
-                <input type="checkbox" className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" id="terms" required />
-                <label htmlFor="terms" className="text-xs text-gray-500 leading-tight">
-                    Bằng cách tích vào ô này, bạn đã đồng ý với <Link href="#" className="text-blue-600 hover:underline">điều khoản</Link> và <Link href="#" className="text-blue-600 hover:underline">chính sách bảo mật</Link> của BaiLearn.
-                </label>
+              <input type="checkbox" className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" id="terms" required />
+              <label htmlFor="terms" className="text-xs text-gray-500 leading-tight">
+                Bằng cách tích vào ô này, bạn đã đồng ý với <Link href="#" className="text-blue-600 hover:underline">điều khoản</Link> và <Link href="#" className="text-blue-600 hover:underline">chính sách bảo mật</Link> của BaiLearn.
+              </label>
             </div>
 
             {error && <div className="text-sm text-red-600 text-center bg-red-50 p-2 rounded">{error}</div>}
