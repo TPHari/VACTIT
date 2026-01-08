@@ -32,7 +32,7 @@ export default function NewsPage() {
         const formattedData: NewsItem[] = rawData.map((item: any) => ({
           id: item.news_id,
           title: item.title,
-          author: item.author || 'Bailearn Team',
+          author: item.author || 'Bailearn',
           date: new Date(item.created_at).toLocaleDateString('vi-VN'),
           excerpt: item.excerpt || '',
           content: item.content || '',

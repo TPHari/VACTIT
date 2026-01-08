@@ -43,6 +43,10 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
   const isCompleted = exam.status === 'completed';
   const isPractice = exam.type === 'practice';
 
+  // Kiểm tra xem đây có phải là bài thi thật đã làm rồi hay không
+  // Nếu đúng -> Sẽ bị khóa vĩnh viễn
+  const isRealExamDone = !isPractice && isCompleted;
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -91,7 +95,8 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
     if (loading) return;
     
     // Nếu nút bị disable về mặt hiển thị thì chặn click
-    if (!isExamOpen && !isPractice && !isCompleted) return;
+    // Thêm điều kiện: Nếu là bài thi thật đã làm rồi thì cũng chặn luôn
+    if ((!isExamOpen && !isPractice && !isCompleted) || isRealExamDone) return;
 
     setLoading(true);
     try {
@@ -121,10 +126,8 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
       const isAlreadyDone = res?.alreadyDone;
 
       if (isAlreadyDone) {
-        // Nếu Backend bảo đã làm rồi (với bài thi Exam 1 lần) -> Hiện thông báo
         setShowNotification(true);
       } else if (trial && trial.trial_id) {
-        // Nếu tạo được (hoặc là Practice) -> Chuyển trang
         router.push(`/exam/${trial.trial_id}`);
       }
     } catch (err: any) {
@@ -163,8 +166,14 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
 
   const getButtonText = () => {
     if (loading) return 'Đang xử lý...';
-    if (isCompleted) return 'Thi lại';
     
+    // 1. Nếu là Practice + Đã làm -> Hiện "Thi lại"
+    if (isPractice && isCompleted) return 'Thi lại';
+    
+    // 2. Nếu là Exam + Đã làm -> Hiện "Đã hoàn thành"
+    if (isCompleted) return 'Đã hoàn thành'; 
+    
+    // 3. Các trường hợp chưa làm
     if (!isExamOpen && !isPractice) {
         const now = new Date().getTime();
         const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
@@ -174,7 +183,10 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
     return 'Thi ngay';
   }
 
-  const isLockedVisual = !isExamOpen && !isPractice && !isCompleted;
+  // Khóa nút nếu: 
+  // 1. Chưa mở/Đã đóng (như cũ)
+  // 2. HOẶC là bài thi thật đã làm rồi (isRealExamDone)
+  const isLockedVisual = (!isExamOpen && !isPractice && !isCompleted) || isRealExamDone;
 
   return (
     <>
@@ -228,9 +240,11 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
         {/* NÚT TRÁI: CHI TIẾT */}
         <button
           onClick={() => onSelect(exam)}
-          disabled={isLockedVisual}
+          // Nút chi tiết vẫn cho phép bấm nếu đã làm rồi (để xem kết quả)
+          // Chỉ disable nếu chưa mở hoặc đã đóng mà chưa làm
+          disabled={!isExamOpen && !isPractice && !isCompleted}
           className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors border ${
-            isLockedVisual ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed' :
+            (!isExamOpen && !isPractice && !isCompleted) ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed' :
             isCompleted 
               ? 'text-green-700 bg-white border-green-200 hover:bg-green-50' 
               : 'text-gray-600 bg-white hover:bg-gray-50 border-gray-200'
@@ -240,8 +254,12 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
         </button>
         
         {/* NÚT PHẢI: THI NGAY / THI LẠI */}
-        {(!isExamOpen && !isPractice && !isCompleted) ? (
+        {/* Điều kiện hiển thị nút Disable: */}
+        {/* 1. Chưa mở / Đã đóng (Thời gian) */}
+        {/* 2. HOẶC Bài thi thật đã làm rồi (isRealExamDone) */}
+        {((!isExamOpen && !isPractice && !isCompleted) || isRealExamDone) ? (
             <button disabled className={`flex-1 py-2 text-white text-xs font-medium rounded-lg cursor-not-allowed shadow-sm ${
+                // Nếu bị lock do thời gian mà có đếm ngược -> màu cam, còn lại xám
                 timeLeft ? 'bg-orange-400' : 'bg-gray-400'
             }`}>
                 {timeLeft ? timeLeft : getButtonText()}
