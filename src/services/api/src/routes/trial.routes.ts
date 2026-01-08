@@ -202,7 +202,7 @@ export async function trialRoutes(server: FastifyInstance) {
 
       const start = new Date();
       // duration is in minutes, default to 0 if null
-      const end = new Date(start.getTime() + (test.duration || 0) * 60000);
+      const end = new Date();
       const trialId = generateTrialId();
 
       const trial = await server.prisma.trial.create({
