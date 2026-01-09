@@ -1,10 +1,66 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { signIn } from 'next-auth/react';
+
+type Slide = {
+  id: string;
+  image: string;
+  title: string;
+  description?: string;
+  dot: 'circle' | 'square' | 'triangle';
+};
+
+const slides: Slide[] = [
+  {
+    id: 'welcome',
+    image: '/assets/logos/LoginLogo1.png',
+    title: 'Chào bạn!',
+    description: undefined,
+    dot: 'circle',
+  },
+  {
+    id: 'practice',
+    image: '/assets/logos/LoginLogo2.png',
+    title: 'Chào bạn đã đến với',
+    description: undefined,
+    dot: 'square',
+  },
+  {
+    id: 'progress',
+    image: '/assets/logos/LoginLogo3.png',
+    title: 'Chào bạn đã đến với web thi thử ĐGNL của BaiLearn!',
+    description: undefined,
+    dot: 'triangle',
+  },
+];
+
+function DotIcon({ type, active }: { type: Slide['dot']; active: boolean }) {
+  const color = active ? '#FFFFFF' : 'rgba(255,255,255,0.6)';
+  switch (type) {
+    case 'square':
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke={color} strokeWidth="2" />
+        </svg>
+      );
+    case 'triangle':
+      return (
+        <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
+          <path d="M2 12.5L8 1.5L14 12.5H2Z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+        </svg>
+      );
+    default:
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5" stroke={color} strokeWidth="2" />
+        </svg>
+      );
+  }
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,6 +71,16 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % slides.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentSlide = slides[activeSlide];
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,46 +106,48 @@ export default function SignupPage() {
     <div className="min-h-screen flex font-sans">
 
       {/* --- LEFT PANEL (Copy hệt từ Login) --- */}
-      <div className="hidden md:flex w-1/2 bg-[#2563EB] text-white flex-col items-center px-12 py-10 relative overflow-hidden">
-
-        {/* 1. Logo Section (Logo + Text) */}
-        <div className="flex flex-col items-center gap-2 mt-8 z-10">
-          <div className="w-20 h-20 relative">
-            {/* Logo vàng */}
-            <img
-              src="/assets/logos/logo.png"
-              alt="BAILEARN Logo"
-              className="w-full h-full object-contain"
-              style={{ filter: 'brightness(0) saturate(100%) invert(75%) sepia(56%) saturate(3006%) hue-rotate(1deg) brightness(106%) contrast(104%)' }}
-            />
+      <div className="hidden md:flex w-1/2 bg-[#2563EB] text-white px-8 py-8 relative overflow-hidden">
+        <div className="flex flex-col w-full h-full z-10 items-center justify-start gap-4">
+          {/* 1. Logo Section */}
+          <div className="flex flex-col items-center gap-3 w-full">
+            <div className="w-28 h-28 relative flex items-center justify-center mx-auto">
+              <img 
+                src="/assets/logos/BaiLearnLogo.png" 
+                alt="BAILEARN Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
           </div>
-          <span className="font-bold text-2xl tracking-widest text-[#FFD700] uppercase mt-1 drop-shadow-md">
-            BAILEARN
-          </span>
-        </div>
-
-        {/* 2. Main Illustration */}
-        <div className="flex-1 flex items-center justify-center w-full z-10 pb-20">
-          <div className="relative w-full max-w-md h-64 md:h-80 flex items-center justify-center">
-            <img
-              src="/assets/logos/vaothingay.png"
-              alt="Illustration"
-              className="w-full h-full object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-500"
-            />
+          {/* 2. Main Illustration slider */}
+          <div className="w-full flex items-start justify-center pt-1 mb-6">
+            <div className="relative w-full max-w-md h-56 md:h-84 flex items-center justify-center">
+              <img 
+                key={currentSlide.id}
+                src={currentSlide.image}
+                alt="Illustration"
+                className="w-full h-full object-contain drop-shadow-xl transition-all duration-700 ease-out animate-slide-in"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* 3. Text 'Chào bạn!' */}
-        <div className="absolute bottom-28 left-12 z-10">
-          <h2 className="text-4xl font-normal">Chào bạn!</h2>
-          <p className="opacity-90 max-w-xs mt-2 text-lg font-light">Xin chào — đăng ký để tiếp tục.</p>
-        </div>
-
-        {/* 4. Pagination Dots (Centered Bottom) */}
-        <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10 flex gap-4">
-          <div className="w-3 h-3 rounded-full bg-white cursor-pointer hover:bg-gray-200 transition-colors" />
-          <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors rounded-sm" />
-          <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors transform rotate-45 rounded-sm" />
+          {/* 3. Dynamic Slide Copy + dots */}
+          <div className="w-full px-1 mt-6">
+            <h2 className="text-[28px] text-white font-normal text-start">{currentSlide.title}</h2>
+            <div className="mt-4 flex gap-6 justify-center">
+              {slides.map((slide, index) => (
+                <button
+                  key={slide.id}
+                  type="button"
+                  onClick={() => setActiveSlide(index)}
+                  aria-label={`Chuyển sang slide ${index + 1}`}
+                  className="transition-opacity duration-200"
+                  style={{ opacity: index === activeSlide ? 1 : 0.6 }}
+                >
+                  <DotIcon type={slide.dot} active={index === activeSlide} />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
