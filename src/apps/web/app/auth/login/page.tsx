@@ -40,7 +40,7 @@ const slides: Slide[] = [
   {
     id: 'progress',
     image: '/assets/logos/LoginLogo3.png',
-    title: 'Chào bạn đã đến với web thi thử DGNL của BaiLearn!',
+    title: 'Chào bạn đã đến với web thi thử ĐGNL của BaiLearn!',
     description: undefined,
     dot: 'triangle',
   },
@@ -126,17 +126,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-        {/* 2. Main Illustration (vaothingay.png) */}
-        {/* Đẩy hình lên một chút bằng pb-20 để không đè vào chữ Chào bạn ở dưới */}
-        <div className="flex-1 flex items-center justify-center w-full z-10 pb-20">
-          <div className="relative w-full max-w-md h-64 md:h-80 flex items-center justify-center">
-            <img
-              src="/assets/logos/vaothingay.png"
-              alt="Illustration"
-              className="w-full h-full object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-500"
-            />
-          </div>
-        </div>
            {/* 2. Main Illustration slider */}
             <div className="w-full flex items-start justify-center pt-1 mb-6">
              <div className="relative w-full max-w-md h-56 md:h-84 flex items-center justify-center">
