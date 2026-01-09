@@ -1,4 +1,5 @@
 import type { SubjectSummary, TrialDetails } from "./_types";
+import { SUBJECT_TACTICS } from "./_tactics";
 
 export function formatDateVN(iso: string) {
   const d = new Date(iso);
@@ -21,9 +22,13 @@ export function computeAllAnswers(
   responses: TrialDetails["responses"],
   totalQuestions: number,
 ) {
-  const sorted = [...responses].sort((a, b) =>
-    String(a.question_id).localeCompare(String(b.question_id)),
-  );
+  const sorted = [...responses].sort((a, b) => {
+    const getIndex = (id: string | number) => {
+      const parts = String(id).split("_");
+      return Number(parts[parts.length - 1]);
+    };
+    return getIndex(a.question_id) - getIndex(b.question_id);
+  });
 
   const base = sorted.map((r, idx) => {
     const number = idx + 1;
@@ -39,9 +44,16 @@ export function computeAllAnswers(
 
   return Array.from({ length: totalQuestions }, (_, idx) => {
     const number = idx + 1;
-    return base.find((a) => a.number === number) ?? { number, answer: "-", correct: false };
+    return (
+      base.find((a) => a.number === number) ?? {
+        number,
+        answer: "-",
+        correct: false,
+      }
+    );
   });
 }
+
 
 export function safeJsonb(x: any) {
   if (x == null) return null;
@@ -86,8 +98,46 @@ export function renderOverallScore(isExam: boolean, rawScore: any, processedScor
   const keys = ["score0_300_en", "score0_300_vi", "score0_300_sci", "score0_300_math"];
   const sum = keys.reduce((acc, k) => {
     const v = Number(p[k]);
-    return Number.isFinite(v) ? acc + v : acc;
+    return Number.isFinite(v) ? acc + Math.round(v) : acc;
   }, 0);
 
-  return String(Math.round(sum));
+  return String(sum);
+}
+
+
+export function attachIrtScores(subjects: SubjectSummary[], processedScore: any) {
+  const p: any = safeJsonb(processedScore);
+  if (!p || typeof p !== "object") return subjects;
+
+  const map: Record<string, string> = {
+    vie: "score0_300_vi",
+    eng: "score0_300_en",
+    math: "score0_300_math",
+    sci: "score0_300_sci",
+  };
+
+  return subjects.map((s) => {
+    const key = map[s.id];
+    if (!key) return s;
+
+    const v = Number(p[key]);
+    if (!Number.isFinite(v)) return s;
+
+    return { ...s, score0_300: Math.round(v) }; 
+  });
+}
+
+export function pickSubjectAdvice(subjectId: string, score: number | null | undefined) {
+  if (!Number.isFinite(score)) return null;
+  const bands = SUBJECT_TACTICS[subjectId];
+  if (!bands || !bands.length) return null;
+
+  const numericScore = Number(score);
+  const matched = bands.find((band) =>
+    numericScore >= band.min && numericScore <= band.max,
+  );
+  if (!matched || !matched.messages?.length) return null;
+
+  const idx = ((Math.floor(numericScore) % matched.messages.length) + matched.messages.length) % matched.messages.length;
+  return matched.messages[idx] ?? null;
 }

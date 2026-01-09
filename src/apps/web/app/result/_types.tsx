@@ -39,4 +39,5 @@ export type SubjectSummary = {
   id: string;
   title: string;
   correct: number;
+  score0_300?: number;
 };

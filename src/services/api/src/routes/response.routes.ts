@@ -134,6 +134,7 @@ export async function responseRoutes(server: FastifyInstance) {
           where: { trial_id: trialId },
           data: {
             raw_score: tacticData as any, // Save JSON breakdown here
+            end_time: new Date(),
             // processed_score is reserved for IRT, not updated here
           }
         })

@@ -1,70 +1,41 @@
 services:
+  # Main Backend API (Node.js)
   - type: web
-    name: vactit-api
+    name: VACTIT
     runtime: node
     region: singapore
     plan: free
     branch: dev
-    # Build from monorepo root so workspaces + devDeps are installed
     buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run -w src/services/api build
     startCommand: npm run -w src/services/api start
     envVars:
       - key: DATABASE_URL
         sync: false
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: vactit-redis
-          property: connectionString
+        sync: false  # Set manually from Upstash
       - key: FRONTEND_URL
         sync: false
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
-    autoDeploy: true
-
-  - type: worker
-    name: vactit-worker
-    runtime: node
-    region: singapore
-    plan: free
-    branch: dev
-    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run -w src/services/worker build
-    startCommand: npm run -w src/services/worker start
-    envVars:
-      - key: DATABASE_URL
+      - key: NEXT_PUBLIC_API
         sync: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: vactit-redis
-          property: connectionString
-      - key: NODE_ENV
-        value: production
-      - key: R_API_URL
-        value: "https://vactit-irt-api.onrender.com"
-      - key: IRT_API_KEY
-        value: "__REPLACE_WITH_SECRET__"
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
     autoDeploy: true
 
-  - type: redis
-    name: vactit-redis
-    region: singapore
-    plan: free
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
-
-  # R microservice (Docker-built). Render will build from the Dockerfile path.
+  # IRT Scoring Microservice (R/Docker)
   - type: web
     name: vactit-irt-api
     env: docker
     dockerfilePath: src/services/worker/Dockerfile.r
     region: singapore
     plan: free
+    branch: dev
     envVars:
       - key: PORT
         value: "8000"
       - key: IRT_API_KEY
-        value: "__REPLACE_WITH_SECRET__"
+        sync: false
     autoDeploy: true

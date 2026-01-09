@@ -46,11 +46,6 @@ console.log('Supabase env check:', { SUPABASE_URL: !!process.env.SUPABASE_URL, N
 // Helper: ensure requester is authenticated and has role 'Admin'
 async function checkAdmin(req: NextRequest) {
   try {
-    // Dev bypass: when using dev mock, allow access for convenience
-    // (developer can enable by setting USE_DEV_MOCK=1 in local environment)
-    if (1) {
-      return null;
-    }
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     if (!token) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 

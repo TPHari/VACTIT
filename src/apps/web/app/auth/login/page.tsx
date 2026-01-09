@@ -126,6 +126,17 @@ export default function LoginPage() {
             </div>
           </div>
 
+        {/* 2. Main Illustration (vaothingay.png) */}
+        {/* Đẩy hình lên một chút bằng pb-20 để không đè vào chữ Chào bạn ở dưới */}
+        <div className="flex-1 flex items-center justify-center w-full z-10 pb-20">
+          <div className="relative w-full max-w-md h-64 md:h-80 flex items-center justify-center">
+            <img
+              src="/assets/logos/vaothingay.png"
+              alt="Illustration"
+              className="w-full h-full object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+        </div>
            {/* 2. Main Illustration slider */}
             <div className="w-full flex items-start justify-center pt-1 mb-6">
              <div className="relative w-full max-w-md h-56 md:h-84 flex items-center justify-center">
@@ -162,12 +173,12 @@ export default function LoginPage() {
       {/* --- RIGHT PANEL --- */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
-          
+
           {/* Header */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h1>
             <p className="text-sm text-gray-500 max-w-xs mx-auto">
-              Câu này có thể là tagline hoặc mục đích của app này nha
+              Chào bạn đã đến với web thi thử ĐGNL HCM của BaiLearn !
             </p>
           </div>
 
@@ -194,8 +205,8 @@ export default function LoginPage() {
                 aria-invalid={!!errors.password}
               />
               {/* Eye Icon Button */}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)} // Thêm sự kiện click
                 className="absolute right-5 top-3.5 text-gray-400 hover:text-gray-600 focus:outline-none"
               >
@@ -218,11 +229,11 @@ export default function LoginPage() {
             {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between text-sm px-2">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={remember} 
-                  onChange={() => setRemember((s) => !s)} 
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={() => setRemember((s) => !s)}
+                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-gray-500">Ghi nhớ tôi khi đăng nhập</span>
               </label>

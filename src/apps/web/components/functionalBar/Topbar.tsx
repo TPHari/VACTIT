@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 
 
@@ -39,25 +40,27 @@ export default function Topbar() {
   // Hàm xử lý tìm kiếm khi bấm Enter ---
   const handleSearch = () => {
     const params = new URLSearchParams(searchParams.toString());
-    
+
     if (searchTerm.trim()) {
       params.set("query", searchTerm.trim());
     } else {
       params.delete("query");
     }
-    
+
     // Dùng push thay vì replace để người dùng có thể back lại kết quả cũ
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsOpen(false);
+    // Clear local storage
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
     }
-    router.push("/auth/login");
+    // Sign out from NextAuth (invalidates session cookie)
+    await signOut({ callbackUrl: "/auth/login" });
   };
 
   return (
@@ -67,7 +70,7 @@ export default function Topbar() {
         <div className="relative w-full max-w-md group">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <svg className="w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
             </svg>
           </div>
           <input
@@ -75,23 +78,23 @@ export default function Topbar() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                    handleSearch();
-                }
+              if (e.key === "Enter") {
+                handleSearch();
+              }
             }}
-            placeholder="Tìm kiếm đề thi, giáo viên..."
+            placeholder="Tìm kiếm đề thi..."
             className="block w-full p-2.5 pl-10 text-sm text-slate-800 border border-slate-200 rounded-full bg-slate-50 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
           />
           {searchTerm && (
-            <button 
-                onClick={() => {
-                    setSearchTerm("");
-                }}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+            <button
+              onClick={() => {
+                setSearchTerm("");
+              }}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+              </svg>
             </button>
           )}
         </div>
@@ -149,7 +152,7 @@ export default function Topbar() {
             </button>
             <div className="my-1 h-px bg-slate-100 mx-2" />
             <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
-               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
               </svg>
               Đăng xuất

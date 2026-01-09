@@ -93,7 +93,7 @@ export default function SignupPage() {
         email: username,
         password,
       });
-      
+
       // Redirect to login after successful signup
       router.push('/auth/login');
     } catch (err: any) {
@@ -104,7 +104,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex font-sans">
-      
+
       {/* --- LEFT PANEL (Copy hệt từ Login) --- */}
       <div className="hidden md:flex w-1/2 bg-[#2563EB] text-white px-8 py-8 relative overflow-hidden">
         <div className="flex flex-col w-full h-full z-10 items-center justify-start gap-4">
@@ -119,6 +119,16 @@ export default function SignupPage() {
             </div>
           </div>
 
+        {/* 2. Main Illustration */}
+        <div className="flex-1 flex items-center justify-center w-full z-10 pb-20">
+          <div className="relative w-full max-w-md h-64 md:h-80 flex items-center justify-center">
+            <img
+              src="/assets/logos/vaothingay.png"
+              alt="Illustration"
+              className="w-full h-full object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+        </div>
           {/* 2. Main Illustration slider */}
           <div className="w-full flex items-start justify-center pt-1 mb-6">
             <div className="relative w-full max-w-md h-56 md:h-84 flex items-center justify-center">
@@ -156,13 +166,13 @@ export default function SignupPage() {
       {/* --- RIGHT PANEL (Form Đăng Ký) --- */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
-          
+
           {/* Header */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng ký tài khoản mới</h1>
-            <p className="text-sm text-gray-500 mb-6">Câu này có thể là tagline hoặc mục đích của app này nha</p>
+            <p className="text-sm text-gray-500 mb-6">Chào bạn đã đến với web thi thử ĐGNL HCM của BaiLearn !</p>
           </div>
-          
+
           {/* Google Sign-in */}
           <button
             type="button"
@@ -197,7 +207,7 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
-            
+
             {/* Tên & Họ */}
             <div className="grid grid-cols-2 gap-4">
               <input
@@ -255,10 +265,10 @@ export default function SignupPage() {
             </div>
 
             <div className="flex items-start gap-2 mt-2">
-                <input type="checkbox" className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" id="terms" required />
-                <label htmlFor="terms" className="text-xs text-gray-500 leading-tight">
-                    Bằng cách tích vào ô này, bạn đã đồng ý với <Link href="#" className="text-blue-600 hover:underline">điều khoản</Link> và <Link href="#" className="text-blue-600 hover:underline">chính sách bảo mật</Link> của BaiLearn.
-                </label>
+              <input type="checkbox" className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" id="terms" required />
+              <label htmlFor="terms" className="text-xs text-gray-500 leading-tight">
+                Bằng cách tích vào ô này, bạn đã đồng ý với <Link href="#" className="text-blue-600 hover:underline">điều khoản</Link> và <Link href="#" className="text-blue-600 hover:underline">chính sách bảo mật</Link> của BaiLearn.
+              </label>
             </div>
 
             {error && <div className="text-sm text-red-600 text-center bg-red-50 p-2 rounded">{error}</div>}
