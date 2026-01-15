@@ -20,15 +20,17 @@ export const authOptions: NextAuthOptions= {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        captchaToken: { label: 'Captcha', type: 'text' },
       },
       async authorize(credentials) {
         try {
-          if (!credentials?.email || !credentials?.password) return null;
+          if (!credentials?.email || !credentials?.password || !credentials?.captchaToken) return null;
           
           // Call Fastify API for authentication
           const response = await api.auth.login({
             email: credentials.email,
             password: credentials.password,
+            captchaToken: credentials.captchaToken,
           });
 
           if (response?.data?.user) {

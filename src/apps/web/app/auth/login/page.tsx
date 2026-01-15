@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, getSession } from 'next-auth/react';
@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api } from '@/lib/api-client';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const schema = z.object({
   email: z.string().email({ message: 'Email không hợp lệ' }),
@@ -78,7 +79,9 @@ export default function LoginPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const recaptchaRef = useRef<ReCAPTCHA | null>(null);
 
   // Forgot password modal state
   const [showForgotModal, setShowForgotModal] = useState(false);
@@ -95,6 +98,7 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -109,20 +113,45 @@ export default function LoginPage() {
 
   async function onSubmit(data: FormData) {
     setServerError(null);
-    const res = await signIn('credentials', {
-      redirect: false,
-      email: data.email,
-      password: data.password,
-    });
-    if (res?.error) {
-      setServerError(res.error);
+
+    if (!captchaToken) {
+      setServerError('Hãy hoàn thành captcha trước khi đăng nhập.');
       return;
     }
-    // fetch session to determine role and redirect accordingly
-    const session = await getSession();
-    const role = (session?.user as any)?.role;
-    if (role === 'Admin') router.push('/admin');
-    else router.push('/');
+
+    try {
+      const res = await signIn('credentials', {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+        captchaToken,
+      });
+
+      if (res?.error) {
+        setServerError(res.error);
+        return;
+      }
+
+      // Important: make sure session is refreshed AFTER successful signIn
+      // (sometimes the first getSession() is stale right after login)
+      const session = await getSession();
+
+      if (!session) {
+        console.log('No session token found after login');
+        setServerError('Login succeeded but session was not created. Please try again.');
+        return;
+      }
+      console.log('Session found after login:', !!session);
+
+      const role = (session.user as any)?.role;
+      if (role === 'Admin') router.replace('/admin');
+      else router.replace('/');
+    } finally {
+      // Non-negotiable: token is single-use
+      // Reset BOTH the captcha widget + the state token
+      recaptchaRef.current?.reset();
+      setCaptchaToken(null);
+    }
   }
 
   // Forgot password handlers
@@ -358,6 +387,15 @@ export default function LoginPage() {
               <button type="button" onClick={openForgotModal} className="text-gray-500 underline hover:text-blue-600">
                 Quên mật khẩu?
               </button>
+            </div>
+
+            {/* Captcha */}
+            <div className="flex justify-center">
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                onChange={(token) => setCaptchaToken(token)}
+              />;
             </div>
 
             {serverError && <div className="text-sm text-red-600 text-center">Email hoặc mật khẩu không đúng</div>}

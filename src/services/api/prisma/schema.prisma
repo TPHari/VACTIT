@@ -13,6 +13,7 @@ model User {
   name          String
   email         String   @unique
   phone         String?
+  avatar_url    String?
   /// 'Student' | 'Author' | 'Admin'
   role          String
   /// 'Regular' | 'VIP', default 'Regular'

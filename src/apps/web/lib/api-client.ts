@@ -157,7 +157,7 @@ export const api = {
   auth: {
     signup: (data: { name: string; email: string; password: string }) =>
       apiClient.post<any>('/api/auth/signup', data),
-    login: (data: { email: string; password: string }) =>
+    login: (data: { email: string; password: string; captchaToken: string }) =>
       apiClient.post<any>('/api/auth/login', data),
     oauthGoogle: (data: { email: string; name?: string; picture?: string }) =>
       apiClient.post<any>('/api/auth/oauth/google', data),
@@ -262,9 +262,18 @@ export const api = {
         return apiClient.get<any>(`/api/leaderboard${query}`);
     },
     getExams: () => apiClient.get<any>('/api/leaderboard/exams'),
+    getLatest: () => apiClient.get<any>('/api/leaderboard/latest'),
   },
   news: {
     getAll: () => apiClient.get<any>('/api/news'),
+  },
+  userStats: {
+    get: () => {
+      if (typeof window !== 'undefined') {
+        return fetch('/api/user/stats').then(r => r.json());
+      }
+      return apiClient.get<any>('/api/user/stats');
+    },
   },
 };
 
