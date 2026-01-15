@@ -1,10 +1,180 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { signIn } from 'next-auth/react';
+
+type Slide = {
+  id: string;
+  image: string;
+  title: string;
+  description?: string;
+  dot: 'circle' | 'square' | 'triangle';
+};
+
+const slides: Slide[] = [
+  {
+    id: 'welcome',
+    image: '/assets/logos/LoginLogo1.png',
+    title: 'Chào bạn!',
+    description: undefined,
+    dot: 'circle',
+  },
+  {
+    id: 'practice',
+    image: '/assets/logos/LoginLogo2.png',
+    title: 'Chào bạn đã đến với',
+    description: undefined,
+    dot: 'square',
+  },
+  {
+    id: 'progress',
+    image: '/assets/logos/LoginLogo3.png',
+    title: 'Chào bạn đã đến với web thi thử ĐGNL của BaiLearn!',
+    description: undefined,
+    dot: 'triangle',
+  },
+];
+
+const termsSections = [
+  {
+    title: '1. Chấp nhận điều khoản',
+    items: [
+      'Bằng việc truy cập, đăng ký tài khoản và sử dụng nền tảng thi thử của BaiLearn, bạn đồng ý tuân thủ toàn bộ các Điều khoản sử dụng này.',
+      'Nếu bạn không đồng ý với bất kỳ điều khoản nào, vui lòng chấm dứt việc sử dụng dịch vụ ngay lập tức.',
+    ],
+  },
+  {
+    title: '2. Tài khoản và Bảo mật',
+    items: [
+      'Thông tin chính xác: Bạn cam kết cung cấp thông tin (Họ tên, Email, SĐT) chính xác và chính chủ.',
+      'Quyền hạn của BaiLearn: BaiLearn có quyền khóa vĩnh viễn các tài khoản sử dụng thông tin giả mạo mà không cần báo trước.',
+      'Trách nhiệm bảo mật: Bạn hoàn toàn chịu trách nhiệm bảo mật thông tin đăng nhập.',
+      'Miễn trừ trách nhiệm: BaiLearn không chịu trách nhiệm cho bất kỳ tổn thất nào phát sinh do việc bạn để lộ mật khẩu hoặc chia sẻ tài khoản cho người khác.',
+    ],
+  },
+  {
+    title: '3. Quyền sở hữu trí tuệ',
+    items: [
+      'Bản quyền nội dung: Tất cả nội dung trên trang web đều là tài sản trí tuệ độc quyền của BaiLearn.',
+      'Hành vi bị nghiêm cấm: Sao chép, chụp ảnh màn hình, quay video, cào dữ liệu, phát tán đề thi ra bên ngoài hoặc sử dụng cho mục đích thương mại khi chưa có sự đồng ý bằng văn bản của BaiLearn.',
+      'Chế tài: Hành vi vi phạm sẽ bị xử lý theo quy định pháp luật về Sở hữu trí tuệ và BaiLearn có quyền yêu cầu bồi thường.',
+    ],
+  },
+  {
+    title: '4. Quy định về Thi thử và Kết quả',
+    items: [
+      'Tính chất tham khảo: Kết quả thi thử và các lời khuyên chiến lược chỉ mang tính tham khảo.',
+      'Cam kết: Không đảm bảo điểm thi thử trùng với điểm thi thật tại kỳ thi ĐGNL HCM.',
+      'Lỗi kỹ thuật: Nếu có sự cố hệ thống, BaiLearn sẽ nỗ lực khắc phục nhưng không chịu trách nhiệm bồi thường.',
+    ],
+  },
+  {
+    title: '5. Quyền sử dụng dữ liệu người dùng',
+    items: [
+      'Bạn trao cho BaiLearn quyền vĩnh viễn, không hủy ngang và miễn phí để sử dụng kết quả làm bài, lịch sử thao tác và điểm số.',
+      'Mục đích: Thống kê, cải thiện chất lượng đề thi và huấn luyện AI.',
+      'Công bố báo cáo: Dữ liệu có thể được công bố ở dạng ẩn danh.',
+    ],
+  },
+  {
+    title: '6. Thanh toán và Hoàn tiền',
+    items: [
+      'Các gói dịch vụ đã mua sẽ không được hoàn tiền dưới mọi hình thức.',
+      'Ngoại lệ: Trừ khi lỗi phát sinh hoàn toàn từ hệ thống của BaiLearn và không thể khắc phục quá 72 giờ.',
+    ],
+  },
+  {
+    title: '7. Giới hạn trách nhiệm',
+    items: [
+      'BaiLearn không chịu trách nhiệm cho thiệt hại gián tiếp, ngẫu nhiên hoặc đặc biệt phát sinh từ việc sử dụng hoặc không thể sử dụng dịch vụ.',
+    ],
+  },
+  {
+    title: '8. Thay đổi Điều khoản',
+    items: [
+      'BaiLearn có quyền thay đổi nội dung chính sách này bất cứ lúc nào. Các thay đổi sẽ được thông báo trên website hoặc qua email. Việc bạn tiếp tục sử dụng dịch vụ sau khi thay đổi đồng nghĩa với việc bạn chấp nhận chính sách mới.',
+    ]
+  }
+];
+
+const privacySections = [
+  {
+    title: '1. Dữ liệu chúng tôi thu thập',
+    items: [
+      'Thông tin định danh: Họ tên, Địa chỉ Email và Số điện thoại.',
+      'Dữ liệu học tập: Lịch sử làm bài, điểm số từng phần, thời gian hoàn thành bài thi, các câu hỏi bạn làm sai thường xuyên.',
+      'Dữ liệu kỹ thuật: Địa chỉ IP, loại trình duyệt, thiết bị sử dụng, cookies.',
+    ],
+  },
+  {
+    title: '2. Mục đích sử dụng dữ liệu',
+    items: [
+      'Cung cấp dịch vụ: Xác thực tài khoản, chấm điểm, lưu trữ tiến độ học tập.',
+      'Phân tích và Tư vấn: Dùng điểm số và hành vi làm bài để phân tích điểm mạnh/yếu và đưa ra lời khuyên chiến lược cá nhân hóa.',
+      'Cải thiện chất lượng: Phân tích dữ liệu gộp để đánh giá độ khó câu hỏi và điều chỉnh đề thi.',
+      'Tiếp thị và Truyền thông: Gửi email về kỳ thi thử, mẹo ôn thi, khóa học, khuyến mãi; bạn có quyền từ chối bất cứ lúc nào.',
+    ],
+  },
+  {
+    title: '3. Chia sẻ dữ liệu',
+    items: [
+      'Không bán thông tin cá nhân cho bên thứ ba.',
+      'Có thể chia sẻ với đối tác cung cấp hạ tầng, dịch vụ email... và họ phải tuân thủ quy định bảo mật của BaiLearn.',
+      'Chia sẻ theo yêu cầu pháp lý từ cơ quan có thẩm quyền.',
+    ],
+  },
+  {
+    title: '4. Lưu trữ và Bảo vệ dữ liệu',
+    items: [
+      'Lưu trữ trên máy chủ bảo mật.',
+      'Mã hóa trong quá trình truyền tải.',
+      'Không có hệ thống nào an toàn tuyệt đối; BaiLearn nỗ lực bảo vệ nhưng không chịu trách nhiệm nếu bị tấn công vượt các lớp bảo mật chuẩn.',
+    ],
+  },
+  {
+    title: '5. Quyền của người dùng',
+    items: [
+      'Bạn có quyền xem và chỉnh sửa thông tin cá nhân trong trang Quản lý tài khoản.',
+      'Bạn có thể hủy đăng ký email marketing qua nút Unsubscribe.',
+      'Bạn có thể yêu cầu xóa hoàn toàn tài khoản và dữ liệu; hành động này không thể khôi phục.',
+    ],
+  },
+  {
+    title: '6. Thay đổi chính sách',
+    items: [
+      'BaiLearn có thể thay đổi chính sách bất cứ lúc nào.',
+      'Thay đổi sẽ được thông báo trên website hoặc qua email.',
+      'Tiếp tục sử dụng dịch vụ nghĩa là bạn chấp nhận chính sách mới.',
+    ],
+  },
+];
+
+function DotIcon({ type, active }: { type: Slide['dot']; active: boolean }) {
+  const color = active ? '#FFFFFF' : 'rgba(255,255,255,0.6)';
+  switch (type) {
+    case 'square':
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke={color} strokeWidth="2" />
+        </svg>
+      );
+    case 'triangle':
+      return (
+        <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
+          <path d="M2 12.5L8 1.5L14 12.5H2Z" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+        </svg>
+      );
+    default:
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5" stroke={color} strokeWidth="2" />
+        </svg>
+      );
+  }
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,11 +185,31 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % slides.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentSlide = slides[activeSlide];
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setConsentError(null);
     setLoading(true);
+    if (!acceptedTerms) {
+      setConsentError('Vui lòng đồng ý với Điều khoản và Chính sách bảo mật trước khi tiếp tục.');
+      setLoading(false);
+      return;
+    }
     try {
       // Use API client to call Fastify backend
       await api.auth.signup({
@@ -27,7 +217,7 @@ export default function SignupPage() {
         email: username,
         password,
       });
-      
+
       // Redirect to login after successful signup
       router.push('/auth/login');
     } catch (err: any) {
@@ -38,48 +228,50 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex font-sans">
-      
+
       {/* --- LEFT PANEL (Copy hệt từ Login) --- */}
-      <div className="hidden md:flex w-1/2 bg-[#2563EB] text-white flex-col items-center px-12 py-10 relative overflow-hidden">
-        
-        {/* 1. Logo Section (Logo + Text) */}
-        <div className="flex flex-col items-center gap-2 mt-8 z-10">
-          <div className="w-20 h-20 relative">
-             {/* Logo vàng */}
-            <img 
-              src="/assets/logos/logo.png" 
-              alt="BAILEARN Logo"
-              className="w-full h-full object-contain"
-              style={{ filter: 'brightness(0) saturate(100%) invert(75%) sepia(56%) saturate(3006%) hue-rotate(1deg) brightness(106%) contrast(104%)' }}
-            />
-          </div>
-          <span className="font-bold text-2xl tracking-widest text-[#FFD700] uppercase mt-1 drop-shadow-md">
-            BAILEARN
-          </span>
-        </div>
-
-        {/* 2. Main Illustration */}
-        <div className="flex-1 flex items-center justify-center w-full z-10 pb-20">
-           <div className="relative w-full max-w-md h-64 md:h-80 flex items-center justify-center">
+      <div className="hidden md:flex w-1/2 bg-[#2563EB] text-white px-8 py-8 relative overflow-hidden">
+        <div className="flex flex-col w-full h-full z-10 items-center justify-start gap-4">
+          {/* 1. Logo Section */}
+          <div className="flex flex-col items-center gap-3 w-full">
+            <div className="w-28 h-28 relative flex items-center justify-center mx-auto">
               <img 
-                src="/assets/logos/vaothingay.png"
-                alt="Illustration"
-                className="w-full h-full object-contain drop-shadow-xl transform hover:scale-105 transition-transform duration-500"
+                src="/assets/logos/BaiLearnLogo.png" 
+                alt="BAILEARN Logo"
+                className="w-full h-full object-contain"
               />
-           </div>
-        </div>
+            </div>
+          </div>
+          {/* 2. Main Illustration slider */}
+          <div className="w-full flex items-start justify-center pt-1 mb-6">
+            <div className="relative w-full max-w-md h-56 md:h-84 flex items-center justify-center">
+              <img 
+                key={currentSlide.id}
+                src={currentSlide.image}
+                alt="Illustration"
+                className="w-full h-full object-contain drop-shadow-xl transition-all duration-700 ease-out animate-slide-in"
+              />
+            </div>
+          </div>
 
-        {/* 3. Text 'Chào bạn!' */}
-        <div className="absolute bottom-28 left-12 z-10">
-           <h2 className="text-4xl font-normal">Chào bạn!</h2>
-           <p className="opacity-90 max-w-xs mt-2 text-lg font-light">Xin chào — đăng ký để tiếp tục.</p>
-        </div>
-
-        {/* 4. Pagination Dots (Centered Bottom) */}
-        <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-10 flex gap-4">
-             <div className="w-3 h-3 rounded-full bg-white cursor-pointer hover:bg-gray-200 transition-colors" />
-             <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors rounded-sm" />
-             <div className="w-3 h-3 border border-white cursor-pointer hover:bg-white/20 transition-colors transform rotate-45 rounded-sm" />
+          {/* 3. Dynamic Slide Copy + dots */}
+          <div className="w-full px-1 mt-6">
+            <h2 className="text-[28px] text-white font-normal text-start">{currentSlide.title}</h2>
+            <div className="mt-4 flex gap-6 justify-center">
+              {slides.map((slide, index) => (
+                <button
+                  key={slide.id}
+                  type="button"
+                  onClick={() => setActiveSlide(index)}
+                  aria-label={`Chuyển sang slide ${index + 1}`}
+                  className="transition-opacity duration-200"
+                  style={{ opacity: index === activeSlide ? 1 : 0.6 }}
+                >
+                  <DotIcon type={slide.dot} active={index === activeSlide} />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -87,13 +279,13 @@ export default function SignupPage() {
       {/* --- RIGHT PANEL (Form Đăng Ký) --- */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
-          
+
           {/* Header */}
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Đăng ký tài khoản mới</h1>
-            <p className="text-sm text-gray-500 mb-6">Câu này có thể là tagline hoặc mục đích của app này nha</p>
+            <p className="text-sm text-gray-500 mb-6">Chào bạn đã đến với web thi thử ĐGNL HCM của BaiLearn !</p>
           </div>
-          
+
           {/* Google Sign-in */}
           <button
             type="button"
@@ -128,20 +320,20 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={onSubmit} className="space-y-4">
-            
+
             {/* Tên & Họ */}
             <div className="grid grid-cols-2 gap-4">
               <input
                 required
                 placeholder="Họ"
-                value={lastName}
+                value={lastName || ''}
                 onChange={(e) => setLastName(e.target.value)}
                 className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
               <input
                 required
                 placeholder="Tên"
-                value={firstName}
+                value={firstName || ''}
                 onChange={(e) => setFirstName(e.target.value)}
                 className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
@@ -151,7 +343,7 @@ export default function SignupPage() {
             <input
               required
               placeholder="Tên đăng nhập / Email"
-              value={username}
+              value={username || ''}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
@@ -161,7 +353,7 @@ export default function SignupPage() {
               <input
                 required
                 placeholder="Mật khẩu"
-                value={password}
+                value={password || ''}
                 onChange={(e) => setPassword(e.target.value)}
                 type={showPassword ? 'text' : 'password'}
                 className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
@@ -186,11 +378,22 @@ export default function SignupPage() {
             </div>
 
             <div className="flex items-start gap-2 mt-2">
-                <input type="checkbox" className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" id="terms" required />
-                <label htmlFor="terms" className="text-xs text-gray-500 leading-tight">
-                    Bằng cách tích vào ô này, bạn đã đồng ý với <Link href="#" className="text-blue-600 hover:underline">điều khoản</Link> và <Link href="#" className="text-blue-600 hover:underline">chính sách bảo mật</Link> của BaiLearn.
-                </label>
+              <input
+                type="checkbox"
+                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                id="terms"
+                checked={!!acceptedTerms}
+                onChange={(e) => {
+                  setAcceptedTerms(e.target.checked);
+                  if (e.target.checked) setConsentError(null);
+                }}
+              />
+              <label htmlFor="terms" className="text-xs text-gray-500 leading-tight">
+                Bằng cách tích vào ô này, bạn đã đồng ý với <button type="button" onClick={() => setShowTermsModal(true)} className="text-blue-600 hover:underline">điều khoản</button> và <button type="button" onClick={() => setShowPrivacyModal(true)} className="text-blue-600 hover:underline">chính sách bảo mật</button> của BaiLearn.
+              </label>
             </div>
+
+            {consentError && <div className="text-xs text-red-600 mt-1">{consentError}</div>}
 
             {error && <div className="text-sm text-red-600 text-center bg-red-50 p-2 rounded">{error}</div>}
 
@@ -208,6 +411,113 @@ export default function SignupPage() {
           </form>
         </div>
       </div>
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-slate-900/60" onClick={() => setShowTermsModal(false)} />
+          <div className="relative z-10 w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-blue-600 font-semibold">BaiLearn</p>
+                <h2 className="text-lg font-semibold text-slate-900">Điều khoản sử dụng</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="rounded-full p-2 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Đóng điều khoản"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-slate-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-6 overflow-y-auto max-h-[60vh]">
+              {termsSections.map((section) => (
+                <section key={section.title} className="space-y-2">
+                  <h3 className="text-base font-semibold text-slate-900">{section.title}</h3>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 leading-relaxed">
+                    {section.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-700 rounded-full border border-slate-200 hover:bg-slate-100"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700"
+              >
+                Tôi đã đọc
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-slate-900/60" onClick={() => setShowPrivacyModal(false)} />
+          <div className="relative z-10 w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-blue-600 font-semibold">BaiLearn</p>
+                <h2 className="text-lg font-semibold text-slate-900">Chính sách bảo mật</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                className="rounded-full p-2 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Đóng chính sách bảo mật"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-slate-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-6 overflow-y-auto max-h-[60vh]">
+              {privacySections.map((section) => (
+                <section key={section.title} className="space-y-2">
+                  <h3 className="text-base font-semibold text-slate-900">{section.title}</h3>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 leading-relaxed">
+                    {section.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-700 rounded-full border border-slate-200 hover:bg-slate-100"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700"
+              >
+                Tôi đã đọc
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
