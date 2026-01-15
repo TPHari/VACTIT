@@ -7,6 +7,7 @@ import { signIn, getSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { api } from '@/lib/api-client';
 
 const schema = z.object({
   email: z.string().email({ message: 'Email không hợp lệ' }),
@@ -69,12 +70,27 @@ function DotIcon({ type, active }: { type: Slide['dot']; active: boolean }) {
       );
   }
 }
+
+type ForgotStep = 'email' | 'otp' | 'password' | 'success';
+
 export default function LoginPage() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [remember, setRemember] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // Thêm state quản lý ẩn/hiện mật khẩu
+  const [showPassword, setShowPassword] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+
+  // Forgot password modal state
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotStep, setForgotStep] = useState<ForgotStep>('email');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotPassword, setForgotPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotInfo, setForgotInfo] = useState<string | null>(null);
 
   const {
     register,
@@ -107,6 +123,119 @@ export default function LoginPage() {
     const role = (session?.user as any)?.role;
     if (role === 'Admin') router.push('/admin');
     else router.push('/');
+  }
+
+  // Forgot password handlers
+  function openForgotModal() {
+    setShowForgotModal(true);
+    setForgotStep('email');
+    setForgotEmail('');
+    setForgotOtp('');
+    setForgotPassword('');
+    setForgotConfirmPassword('');
+    setForgotError(null);
+    setForgotInfo(null);
+  }
+
+  function closeForgotModal() {
+    setShowForgotModal(false);
+    setForgotStep('email');
+    setForgotError(null);
+    setForgotInfo(null);
+  }
+
+  async function handleForgotSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setForgotError(null);
+    setForgotInfo(null);
+
+    if (forgotStep === 'email') {
+      if (!forgotEmail.trim()) {
+        setForgotError('Vui lòng nhập email.');
+        return;
+      }
+      setForgotLoading(true);
+      try {
+        const res = await api.auth.forgotPasswordSendOtp({ email: forgotEmail.trim().toLowerCase() });
+        if (res.error) {
+          setForgotError(res.error);
+        } else {
+          setForgotStep('otp');
+          setForgotInfo('Mã xác nhận đã được gửi tới email của bạn.');
+        }
+      } catch (err: any) {
+        setForgotError(err.message || 'Không thể gửi mã xác nhận.');
+      }
+      setForgotLoading(false);
+      return;
+    }
+
+    if (forgotStep === 'otp') {
+      if (forgotOtp.trim().length !== 6) {
+        setForgotError('Mã xác nhận cần đủ 6 chữ số.');
+        return;
+      }
+      setForgotLoading(true);
+      try {
+        const res = await api.auth.forgotPasswordVerifyOtp({ 
+          email: forgotEmail.trim().toLowerCase(), 
+          code: forgotOtp.trim() 
+        });
+        if (res.error) {
+          setForgotError(res.error);
+        } else {
+          setForgotStep('password');
+          setForgotInfo('Email đã được xác minh. Hãy đặt mật khẩu mới.');
+        }
+      } catch (err: any) {
+        setForgotError(err.message || 'Mã xác nhận không hợp lệ.');
+      }
+      setForgotLoading(false);
+      return;
+    }
+
+    if (forgotStep === 'password') {
+      if (forgotPassword.length < 8) {
+        setForgotError('Mật khẩu cần tối thiểu 8 ký tự.');
+        return;
+      }
+      if (forgotPassword !== forgotConfirmPassword) {
+        setForgotError('Mật khẩu xác nhận không khớp.');
+        return;
+      }
+      setForgotLoading(true);
+      try {
+        const res = await api.auth.forgotPasswordReset({ 
+          email: forgotEmail.trim().toLowerCase(), 
+          password: forgotPassword 
+        });
+        if (res.error) {
+          setForgotError(res.error);
+        } else {
+          setForgotStep('success');
+          setForgotInfo('Mật khẩu đã được đặt lại thành công!');
+        }
+      } catch (err: any) {
+        setForgotError(err.message || 'Không thể đặt lại mật khẩu.');
+      }
+      setForgotLoading(false);
+    }
+  }
+
+  async function handleForgotResendOtp() {
+    setForgotError(null);
+    setForgotLoading(true);
+    try {
+      const res = await api.auth.forgotPasswordSendOtp({ email: forgotEmail.trim().toLowerCase() });
+      if (res.error) {
+        setForgotError(res.error);
+      } else {
+        setForgotInfo('Đã gửi lại mã xác nhận.');
+      }
+    } catch (err: any) {
+      setForgotError(err.message || 'Không thể gửi lại mã.');
+    }
+    setForgotLoading(false);
   }
 
   return (
@@ -226,9 +355,9 @@ export default function LoginPage() {
                 />
                 <span className="text-gray-500">Ghi nhớ tôi khi đăng nhập</span>
               </label>
-              <Link href="/auth/forgot" className="text-gray-500 underline hover:text-blue-600">
+              <button type="button" onClick={openForgotModal} className="text-gray-500 underline hover:text-blue-600">
                 Quên mật khẩu?
-              </Link>
+              </button>
             </div>
 
             {serverError && <div className="text-sm text-red-600 text-center">Email hoặc mật khẩu không đúng</div>}
@@ -276,6 +405,162 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-slate-900/60" onClick={closeForgotModal} />
+          <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-blue-600 font-semibold">BaiLearn</p>
+                <h2 className="text-lg font-semibold text-slate-900">Quên mật khẩu</h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeForgotModal}
+                className="rounded-full p-2 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Đóng"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-slate-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleForgotSubmit} className="px-6 py-5 space-y-4">
+              {/* Step indicators */}
+              <div className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                <span className={`px-3 py-1 rounded-full ${forgotStep === 'email' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>Email</span>
+                <span className={`px-3 py-1 rounded-full ${forgotStep === 'otp' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>Xác nhận</span>
+                <span className={`px-3 py-1 rounded-full ${forgotStep === 'password' || forgotStep === 'success' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>Mật khẩu</span>
+              </div>
+
+              {/* Email Step */}
+              {forgotStep === 'email' && (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600 text-center">Nhập email đã đăng ký để nhận mã xác nhận.</p>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              )}
+
+              {/* OTP Step */}
+              {forgotStep === 'otp' && (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600 text-center">
+                    Nhập mã xác nhận 6 số được gửi tới <span className="font-semibold">{forgotEmail}</span>.
+                    <button 
+                      type="button" 
+                      onClick={() => { setForgotStep('email'); setForgotOtp(''); setForgotError(null); setForgotInfo(null); }} 
+                      className="text-blue-600 hover:underline ml-1"
+                    >
+                      Đổi email
+                    </button>
+                  </p>
+                  <input
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    placeholder="Nhập mã 6 số"
+                    value={forgotOtp}
+                    onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-center tracking-[0.6em] text-lg font-semibold text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                  <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                    <span>Không nhận được mã?</span>
+                    <button type="button" onClick={handleForgotResendOtp} className="text-blue-600 font-semibold hover:underline" disabled={forgotLoading}>Gửi lại</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Password Step */}
+              {forgotStep === 'password' && (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600 text-center">Đặt mật khẩu mới cho tài khoản của bạn.</p>
+                  <div className="relative">
+                    <input
+                      type={showForgotPassword ? 'text' : 'password'}
+                      placeholder="Mật khẩu mới"
+                      value={forgotPassword}
+                      onChange={(e) => setForgotPassword(e.target.value)}
+                      className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword((s) => !s)}
+                      className="absolute right-5 top-3.5 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      {showForgotPassword ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <input
+                    type={showForgotPassword ? 'text' : 'password'}
+                    placeholder="Xác nhận mật khẩu mới"
+                    value={forgotConfirmPassword}
+                    onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                    className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              )}
+
+              {/* Success Step */}
+              {forgotStep === 'success' && (
+                <div className="space-y-3 text-center py-4">
+                  <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-green-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900">Đặt lại mật khẩu thành công!</p>
+                  <p className="text-sm text-gray-600">Bạn có thể đăng nhập bằng mật khẩu mới.</p>
+                </div>
+              )}
+
+              {/* Error/Info messages */}
+              {forgotError && <div className="text-sm text-red-600 text-center bg-red-50 p-2 rounded">{forgotError}</div>}
+              {forgotInfo && !forgotError && <div className="text-sm text-green-700 text-center bg-green-50 p-2 rounded">{forgotInfo}</div>}
+
+              {/* Submit Button */}
+              {forgotStep !== 'success' ? (
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="w-full bg-[#2563EB] text-white py-3.5 rounded-full font-medium shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-70"
+                >
+                  {forgotStep === 'email' && (forgotLoading ? 'Đang gửi...' : 'Gửi mã xác nhận')}
+                  {forgotStep === 'otp' && (forgotLoading ? 'Đang xác nhận...' : 'Xác nhận')}
+                  {forgotStep === 'password' && (forgotLoading ? 'Đang lưu...' : 'Đặt lại mật khẩu')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={closeForgotModal}
+                  className="w-full bg-[#2563EB] text-white py-3.5 rounded-full font-medium shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                >
+                  Đóng và đăng nhập
+                </button>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

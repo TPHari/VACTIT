@@ -167,6 +167,13 @@ export const api = {
       apiClient.post<any>('/api/auth/verify-otp', data),
     completeSignup: (data: { email: string; password: string }) =>
       apiClient.post<any>('/api/auth/complete-signup', data),
+    // Forgot password
+    forgotPasswordSendOtp: (data: { email: string }) =>
+      apiClient.post<any>('/api/auth/forgot-password/send-otp', data),
+    forgotPasswordVerifyOtp: (data: { email: string; code: string }) =>
+      apiClient.post<any>('/api/auth/forgot-password/verify-otp', data),
+    forgotPasswordReset: (data: { email: string; password: string }) =>
+      apiClient.post<any>('/api/auth/forgot-password/reset', data),
   },
   admin: {
     tests: {
