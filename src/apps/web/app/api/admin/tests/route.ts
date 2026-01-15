@@ -252,6 +252,30 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // LOGIC TẠO THÔNG BÁO (NOTIFICATION)
+    if (created.type === 'exam') {
+        try {
+            // Kiểm tra xem prisma.notification có tồn tại không
+            if ((prisma as any).notification) {
+                await (prisma as any).notification.create({
+                    data: {
+                        title: 'Đề thi mới đã lên kệ! 📝',
+                        message: `Thử sức ngay với đề thi: ${created.title}`,
+                        type: 'exam',
+                        link: `/exam`, // Link trỏ tới trang bài thi
+                        user_id: null, // Broadcast
+                    }
+                });
+                console.log(`[Notification] Created broadcast for test: ${created.test_id}`);
+            } else {
+                console.warn('[Notification] Prisma Notification model not found. Run npx prisma generate.');
+            }
+        } catch (notifErr) {
+            console.error('[Notification] Failed to create notification:', notifErr);
+            // Không throw error để tránh làm lỗi API tạo test
+        }
+    }
+
     // If answers string present, create Question records
     if (answers && num_questions) {
       // debug: ensure Prisma client includes Question delegate

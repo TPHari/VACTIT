@@ -253,6 +253,9 @@ export const api = {
   news: {
     getAll: () => apiClient.get<any>('/api/news'),
   },
+  notifications: {
+    getAll: () => apiClient.get<any>('/api/notifications'),
+  },
 };
 
 export default api;

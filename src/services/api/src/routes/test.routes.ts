@@ -4,12 +4,12 @@ import { createWriteStream } from 'fs';
 import path from 'path';
 import os from 'os';
 import { pipeline } from 'stream/promises';
-import { execFile } from 'child_process';
+import { createBroadcastNotification } from '../utils/notification';
 import { createClient } from '@supabase/supabase-js';
 // Định nghĩa kiểu dữ liệu cho Query Params
 interface GetTestsQuery {
   query?: string;
-  type?: string; 
+  type?: string;
   category?: 'upcoming' | 'countdown' | 'in_progress' | 'locked' | 'practice' | 'all';
   status?: 'completed' | 'not_started' | 'all';
   sort?: 'newest' | 'oldest';
@@ -24,27 +24,27 @@ export async function testRoutes(server: FastifyInstance) {
   );
   server.get<{ Querystring: GetTestsQuery }>('/api/tests', async (request, reply) => {
     try {
-      const { 
+      const {
         query, type, category = 'all', status = 'all', sort = 'newest',
         page = '1', limit = '12',
         userId
       } = request.query;
-      
+
       const pageInt = parseInt(page);
       const limitInt = parseInt(limit);
       const skip = (pageInt - 1) * limitInt;
 
       // --- LOGIC LẤY USER ID ---
       // Ưu tiên lấy từ Query Param do Frontend gửi xuống
-      const currentUserId = userId; 
-      const searchUserId = currentUserId; 
+      const currentUserId = userId;
+      const searchUserId = currentUserId;
 
       // --- Debug Log ---
       console.log(`[API] Fetching tests. UserID provided: ${currentUserId || 'Guest'}`);
 
       // --- B. Mốc thời gian ---
       const now = new Date();
-      const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
+      const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
       // --- C. Bộ lọc (WHERE) ---
       const where: any = {};
@@ -89,13 +89,13 @@ export async function testRoutes(server: FastifyInstance) {
       // --- D. Sắp xếp (ORDER BY) ---
       let orderBy: any = [];
       if (['upcoming', 'countdown', 'in_progress'].includes(category)) {
-         orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
+        orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
       } else {
-         if (sort === 'oldest') {
-            orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
-         } else {
-            orderBy = [{ start_time: 'desc' }, { test_id: 'desc' }];
-         }
+        if (sort === 'oldest') {
+          orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
+        } else {
+          orderBy = [{ start_time: 'desc' }, { test_id: 'desc' }];
+        }
       }
 
       // --- E. Truy vấn ---
@@ -107,23 +107,23 @@ export async function testRoutes(server: FastifyInstance) {
           orderBy: orderBy,
           include: {
             author: { select: { user_id: true, name: true, email: true } },
-            
+
             // Lấy danh sách lần thi của User này để Frontend đếm
             trials: {
               where: { student_id: searchUserId },
-              select: { trial_id: true } 
+              select: { trial_id: true }
             },
-            
+
             _count: { select: { trials: true } }
           }
         }),
         server.prisma.test.count({ where })
       ]);
 
-      return { 
-        data: tests, 
-        pagination: { 
-          total, page: pageInt, limit: limitInt, totalPages: Math.ceil(total / limitInt) 
+      return {
+        data: tests,
+        pagination: {
+          total, page: pageInt, limit: limitInt, totalPages: Math.ceil(total / limitInt)
         }
       };
 
@@ -155,7 +155,22 @@ export async function testRoutes(server: FastifyInstance) {
 
   server.post('/api/tests', async (request, reply) => {
     try {
+      console.log('1. [DEBUG] Bắt đầu tạo Test...'); // Log 1
       const test = await server.prisma.test.create({ data: request.body as any });
+      console.log('2. [DEBUG] Tạo Test thành công:', test.test_id); // Log 2
+      console.log('3. [DEBUG] Loại đề thi (type) là:', test.type); // Log 3
+      //  LOGIC THÔNG BÁO
+      if (test.type === 'exam') {
+        console.log('4. [DEBUG] Điều kiện đúng (test.type === exam). Đang gọi notification service...'); // Log 4
+        await createBroadcastNotification(server.prisma, {
+          title: 'Đề thi mới đã lên kệ! 📝',
+          message: `Thử sức ngay với đề thi: ${test.title}`,
+          type: 'exam',
+          link: `/exam/${test.test_id}` // Link trỏ tới trang làm bài
+        });
+      } else {
+        console.log('4. [DEBUG] BỎ QUA thông báo vì type không phải là "exam". Type thực tế:', test.type); // Log 4 (Else)
+      }
       reply.status(201);
       return { data: test };
     } catch (error) {

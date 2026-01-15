@@ -1,6 +1,6 @@
 // services/api/src/routes/news.routes.ts
 import { FastifyInstance } from 'fastify';
-
+import { createBroadcastNotification } from '../utils/notification';
 export async function newsRoutes(server: FastifyInstance) {
   
   // 1. GET /api/news - Lấy danh sách tin tức
@@ -25,6 +25,14 @@ export async function newsRoutes(server: FastifyInstance) {
       const newArticle = await server.prisma.news.create({
         data: request.body as any
       });
+      // LOGIC THÔNG BÁO
+      await createBroadcastNotification(server.prisma, {
+        title: 'Tin tức mới! 📰',
+        message: newArticle.title, // Lấy tiêu đề tin làm nội dung
+        type: 'news',
+        link: `/news?id=${newArticle.news_id}` // Link trỏ tới tin đó
+      });
+
       return { data: newArticle };
     } catch (error) {
       server.log.error(error);

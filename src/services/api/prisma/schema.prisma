@@ -109,3 +109,17 @@ model News {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 }
+
+model Notification {
+  notification_id        String   @id @default(uuid())
+  title     String
+  message   String?
+  type      String   // 'exam', 'news', 'leaderboard', 'system'
+  link      String?  // Link for directing (ex: /exams)
+  created_at DateTime @default(now()) @map("created_at")
+  
+  // userId = null mearns Broadcast (notify to all users)
+  user_id    String?  @map("user_id") 
+
+  @@map("Notification")
+}
