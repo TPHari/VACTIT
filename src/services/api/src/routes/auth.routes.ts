@@ -12,7 +12,51 @@ const signupSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email('Sai cú pháp email'),
   password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
+  captchaToken: z.string().min(1, 'Yêu cầu xác thực captcha'),
 });
+
+async function verifyRecaptcha(token: string) {
+  const secret = process.env.RECAPTCHA_SECRET_KEY;
+  console.log('Secret exists:', !!secret);
+
+  if (!secret) return { ok: false, error: 'Captcha not configured' };
+  if (!token) return { ok: false, error: 'Missing captcha token' };
+
+  const response = await fetch(
+    'https://www.google.com/recaptcha/api/siteverify',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ secret, response: token }).toString(),
+    }
+  );
+
+  if (!response.ok) {
+    return { ok: false, error: 'Captcha verification failed' };
+  }
+
+  const json: unknown = await response.json();
+
+  // Runtime guard (no interface, no type)
+  if (
+    typeof json !== 'object' ||
+    json === null ||
+    !('success' in json) ||
+    typeof (json as any).success !== 'boolean'
+  ) {
+    return { ok: false, error: 'Invalid captcha response' };
+  }
+
+  if ((json as any).success !== true) {
+    console.error(
+      'reCAPTCHA error codes:',
+      (json as any)['error-codes']
+    );
+    return { ok: false, error: 'Invalid captcha' };
+  }
+
+  return { ok: true };
+}
 
 // OAuth (Google) - we only need enough info to ensure a User exists in DB.
 // NextAuth handles Google verification + web session; this endpoint upserts the user record.
@@ -110,7 +154,14 @@ export async function authRoutes(server: FastifyInstance) {
         return { error: 'Dữ liệu nhập không hợp lệ !' };
       }
 
-      const { email, password } = parsed.data;
+      const { email, password, captchaToken } = parsed.data;
+
+      const captcha = await verifyRecaptcha(captchaToken);
+      if (!captcha.ok) {
+        reply.status(captcha.error ? 500 : 403);
+        return { error: captcha.error || 'Invalid captcha' };
+      }
+
 
       const user = await server.prisma.user.findUnique({
         where: { email },
@@ -127,6 +178,7 @@ export async function authRoutes(server: FastifyInstance) {
         reply.status(401);
         return { error: 'Email hoặc mật khẩu không đúng' };
       }
+      console.log('OK');
       console.log('User logged in successfully:', user);
       return {
         data: {
