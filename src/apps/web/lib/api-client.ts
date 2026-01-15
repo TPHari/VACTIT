@@ -161,6 +161,12 @@ export const api = {
       apiClient.post<any>('/api/auth/login', data),
     oauthGoogle: (data: { email: string; name?: string; picture?: string }) =>
       apiClient.post<any>('/api/auth/oauth/google', data),
+    sendOtp: (data: { email: string; name: string }) =>
+      apiClient.post<any>('/api/auth/send-otp', data),
+    verifyOtp: (data: { email: string; code: string }) =>
+      apiClient.post<any>('/api/auth/verify-otp', data),
+    completeSignup: (data: { email: string; password: string }) =>
+      apiClient.post<any>('/api/auth/complete-signup', data),
   },
   admin: {
     tests: {
