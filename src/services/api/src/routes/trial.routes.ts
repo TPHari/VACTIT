@@ -48,7 +48,14 @@ export async function trialRoutes(server: FastifyInstance) {
         where: { trial_id: request.params.id },
         include: {
           student: true,
-          test: true,
+          test: {
+            select: {
+              test_id: true,
+              title: true,
+              type: true,
+              duration: true,
+            },
+          },
           responses: true
         }
       });
@@ -58,7 +65,13 @@ export async function trialRoutes(server: FastifyInstance) {
         return { error: 'Trial not found' };
       }
 
-      return { data: trial };
+      // expose test duration directly for convenience
+      return {
+        data: {
+          ...trial,
+          testDuration: trial.test?.duration ?? null,
+        },
+      };
     } catch (error) {
       reply.status(500);
       return {
