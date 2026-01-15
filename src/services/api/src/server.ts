@@ -61,10 +61,27 @@ server.decorate('redis', redisConnection);
 
 // ============ Plugins ============
 // CORS for frontend access
+const getAllowedOrigins = () => {
+  if (process.env.NODE_ENV !== 'production') {
+    return true; // Allow all in development
+  }
+
+  // Support multiple origins (comma-separated)
+  const frontendUrl = process.env.FRONTEND_URL || '';
+  const origins = frontendUrl.split(',').map(url => url.trim()).filter(Boolean);
+
+  console.log('[CORS] Allowed origins:', origins);
+
+  if (origins.length === 0) {
+    console.warn('[CORS] WARNING: No FRONTEND_URL configured, allowing all origins');
+    return true;
+  }
+
+  return origins;
+};
+
 server.register(require('@fastify/cors'), {
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.FRONTEND_URL
-    : true, // Allow all origins in development
+  origin: getAllowedOrigins(),
   credentials: true,
 });
 

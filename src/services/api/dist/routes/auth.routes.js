@@ -104,6 +104,7 @@ async function authRoutes(server) {
                 reply.status(401);
                 return { error: 'Email hoặc mật khẩu không đúng' };
             }
+            console.log('OK');
             console.log('User logged in successfully:', user);
             return {
                 data: {

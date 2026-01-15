@@ -8,13 +8,37 @@ const MEMBERSHIP_LABELS: Record<Membership, string> = {
   normal: "Thường",
   vip: "VIP",
   premium: "Premium",
+  Regular: "Thường",
+  VIP: "VIP",
+  Premium: "Premium",
 };
+
+const getMembershipLabel = (value: Membership | string) =>
+  (MEMBERSHIP_LABELS as Record<string, string>)[value] ?? value;
+
+const AVATAR_OPTIONS = [
+  "/assets/avatars/avatar-01.png",
+  "/assets/avatars/avatar-02.png",
+  "/assets/avatars/avatar-03.png",
+  "/assets/avatars/avatar-04.png",
+  "/assets/avatars/avatar-05.png",
+  "/assets/avatars/avatar-06.png",
+];
 
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [savedUser, setSavedUser] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string>("/assets/logos/avatar.png");
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Fetch user info on mount
   useEffect(() => {
@@ -22,8 +46,17 @@ export default function ProfilePage() {
       .then(res => res.json())
       .then(data => {
         if (data.ok) {
-          setUser(data.user);
-          setAvatarPreview(data.user.avatarUrl || "/assets/logos/avatar.png");
+          const normalizedUser: UserProfile = {
+            id: data.user.id ?? data.user.user_id,
+            name: data.user.name,
+            email: data.user.email,
+            phone: data.user.phone || "",
+            membership: data.user.membership,
+            avatarUrl: data.user.avatarUrl || data.user.avatar_url,
+          };
+          setUser(normalizedUser);
+          setSavedUser(normalizedUser);
+          setAvatarPreview(normalizedUser.avatarUrl || "/assets/logos/avatar.png");
         }
       });
   }, []);
@@ -36,24 +69,88 @@ export default function ProfilePage() {
     setUser((prev) => prev ? { ...prev, [name]: value } : prev);
   };
 
-  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
+  const handleAvatarSelect = (url: string) => {
     setAvatarPreview(url);
     setUser((prev) => prev ? { ...prev, avatarUrl: url } : prev);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // here you'd call your API: await updateUser(user)
-    setIsEditing(false);
+    if (!user) return;
+    setIsSaving(true);
+    setProfileMessage(null);
+    try {
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: user.name,
+          phone: user.phone,
+          avatarUrl: user.avatarUrl,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Cập nhật thất bại');
+      }
+      const updatedUser: UserProfile = {
+        id: data.user.id ?? data.user.user_id,
+        name: data.user.name,
+        email: data.user.email,
+        phone: data.user.phone || "",
+        membership: data.user.membership,
+        avatarUrl: data.user.avatarUrl || data.user.avatar_url,
+      };
+      setUser(updatedUser);
+      setSavedUser(updatedUser);
+      setAvatarPreview(updatedUser.avatarUrl || "/assets/logos/avatar.png");
+      setProfileMessage('Đã lưu thay đổi.');
+      setIsEditing(false);
+    } catch (error: any) {
+      setProfileMessage(error?.message || 'Cập nhật thất bại');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     // Optionally re-fetch user from API to reset
-    if (user) setAvatarPreview(user.avatarUrl || "/assets/logos/avatar.png");
+    if (savedUser) {
+      setUser(savedUser);
+      setAvatarPreview(savedUser.avatarUrl || "/assets/logos/avatar.png");
+    }
     setIsEditing(false);
+  };
+
+  const handlePasswordSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setPasswordMessage(null);
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) {
+      setPasswordMessage({ type: "error", text: "Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới." });
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordMessage({ type: "error", text: "Mật khẩu mới và xác nhận không khớp." });
+      return;
+    }
+    try {
+      const res = await fetch('/api/user/password', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Đổi mật khẩu thất bại');
+      }
+      setPasswordMessage({ type: "success", text: "Đổi mật khẩu thành công." });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error: any) {
+      setPasswordMessage({ type: "error", text: error?.message || "Đổi mật khẩu thất bại" });
+    }
   };
 
   if (!user) {
@@ -83,16 +180,6 @@ export default function ProfilePage() {
                       alt={user.name}
                       className="h-full w-full object-cover"
                     />
-                    {/* change avatar button */}
-                    <label className="absolute bottom-0 left-0 right-0 cursor-pointer bg-black/50 py-1 text-center text-[11px] font-medium text-white">
-                      Đổi ảnh
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarChange}
-                      />
-                    </label>
                   </div>
 
                   <div className="text-center">
@@ -101,10 +188,42 @@ export default function ProfilePage() {
                     </p>
                     <p className="text-xs text-brand-muted">ID: {user.id}</p>
                     <p className="mt-1 inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-                      {MEMBERSHIP_LABELS[user.membership]} member
+                      {getMembershipLabel(user.membership)} member
                     </p>
                   </div>
                 </div>
+
+                {isEditing && (
+                  <div className="mt-6">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted mb-3">
+                      Chọn ảnh đại diện
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {AVATAR_OPTIONS.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => handleAvatarSelect(option)}
+                          className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition-all ${
+                            avatarPreview === option
+                              ? "border-brand-primary ring-2 ring-brand-primary/30"
+                              : "border-slate-200 hover:border-brand-primary"
+                          }`}
+                          aria-label="Chọn ảnh đại diện"
+                        >
+                          <img
+                            src={option}
+                            alt="Avatar"
+                            className="h-full w-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-xs text-brand-muted">
+                      Ảnh đại diện được chọn từ bộ có sẵn.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Right: editable form */}
@@ -150,17 +269,7 @@ export default function ProfilePage() {
                     <label className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
                       Email
                     </label>
-                    {isEditing ? (
-                      <input
-                        type="email"
-                        name="email"
-                        value={user.email}
-                        onChange={handleFieldChange}
-                        className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
-                      />
-                    ) : (
-                      <p className="mt-1 text-brand-text">{user.email}</p>
-                    )}
+                    <p className="mt-1 text-brand-text">{user.email}</p>
                   </div>
 
                   {/* Phone */}
@@ -176,7 +285,7 @@ export default function ProfilePage() {
                         className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
                       />
                     ) : (
-                      <p className="mt-1 text-brand-text">{user.phone}</p>
+                      <p className="mt-1 text-brand-text">{user.phone || "---"}</p>
                     )}
                   </div>
 
@@ -185,32 +294,26 @@ export default function ProfilePage() {
                     <label className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
                       Gói thành viên
                     </label>
-                    {isEditing ? (
-                      <select
-                        name="membership"
-                        value={user.membership}
-                        onChange={handleFieldChange}
-                        className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
-                      >
-                        <option value="normal">Thường</option>
-                        <option value="vip">VIP</option>
-                        <option value="premium">Premium</option>
-                      </select>
-                    ) : (
-                      <p className="mt-1 text-brand-text">
-                        {MEMBERSHIP_LABELS[user.membership]}
-                      </p>
-                    )}
+                    <p className="mt-1 text-brand-text">
+                      {getMembershipLabel(user.membership)}
+                    </p>
                   </div>
+
+                  {profileMessage && (
+                    <div className="sm:col-span-2 text-xs text-slate-500">
+                      {profileMessage}
+                    </div>
+                  )}
 
                   {/* Actions */}
                   {isEditing && (
                     <div className="mt-4 flex gap-3 sm:col-span-2">
                       <button
                         type="submit"
-                        className="inline-flex items-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                        disabled={isSaving}
+                        className="inline-flex items-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
                       >
-                        Lưu thay đổi
+                        {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
                       </button>
                       <button
                         type="button"
@@ -221,6 +324,63 @@ export default function ProfilePage() {
                       </button>
                     </div>
                   )}
+                </form>
+              </div>
+
+              <div className="rounded-card bg-white p-6 shadow-card md:col-span-2">
+                <h2 className="text-sm font-semibold text-brand-text">Đổi mật khẩu</h2>
+                <form onSubmit={handlePasswordSubmit} className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                  <div className="sm:col-span-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                      Mật khẩu hiện tại
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
+                      className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
+                    />
+                  </div>
+                  <div className="sm:col-span-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                      Mật khẩu mới
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
+                      className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
+                    />
+                  </div>
+                  <div className="sm:col-span-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                      Xác nhận mật khẩu mới
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                      className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 flex items-center gap-3">
+                    <button
+                      type="submit"
+                      className="inline-flex items-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                      Cập nhật mật khẩu
+                    </button>
+                    {passwordMessage && (
+                      <span
+                        className={`text-xs ${
+                          passwordMessage.type === "success" ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {passwordMessage.text}
+                      </span>
+                    )}
+                  </div>
                 </form>
               </div>
             </section>

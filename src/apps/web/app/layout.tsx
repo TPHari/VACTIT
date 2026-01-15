@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'VACTIT',
-  description: 'Web Application',
+  title: 'VACTIT – Thi thử Đánh giá năng lực ĐHQG-HCM V-ACT',
+  description: 'Hệ thống thi thử đánh giá năng lực V-ACT miễn phí, tích hợp chấm điểm theo lý thuyết IRT và phân tích kết quả chi tiết.',
 };
 
 export default function RootLayout({
