@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-export function middleware(request: NextRequest) {
-  // Add custom middleware logic here
-  // Example: Authentication, logging, etc.
-  
+const PUBLIC_PATHS = ['/auth/login', '/auth/signup', '/terms', '/_next', '/favicon.ico', '/assets'];
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) return NextResponse.next();
+
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return NextResponse.redirect(new URL('/auth/login', req.url));
+
+  // Optional role check
+  if (token.role !== 'Student') return NextResponse.redirect(new URL('/auth/login', req.url));
+
   return NextResponse.next();
 }
 

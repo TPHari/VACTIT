@@ -38,6 +38,120 @@ const slides: Slide[] = [
   },
 ];
 
+const termsSections = [
+  {
+    title: '1. Chấp nhận điều khoản',
+    items: [
+      'Bằng việc truy cập, đăng ký tài khoản và sử dụng nền tảng thi thử của BaiLearn, bạn đồng ý tuân thủ toàn bộ các Điều khoản sử dụng này.',
+      'Nếu bạn không đồng ý với bất kỳ điều khoản nào, vui lòng chấm dứt việc sử dụng dịch vụ ngay lập tức.',
+    ],
+  },
+  {
+    title: '2. Tài khoản và Bảo mật',
+    items: [
+      'Thông tin chính xác: Bạn cam kết cung cấp thông tin (Họ tên, Email, SĐT) chính xác và chính chủ.',
+      'Quyền hạn của BaiLearn: BaiLearn có quyền khóa vĩnh viễn các tài khoản sử dụng thông tin giả mạo mà không cần báo trước.',
+      'Trách nhiệm bảo mật: Bạn hoàn toàn chịu trách nhiệm bảo mật thông tin đăng nhập.',
+      'Miễn trừ trách nhiệm: BaiLearn không chịu trách nhiệm cho bất kỳ tổn thất nào phát sinh do việc bạn để lộ mật khẩu hoặc chia sẻ tài khoản cho người khác.',
+    ],
+  },
+  {
+    title: '3. Quyền sở hữu trí tuệ',
+    items: [
+      'Bản quyền nội dung: Tất cả nội dung trên trang web đều là tài sản trí tuệ độc quyền của BaiLearn.',
+      'Hành vi bị nghiêm cấm: Sao chép, chụp ảnh màn hình, quay video, cào dữ liệu, phát tán đề thi ra bên ngoài hoặc sử dụng cho mục đích thương mại khi chưa có sự đồng ý bằng văn bản của BaiLearn.',
+      'Chế tài: Hành vi vi phạm sẽ bị xử lý theo quy định pháp luật về Sở hữu trí tuệ và BaiLearn có quyền yêu cầu bồi thường.',
+    ],
+  },
+  {
+    title: '4. Quy định về Thi thử và Kết quả',
+    items: [
+      'Tính chất tham khảo: Kết quả thi thử và các lời khuyên chiến lược chỉ mang tính tham khảo.',
+      'Cam kết: Không đảm bảo điểm thi thử trùng với điểm thi thật tại kỳ thi ĐGNL HCM.',
+      'Lỗi kỹ thuật: Nếu có sự cố hệ thống, BaiLearn sẽ nỗ lực khắc phục nhưng không chịu trách nhiệm bồi thường.',
+    ],
+  },
+  {
+    title: '5. Quyền sử dụng dữ liệu người dùng',
+    items: [
+      'Bạn trao cho BaiLearn quyền vĩnh viễn, không hủy ngang và miễn phí để sử dụng kết quả làm bài, lịch sử thao tác và điểm số.',
+      'Mục đích: Thống kê, cải thiện chất lượng đề thi và huấn luyện AI.',
+      'Công bố báo cáo: Dữ liệu có thể được công bố ở dạng ẩn danh.',
+    ],
+  },
+  {
+    title: '6. Thanh toán và Hoàn tiền',
+    items: [
+      'Các gói dịch vụ đã mua sẽ không được hoàn tiền dưới mọi hình thức.',
+      'Ngoại lệ: Trừ khi lỗi phát sinh hoàn toàn từ hệ thống của BaiLearn và không thể khắc phục quá 72 giờ.',
+    ],
+  },
+  {
+    title: '7. Giới hạn trách nhiệm',
+    items: [
+      'BaiLearn không chịu trách nhiệm cho thiệt hại gián tiếp, ngẫu nhiên hoặc đặc biệt phát sinh từ việc sử dụng hoặc không thể sử dụng dịch vụ.',
+    ],
+  },
+  {
+    title: '8. Thay đổi Điều khoản',
+    items: [
+      'BaiLearn có quyền thay đổi nội dung chính sách này bất cứ lúc nào. Các thay đổi sẽ được thông báo trên website hoặc qua email. Việc bạn tiếp tục sử dụng dịch vụ sau khi thay đổi đồng nghĩa với việc bạn chấp nhận chính sách mới.',
+    ]
+  }
+];
+
+const privacySections = [
+  {
+    title: '1. Dữ liệu chúng tôi thu thập',
+    items: [
+      'Thông tin định danh: Họ tên, Địa chỉ Email và Số điện thoại.',
+      'Dữ liệu học tập: Lịch sử làm bài, điểm số từng phần, thời gian hoàn thành bài thi, các câu hỏi bạn làm sai thường xuyên.',
+      'Dữ liệu kỹ thuật: Địa chỉ IP, loại trình duyệt, thiết bị sử dụng, cookies.',
+    ],
+  },
+  {
+    title: '2. Mục đích sử dụng dữ liệu',
+    items: [
+      'Cung cấp dịch vụ: Xác thực tài khoản, chấm điểm, lưu trữ tiến độ học tập.',
+      'Phân tích và Tư vấn: Dùng điểm số và hành vi làm bài để phân tích điểm mạnh/yếu và đưa ra lời khuyên chiến lược cá nhân hóa.',
+      'Cải thiện chất lượng: Phân tích dữ liệu gộp để đánh giá độ khó câu hỏi và điều chỉnh đề thi.',
+      'Tiếp thị và Truyền thông: Gửi email về kỳ thi thử, mẹo ôn thi, khóa học, khuyến mãi; bạn có quyền từ chối bất cứ lúc nào.',
+    ],
+  },
+  {
+    title: '3. Chia sẻ dữ liệu',
+    items: [
+      'Không bán thông tin cá nhân cho bên thứ ba.',
+      'Có thể chia sẻ với đối tác cung cấp hạ tầng, dịch vụ email... và họ phải tuân thủ quy định bảo mật của BaiLearn.',
+      'Chia sẻ theo yêu cầu pháp lý từ cơ quan có thẩm quyền.',
+    ],
+  },
+  {
+    title: '4. Lưu trữ và Bảo vệ dữ liệu',
+    items: [
+      'Lưu trữ trên máy chủ bảo mật.',
+      'Mã hóa trong quá trình truyền tải.',
+      'Không có hệ thống nào an toàn tuyệt đối; BaiLearn nỗ lực bảo vệ nhưng không chịu trách nhiệm nếu bị tấn công vượt các lớp bảo mật chuẩn.',
+    ],
+  },
+  {
+    title: '5. Quyền của người dùng',
+    items: [
+      'Bạn có quyền xem và chỉnh sửa thông tin cá nhân trong trang Quản lý tài khoản.',
+      'Bạn có thể hủy đăng ký email marketing qua nút Unsubscribe.',
+      'Bạn có thể yêu cầu xóa hoàn toàn tài khoản và dữ liệu; hành động này không thể khôi phục.',
+    ],
+  },
+  {
+    title: '6. Thay đổi chính sách',
+    items: [
+      'BaiLearn có thể thay đổi chính sách bất cứ lúc nào.',
+      'Thay đổi sẽ được thông báo trên website hoặc qua email.',
+      'Tiếp tục sử dụng dịch vụ nghĩa là bạn chấp nhận chính sách mới.',
+    ],
+  },
+];
+
 function DotIcon({ type, active }: { type: Slide['dot']; active: boolean }) {
   const color = active ? '#FFFFFF' : 'rgba(255,255,255,0.6)';
   switch (type) {
@@ -72,6 +186,10 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -85,7 +203,13 @@ export default function SignupPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setConsentError(null);
     setLoading(true);
+    if (!acceptedTerms) {
+      setConsentError('Vui lòng đồng ý với Điều khoản và Chính sách bảo mật trước khi tiếp tục.');
+      setLoading(false);
+      return;
+    }
     try {
       // Use API client to call Fastify backend
       await api.auth.signup({
@@ -202,14 +326,14 @@ export default function SignupPage() {
               <input
                 required
                 placeholder="Họ"
-                value={lastName}
+                value={lastName || ''}
                 onChange={(e) => setLastName(e.target.value)}
                 className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
               <input
                 required
                 placeholder="Tên"
-                value={firstName}
+                value={firstName || ''}
                 onChange={(e) => setFirstName(e.target.value)}
                 className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
@@ -219,7 +343,7 @@ export default function SignupPage() {
             <input
               required
               placeholder="Tên đăng nhập / Email"
-              value={username}
+              value={username || ''}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
@@ -229,7 +353,7 @@ export default function SignupPage() {
               <input
                 required
                 placeholder="Mật khẩu"
-                value={password}
+                value={password || ''}
                 onChange={(e) => setPassword(e.target.value)}
                 type={showPassword ? 'text' : 'password'}
                 className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
@@ -254,11 +378,22 @@ export default function SignupPage() {
             </div>
 
             <div className="flex items-start gap-2 mt-2">
-              <input type="checkbox" className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" id="terms" required />
+              <input
+                type="checkbox"
+                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                id="terms"
+                checked={!!acceptedTerms}
+                onChange={(e) => {
+                  setAcceptedTerms(e.target.checked);
+                  if (e.target.checked) setConsentError(null);
+                }}
+              />
               <label htmlFor="terms" className="text-xs text-gray-500 leading-tight">
-                Bằng cách tích vào ô này, bạn đã đồng ý với <Link href="#" className="text-blue-600 hover:underline">điều khoản</Link> và <Link href="#" className="text-blue-600 hover:underline">chính sách bảo mật</Link> của BaiLearn.
+                Bằng cách tích vào ô này, bạn đã đồng ý với <button type="button" onClick={() => setShowTermsModal(true)} className="text-blue-600 hover:underline">điều khoản</button> và <button type="button" onClick={() => setShowPrivacyModal(true)} className="text-blue-600 hover:underline">chính sách bảo mật</button> của BaiLearn.
               </label>
             </div>
+
+            {consentError && <div className="text-xs text-red-600 mt-1">{consentError}</div>}
 
             {error && <div className="text-sm text-red-600 text-center bg-red-50 p-2 rounded">{error}</div>}
 
@@ -276,6 +411,113 @@ export default function SignupPage() {
           </form>
         </div>
       </div>
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-slate-900/60" onClick={() => setShowTermsModal(false)} />
+          <div className="relative z-10 w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-blue-600 font-semibold">BaiLearn</p>
+                <h2 className="text-lg font-semibold text-slate-900">Điều khoản sử dụng</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="rounded-full p-2 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Đóng điều khoản"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-slate-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-6 overflow-y-auto max-h-[60vh]">
+              {termsSections.map((section) => (
+                <section key={section.title} className="space-y-2">
+                  <h3 className="text-base font-semibold text-slate-900">{section.title}</h3>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 leading-relaxed">
+                    {section.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-700 rounded-full border border-slate-200 hover:bg-slate-100"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700"
+              >
+                Tôi đã đọc
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-slate-900/60" onClick={() => setShowPrivacyModal(false)} />
+          <div className="relative z-10 w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-blue-600 font-semibold">BaiLearn</p>
+                <h2 className="text-lg font-semibold text-slate-900">Chính sách bảo mật</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                className="rounded-full p-2 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Đóng chính sách bảo mật"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-slate-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-4 space-y-6 overflow-y-auto max-h-[60vh]">
+              {privacySections.map((section) => (
+                <section key={section.title} className="space-y-2">
+                  <h3 className="text-base font-semibold text-slate-900">{section.title}</h3>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 leading-relaxed">
+                    {section.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-700 rounded-full border border-slate-200 hover:bg-slate-100"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700"
+              >
+                Tôi đã đọc
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

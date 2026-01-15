@@ -102,7 +102,7 @@ export default function ExamModal({ exam, onClose }: ExamModalProps) {
               <h3 className="text-blue-600 font-bold text-lg group-hover:text-blue-700 transition-colors">Thông tin bài thi</h3>
               <div className="bg-[#2563EB] text-white p-5 rounded-2xl h-48 overflow-y-auto overflow-x-hidden shadow-lg shadow-blue-200 custom-scrollbar-light transition-transform duration-300 ease-out hover:scale-[1.02] hover:shadow-xl">
                 <p className="text-sm leading-relaxed opacity-95 whitespace-pre-line">
-                  {exam.description || "Chưa có thông tin mô tả cho bài thi này."}
+                  {"Đây không chỉ là một bài kiểm tra, đây là bước chạy đà quan trọng nhất để bạn chạm tay vào tấm vé đại học mơ ước. Đề thi thử ĐGNL 2026 được biên soạn công phu, bám sát cấu trúc đề thi thật của ĐHQG-HCM.\n\nCấu trúc chuẩn 3 phần: Ngôn ngữ (Tiếng Việt, Tiếng Anh) - Toán học, Tư duy khoa học (Logic, phân tích số liệu & Tư duy khoa học).\n\nCác câu hỏi được thiết kế để phân loại thí sinh, từ nhận biết đến vận dụng cao, đảm bảo phản ánh đúng năng lực hiện tại của bạn.\n\nRèn luyện áp lực bằng việc trải nghiệm không khí phòng thi với quy định thời gian nghiêm ngặt (150 phút/120 câu), giúp bạn làm quen với áp lực tâm lý và quản lý thời gian hiệu quả.\n\nMục tiêu: Giúp bạn định vị chính xác năng lực bản thân so với mặt bằng chung trước kỳ thi chính thức."}
                 </p>
               </div>
             </div>
