@@ -249,9 +249,18 @@ export const api = {
         return apiClient.get<any>(`/api/leaderboard${query}`);
     },
     getExams: () => apiClient.get<any>('/api/leaderboard/exams'),
+    getLatest: () => apiClient.get<any>('/api/leaderboard/latest'),
   },
   news: {
     getAll: () => apiClient.get<any>('/api/news'),
+  },
+  userStats: {
+    get: () => {
+      if (typeof window !== 'undefined') {
+        return fetch('/api/user/stats').then(r => r.json());
+      }
+      return apiClient.get<any>('/api/user/stats');
+    },
   },
 };
 
