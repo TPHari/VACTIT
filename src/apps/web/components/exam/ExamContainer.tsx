@@ -68,7 +68,7 @@ export default function ExamContainer({
 
   const testData = {
     title: testTitle || 'Đề thi thử ĐGNL',
-    durationSeconds: (durationMinutes || 120) * 60,
+    durationSeconds: (durationMinutes || 150) * 60,
     testId: testId,
   };
 

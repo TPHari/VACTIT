@@ -157,10 +157,23 @@ export const api = {
   auth: {
     signup: (data: { name: string; email: string; password: string }) =>
       apiClient.post<any>('/api/auth/signup', data),
-    login: (data: { email: string; password: string }) =>
+    login: (data: { email: string; password: string; captchaToken: string }) =>
       apiClient.post<any>('/api/auth/login', data),
     oauthGoogle: (data: { email: string; name?: string; picture?: string }) =>
       apiClient.post<any>('/api/auth/oauth/google', data),
+    sendOtp: (data: { email: string; name: string }) =>
+      apiClient.post<any>('/api/auth/send-otp', data),
+    verifyOtp: (data: { email: string; code: string }) =>
+      apiClient.post<any>('/api/auth/verify-otp', data),
+    completeSignup: (data: { email: string; password: string }) =>
+      apiClient.post<any>('/api/auth/complete-signup', data),
+    // Forgot password
+    forgotPasswordSendOtp: (data: { email: string }) =>
+      apiClient.post<any>('/api/auth/forgot-password/send-otp', data),
+    forgotPasswordVerifyOtp: (data: { email: string; code: string }) =>
+      apiClient.post<any>('/api/auth/forgot-password/verify-otp', data),
+    forgotPasswordReset: (data: { email: string; password: string }) =>
+      apiClient.post<any>('/api/auth/forgot-password/reset', data),
   },
   admin: {
     tests: {
@@ -249,9 +262,18 @@ export const api = {
         return apiClient.get<any>(`/api/leaderboard${query}`);
     },
     getExams: () => apiClient.get<any>('/api/leaderboard/exams'),
+    getLatest: () => apiClient.get<any>('/api/leaderboard/latest'),
   },
   news: {
     getAll: () => apiClient.get<any>('/api/news'),
+  },
+  userStats: {
+    get: () => {
+      if (typeof window !== 'undefined') {
+        return fetch('/api/user/stats').then(r => r.json());
+      }
+      return apiClient.get<any>('/api/user/stats');
+    },
   },
 };
 

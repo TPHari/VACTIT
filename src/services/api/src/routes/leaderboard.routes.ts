@@ -116,4 +116,91 @@ export async function leaderboardRoutes(server: FastifyInstance) {
       return reply.status(500).send({ error: 'Failed to fetch leaderboard' });
     }
   });
+
+  // 3. Lấy Leaderboard của bài thi gần nhất
+  server.get('/api/leaderboard/latest', async (request, reply) => {
+    try {
+      // Tìm bài thi gần nhất có type = 'exam'
+      const latestExam = await server.prisma.test.findFirst({
+        where: { type: 'exam' },
+        orderBy: { start_time: 'desc' },
+        select: { test_id: true, title: true }
+      });
+
+      if (!latestExam) {
+        return { data: [], testInfo: null };
+      }
+
+      // Lấy trials của bài thi này
+      const trials = await server.prisma.trial.findMany({
+        where: { test_id: latestExam.test_id },
+        include: {
+          student: {
+            select: { user_id: true, name: true, avatar_url: true }
+          }
+        }
+      });
+
+      // Map và tính điểm
+      const results = trials.map(trial => {
+        const totalScore = calculateTotalScore(trial.processed_score);
+        const start = new Date(trial.start_time).getTime();
+        const end = trial.end_time ? new Date(trial.end_time).getTime() : new Date().getTime();
+        const durationMinutes = Math.floor((end - start) / 60000);
+        const durationSeconds = Math.floor((end - start) / 1000) % 60;
+
+        return {
+          userId: trial.student_id,
+          name: trial.student?.name || 'Ẩn danh',
+          avatar: trial.student?.avatar_url || null,
+          score: totalScore,
+          timeMinutes: durationMinutes,
+          timeSeconds: durationSeconds,
+          date: trial.end_time || trial.start_time
+        };
+      });
+
+      // Lọc kết quả tốt nhất của mỗi User
+      const bestResultsByUser = new Map<string, typeof results[0]>();
+      results.forEach(record => {
+        const currentBest = bestResultsByUser.get(record.userId);
+        if (!currentBest) {
+          bestResultsByUser.set(record.userId, record);
+        } else if (record.score > currentBest.score) {
+          bestResultsByUser.set(record.userId, record);
+        } else if (record.score === currentBest.score && 
+                   record.timeMinutes * 60 + record.timeSeconds < currentBest.timeMinutes * 60 + currentBest.timeSeconds) {
+          bestResultsByUser.set(record.userId, record);
+        }
+      });
+
+      // Sắp xếp và format
+      const leaderboard = Array.from(bestResultsByUser.values())
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return (a.timeMinutes * 60 + a.timeSeconds) - (b.timeMinutes * 60 + b.timeSeconds);
+        })
+        .slice(0, 7) // Giới hạn top 7
+        .map((item) => ({
+          id: item.userId,
+          name: item.name,
+          avatar: item.avatar,
+          score: item.score,
+          time: `${item.timeMinutes}:${item.timeSeconds.toString().padStart(2, '0')}`,
+          date: item.date
+        }));
+
+      return { 
+        data: leaderboard,
+        testInfo: {
+          testId: latestExam.test_id,
+          title: latestExam.title
+        }
+      };
+
+    } catch (error) {
+      server.log.error(error);
+      return reply.status(500).send({ error: 'Failed to fetch latest leaderboard' });
+    }
+  });
 }

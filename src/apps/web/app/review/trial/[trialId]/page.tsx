@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ViewerPane from "@/components/exam/ViewerPane";
 import AnswerReviewPanel2Col from "@/components/exam/AnswerReviewPanel2Col";
 import { buildAnswerReviewRows } from "@/lib/adapters/answers";
@@ -23,6 +24,7 @@ type TrialDetails = {
 
 export default function ReviewPage({ params }: { params: Promise<{ trialId: string }> }) {
   const { trialId } = use(params);
+  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [trial, setTrial] = useState<TrialDetails | null>(null);
@@ -92,9 +94,20 @@ export default function ReviewPage({ params }: { params: Promise<{ trialId: stri
 
   return (
     <main className="px-6 pb-8 pt-4 lg:px-8">
-      <h1 className="mb-3 text-base font-semibold">
-        {trial.test.title} – Review
-      </h1>
+      <div className="flex items-center gap-4 mb-3">
+        <button
+          onClick={() => router.push("/result")}
+          className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Quay lại
+        </button>
+        <h1 className="text-base font-semibold">
+          {trial.test.title} – Review
+        </h1>
+      </div>
 
       <div className="flex h-[calc(100vh-0px)] gap-6">
         <div className="flex-2 rounded-md border bg-white shadow-sm">

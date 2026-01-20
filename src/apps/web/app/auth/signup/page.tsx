@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api-client';
 import { signIn } from 'next-auth/react';
+import { api } from '@/lib/api-client';
 
 type Slide = {
   id: string;
@@ -176,15 +176,21 @@ function DotIcon({ type, active }: { type: Slide['dot']; active: boolean }) {
   }
 }
 
+type SignupStep = 'details' | 'otp' | 'password';
+
 export default function SignupPage() {
   const router = useRouter();
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<SignupStep>('details');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
@@ -199,31 +205,145 @@ export default function SignupPage() {
   }, []);
 
   const currentSlide = slides[activeSlide];
+  const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
+  const fullName = useMemo(() => `${lastName} ${firstName}`.trim(), [firstName, lastName]);
 
-  async function onSubmit(e: React.FormEvent) {
+  const isGmail = (value: string) => /@gmail\.com$/i.test(value.trim());
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setInfo(null);
     setConsentError(null);
-    setLoading(true);
-    if (!acceptedTerms) {
-      setConsentError('Vui lòng đồng ý với Điều khoản và Chính sách bảo mật trước khi tiếp tục.');
+
+    if (step === 'details') {
+      if (!acceptedTerms) {
+        setConsentError('Vui lòng đồng ý với Điều khoản và Chính sách bảo mật trước khi tiếp tục.');
+        return;
+      }
+      if (!isGmail(normalizedEmail)) {
+        setError('Chỉ chấp nhận đăng ký bằng địa chỉ Gmail (@gmail.com).');
+        return;
+      }
+      if (!fullName.trim()) {
+        setError('Vui lòng nhập họ và tên.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await api.auth.sendOtp({
+          email: normalizedEmail,
+          name: fullName,
+        });
+
+        if (res.error) {
+          setError(res.error);
+          setLoading(false);
+          return;
+        }
+
+        setStep('otp');
+        setInfo('Đã gửi mã xác nhận tới Gmail của bạn. Vui lòng kiểm tra hộp thư hoặc spam.');
+      } catch (err: any) {
+        setError(err.message || 'Không thể gửi mã xác nhận.');
+      }
       setLoading(false);
       return;
     }
-    try {
-      // Use API client to call Fastify backend
-      await api.auth.signup({
-        name: `${firstName} ${lastName}`.trim(),
-        email: username,
-        password,
-      });
 
-      // Redirect to login after successful signup
-      router.push('/auth/login');
-    } catch (err: any) {
-      setError(err.message || 'Signup failed');
+    if (step === 'otp') {
+      if (otpCode.trim().length !== 6) {
+        setError('Mã xác nhận cần đủ 6 chữ số.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await api.auth.verifyOtp({
+          email: normalizedEmail,
+          code: otpCode.trim(),
+        });
+
+        if (res.error) {
+          setError(res.error);
+          setLoading(false);
+          return;
+        }
+
+        setStep('password');
+        setInfo('Email đã được xác minh. Hãy tạo mật khẩu để hoàn tất.');
+      } catch (err: any) {
+        setError(err.message || 'Mã xác nhận không hợp lệ hoặc đã hết hạn.');
+      }
+      setLoading(false);
+      return;
+    }
+
+    if (step === 'password') {
+      if (password.length < 8) {
+        setError('Mật khẩu cần tối thiểu 8 ký tự.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await api.auth.completeSignup({
+          email: normalizedEmail,
+          password,
+        });
+
+        if (res.error) {
+          setError(res.error);
+          setLoading(false);
+          return;
+        }
+
+        // Auto login after signup
+        const loginRes = await signIn('credentials', {
+          redirect: false,
+          email: normalizedEmail,
+          password,
+        });
+
+        if (loginRes?.error) {
+          // Still show success but redirect to login
+          setInfo('Đăng ký thành công! Vui lòng đăng nhập.');
+          router.push('/auth/login');
+        } else {
+          router.push('/');
+        }
+      } catch (err: any) {
+        setError(err.message || 'Không thể tạo tài khoản.');
+      }
       setLoading(false);
     }
+  }
+
+  async function handleResendOtp() {
+    setError(null);
+    setInfo(null);
+    if (!isGmail(normalizedEmail)) {
+      setError('Chỉ chấp nhận đăng ký bằng địa chỉ Gmail (@gmail.com).');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await api.auth.sendOtp({
+        email: normalizedEmail,
+        name: fullName,
+      });
+
+      if (res.error) {
+        setError(res.error);
+      } else {
+        setInfo('Đã gửi lại mã xác nhận. Vui lòng kiểm tra hộp thư.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Không thể gửi lại mã xác nhận.');
+    }
+    setLoading(false);
   }
 
   return (
@@ -319,90 +439,132 @@ export default function SignupPage() {
             <div className="flex-grow border-t border-gray-300"></div>
           </div>
 
-          <form onSubmit={onSubmit} className="space-y-4">
-
-            {/* Tên & Họ */}
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                required
-                placeholder="Họ"
-                value={lastName || ''}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-              <input
-                required
-                placeholder="Tên"
-                value={firstName || ''}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              <span className={`px-3 py-1 rounded-full ${step === 'details' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>Thông tin</span>
+              <span className={`px-3 py-1 rounded-full ${step === 'otp' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>Nhập mã</span>
+              <span className={`px-3 py-1 rounded-full ${step === 'password' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>Mật khẩu</span>
             </div>
 
-            {/* Email */}
-            <input
-              required
-              placeholder="Tên đăng nhập / Email"
-              value={username || ''}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
+            {step === 'details' && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    required
+                    placeholder="Họ"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                  <input
+                    required
+                    placeholder="Tên"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
 
-            {/* Password */}
-            <div className="relative">
-              <input
-                required
-                placeholder="Mật khẩu"
-                value={password || ''}
-                onChange={(e) => setPassword(e.target.value)}
-                type={showPassword ? 'text' : 'password'}
-                className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
-              />
-              <button
-                type="button"
-                aria-label="Toggle password"
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-5 top-3.5 text-gray-400 hover:text-gray-600 focus:outline-none"
-              >
-                {showPassword ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                  </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                )}
-              </button>
-            </div>
+                <input
+                  required
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  type="email"
+                />
 
-            <div className="flex items-start gap-2 mt-2">
-              <input
-                type="checkbox"
-                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                id="terms"
-                checked={!!acceptedTerms}
-                onChange={(e) => {
-                  setAcceptedTerms(e.target.checked);
-                  if (e.target.checked) setConsentError(null);
-                }}
-              />
-              <label htmlFor="terms" className="text-xs text-gray-500 leading-tight">
-                Bằng cách tích vào ô này, bạn đã đồng ý với <button type="button" onClick={() => setShowTermsModal(true)} className="text-blue-600 hover:underline">điều khoản</button> và <button type="button" onClick={() => setShowPrivacyModal(true)} className="text-blue-600 hover:underline">chính sách bảo mật</button> của BaiLearn.
-              </label>
-            </div>
+                <div className="flex items-start gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    id="terms"
+                    checked={acceptedTerms}
+                    onChange={(e) => {
+                      setAcceptedTerms(e.target.checked);
+                      if (e.target.checked) setConsentError(null);
+                    }}
+                  />
+                  <label htmlFor="terms" className="text-xs text-gray-500 leading-tight">
+                    Bằng cách tích vào ô này, bạn đã đồng ý với <button type="button" onClick={() => setShowTermsModal(true)} className="text-blue-600 hover:underline">điều khoản</button> và <button type="button" onClick={() => setShowPrivacyModal(true)} className="text-blue-600 hover:underline">chính sách bảo mật</button> của BaiLearn.
+                  </label>
+                </div>
+                {consentError && <div className="text-xs text-red-600 mt-1">{consentError}</div>}
+              </>
+            )}
 
-            {consentError && <div className="text-xs text-red-600 mt-1">{consentError}</div>}
+            {step === 'otp' && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 text-center">
+                  Nhập mã xác nhận 6 số được gửi tới <span className="font-semibold">{normalizedEmail}</span>.
+                  <button 
+                    type="button" 
+                    onClick={() => { setStep('details'); setOtpCode(''); setError(null); setInfo(null); }} 
+                    className="text-blue-600 hover:underline ml-1"
+                  >
+                    Đổi email
+                  </button>
+                </p>
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="Nhập mã 6 số"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-center tracking-[0.6em] text-lg font-semibold text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                  <span>Không nhận được mã?</span>
+                  <button type="button" onClick={handleResendOtp} className="text-blue-600 font-semibold hover:underline" disabled={loading}>Gửi lại</button>
+                </div>
+              </div>
+            )}
+
+            {step === 'password' && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 text-center">Email đã được xác minh. Đặt mật khẩu để hoàn tất đăng ký.</p>
+                <div className="relative">
+                  <input
+                    required
+                    placeholder="Mật khẩu (tối thiểu 8 ký tự)"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    type={showPassword ? 'text' : 'password'}
+                    className="w-full px-6 py-3.5 border border-gray-300 rounded-full text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Toggle password"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute right-5 top-3.5 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {error && <div className="text-sm text-red-600 text-center bg-red-50 p-2 rounded">{error}</div>}
+            {info && <div className="text-sm text-green-700 text-center bg-green-50 p-2 rounded">{info}</div>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#2563EB] text-white py-3.5 rounded-full font-medium shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-70 mt-4"
+              className="w-full bg-[#2563EB] text-white py-3.5 rounded-full font-medium shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-70 mt-2"
             >
-              {loading ? 'Đang đăng ký…' : 'Đăng ký'}
+              {step === 'details' && (loading ? 'Đang gửi mã…' : 'Tiếp tục')}
+              {step === 'otp' && (loading ? 'Đang xác nhận…' : 'Xác nhận')}
+              {step === 'password' && (loading ? 'Đang tạo…' : 'Tạo tài khoản')}
             </button>
 
             <div className="text-center text-sm text-gray-500 mt-4">
