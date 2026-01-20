@@ -16,12 +16,14 @@
     "@supabase/supabase-js": "^2.89.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.9.1",
+    "@types/nodemailer": "^6.4.17",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.0.0",
     "dotenv": "^17.2.3",
     "fastify": "^5.0.0",
     "ioredis": "^5.8.2",
     "mupdf": "^1.26.4",
+    "nodemailer": "^6.9.16",
     "zod": "^4.1.13"
   },
   "devDependencies": {
