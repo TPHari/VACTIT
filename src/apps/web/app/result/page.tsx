@@ -466,11 +466,11 @@ export default function ResultsPage() {
                           key={item.number}
                           className="flex flex-col items-center"
                         >
-                          <span className="text-[8px] text-brand-muted mb-0.5">
+                          <span className="text-[9px] text-brand-muted mb-0.5">
                             {item.number}
                           </span>
                           <span
-                            className="flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-semibold text-white"
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-semibold text-white"
                             style={{
                               backgroundColor:
                                 item.answer === "-"
