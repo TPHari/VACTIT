@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { api } from '@/lib/api-client';
 
-export const authOptions: NextAuthOptions= {
+export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
@@ -25,7 +25,7 @@ export const authOptions: NextAuthOptions= {
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials?.password || !credentials?.captchaToken) return null;
-          
+
           // Call Fastify API for authentication
           const response = await api.auth.login({
             email: credentials.email,
@@ -86,6 +86,17 @@ export const authOptions: NextAuthOptions= {
         if (account?.provider === "google" && email) {
           token.id = email;
           (token as any).email = email;
+
+          // Fetch role from database for Google OAuth users
+          try {
+            const response = await api.auth.oauthGoogle({ email, name: (profile as any)?.name });
+            if (response?.data?.user?.role) {
+              (token as any).role = response.data.user.role;
+            }
+          } catch (err) {
+            console.error('Failed to fetch role for Google user:', err);
+            (token as any).role = 'Student'; // Default fallback
+          }
         } else {
           // Credentials login: your authorize() should have set user.id already
           // But if your system uses email as user_id, keeping email works too.

@@ -5,15 +5,21 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Experimental optimizations for faster navigation
+  experimental: {
+    // Enable optimistic client cache for faster back/forward navigation
+    optimisticClientCache: true,
+  },
   images: {
-  remotePatterns: [
-    {
-      protocol: "https",
-      hostname: "mbfmmvhkqmdxqsqduqlz.supabase.co",
-      pathname: "/storage/v1/object/**",
-    },
-  ],
-},
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "mbfmmvhkqmdxqsqduqlz.supabase.co",
+        pathname: "/storage/v1/object/**",
+      },
+    ],
+  },
 };
 
 module.exports = nextConfig;
+
