@@ -200,7 +200,7 @@ export default function OverviewTab() {
                           cx="48"
                           cy="48"
                           r="40"
-                          stroke="#2864d2"
+                          stroke="#FFD700"
                           strokeWidth="8"
                           fill="none"
                           strokeLinecap="round"
@@ -208,7 +208,7 @@ export default function OverviewTab() {
                         />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xl font-bold text-[#2864d2]">{progressPercentage}%</span>
+                        <span className="text-xl font-bold text-[#000000]">{progressPercentage}%</span>
                       </div>
                     </div>
 
