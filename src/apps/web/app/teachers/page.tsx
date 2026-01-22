@@ -216,16 +216,38 @@ export default function TeachersPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen flex bg-gray-50">
+      <div className="min-h-screen mt-6 flex bg-gray-50 z-0">
         <div className="flex-1 flex flex-col">
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1">
             <main
-              className="p-6 h-full overflow-auto"
+              className="px-6 pb-6 pt-2 h-full overflow-auto"
               style={{ maxHeight: 'calc(100vh - 72px)' }}
             >
-              <header className="mb-6">
-                <h1 className="text-2xl sm:text-3xl font-semibold text-brand-text">Đội ngũ chuyên môn</h1>
-              </header>
+            <div className="relative my-6 overflow-visible ">
+      
+            <section className="w-full bg-white rounded-2xl p-8 flex items-center justify-between shadow-sm h-[80xpx] relative z-0">
+              <div className="max-w-2xl text-[#2864D2]">
+                <p className="text-2xl font-bold md:text-3xl text-center leading-relaxed ">
+                  Đội ngũ chuyên môn
+                </p>
+              </div>
+              {/* Bên phải để trống cho text không đè lên vùng logo (trên mobile/tablet) */}
+              <div className="hidden md:block w-32 shrink-0"></div>
+            </section>
+
+            {/* 3. Logo (Nằm cùng cấp với Section, nhưng Absolute theo Parent Div) */}
+            {/* Logic: bottom-0 sẽ căn theo đáy của Parent Div (tức là đáy của Blue Card) */}
+            <div className="absolute right-20 bottom-0 pointer-events-none md:pointer-events-auto z-[100]">
+               <div className="relative w-40 h-40 md:w-55 md:h-55 md:translate-x-0 md:translate-y-10 ">
+                  <img
+                    src="/assets/logos/hero-illustration-ver2.png"
+                    alt="Hero Illustration"
+                     className="w-full h-full object-contain"
+                  />
+               </div>
+            </div>
+
+          </div>
 
               {/* Truyền mock data vào và xử lý sự kiện click để mở modal */}
               <TeacherList 
