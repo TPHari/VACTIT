@@ -275,6 +275,9 @@ export const api = {
       return apiClient.get<any>('/api/user/stats');
     },
   },
+  notifications: {
+    getAll: () => apiClient.get<any>('/api/notifications'),
+  },
 };
 
 export default api;

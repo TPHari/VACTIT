@@ -4,7 +4,7 @@ import { createWriteStream } from 'fs';
 import path from 'path';
 import os from 'os';
 import { pipeline } from 'stream/promises';
-import { execFile } from 'child_process';
+import { createBroadcastNotification } from '../utils/notification';
 import { createClient } from '@supabase/supabase-js';
 // Định nghĩa kiểu dữ liệu cho Query Params
 interface GetTestsQuery {
@@ -185,7 +185,22 @@ export async function testRoutes(server: FastifyInstance) {
 
   server.post('/api/tests', async (request, reply) => {
     try {
+      console.log('1. [DEBUG] Bắt đầu tạo Test...'); // Log 1
       const test = await server.prisma.test.create({ data: request.body as any });
+      console.log('2. [DEBUG] Tạo Test thành công:', test.test_id); // Log 2
+      console.log('3. [DEBUG] Loại đề thi (type) là:', test.type); // Log 3
+      //  LOGIC THÔNG BÁO
+      if (test.type === 'exam') {
+        console.log('4. [DEBUG] Điều kiện đúng (test.type === exam). Đang gọi notification service...'); // Log 4
+        await createBroadcastNotification(server.prisma, {
+          title: 'Đề thi mới đã lên kệ! 📝',
+          message: `Thử sức ngay với đề thi: ${test.title}`,
+          type: 'exam',
+          link: `/exam/${test.test_id}` // Link trỏ tới trang làm bài
+        });
+      } else {
+        console.log('4. [DEBUG] BỎ QUA thông báo vì type không phải là "exam". Type thực tế:', test.type); // Log 4 (Else)
+      }
       reply.status(201);
       return { data: test };
     } catch (error) {
