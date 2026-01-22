@@ -22,8 +22,10 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
     const searchParams = useSearchParams();
     const searchQuery = searchParams.get('query')?.toLowerCase() || '';
 
-    // ✅ Use shared SWR hook instead of direct fetch
-    const { userId: currentUserId } = useCurrentUser();
+    // Lấy user info
+    const { user } = useCurrentUser();
+    // Fallback nhiều trường hợp để đảm bảo lấy được ID
+    const currentUserId = user?.user_id || user?.id || user?.sub;
 
     // State lưu trữ các nhóm bài thi
     const [groupedExams, setGroupedExams] = useState<{
@@ -42,19 +44,22 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
 
     const [loading, setLoading] = useState(true);
     const [selectedExam, setSelectedExam] = useState<ExamData | null>(null);
+    const [sortOrder, setSortOrder] = useState('newest');
 
     // --- LOGIC FETCH DATA ---
     useEffect(() => {
         const initData = async () => {
             setLoading(true);
 
-            // Fetch tests with userId from SWR hook
             try {
+                // Backend API đã được thiết kế để:
+                // 1. Trả về tổng số lượt thi trong `_count.trials`
+                // 2. Trả về lượt thi CỦA USER trong `trials` (nhờ tham số userId gửi xuống)
                 const response = await api.tests.getAll({
                     query: searchQuery,
                     category: 'all',
                     limit: 100,
-                    userId: currentUserId,
+                    userId: currentUserId, 
                     sort: sortKey === 'date' ? (sortDir === 'desc' ? 'newest' : 'oldest') : undefined,
                 });
 
@@ -71,40 +76,45 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
                 };
 
                 rawData.forEach((item: any) => {
-                    const allTrials = item.trials || [];
-                    const userTrials = currentUserId
-                        ? allTrials.filter((t: any) => t.user_id === currentUserId)
-                        : allTrials;
-                    const isTaken = userTrials.length > 0;
+                    // [LOGIC 1]: Xác định User đã làm bài này chưa?
+                    // Vì backend đã lọc `trials` theo userId, nên nếu mảng này có phần tử => User đã làm.
+                    const userPersonalTrials = item.trials || []; 
+                    const isTaken = userPersonalTrials.length > 0;
+
+                    // [LOGIC 2]: Lấy tổng số lượt thi của TOÀN BỘ User
+                    // Backend trả về trong `_count`
+                    const globalTotalTrials = item._count?.trials || 0;
 
                     const exam: ExamData = {
                         id: item.test_id,
                         title: item.title,
                         author: item.author?.name || 'Unknown',
                         questions: item._count?.questions || 0,
-                        totalTrials: userTrials.length,
+                        
+                        // HIỂN THỊ: Tổng số lượt thi của tất cả mọi người
+                        totalTrials: globalTotalTrials, 
+                        
                         duration: item.duration ? Number(item.duration) : 0,
                         date: item.start_time || item.created_at || new Date().toISOString(),
                         startTime: item.start_time,
                         dueTime: item.due_time,
+                        
+                        // TRẠNG THÁI: Tính dựa trên việc User hiện tại đã làm hay chưa
                         status: isTaken ? 'completed' : 'not_started',
+                        
                         type: item.type,
                         subject: 'Tổng hợp',
                         isVip: item.status === 'Premium',
                     };
 
-                    // --- [LOGIC PHÂN NHÓM] ---
+                    // --- PHÂN NHÓM (Dựa trên status của User và Thời gian) ---
                     if (exam.type === 'practice') {
-                        // 1. Nếu là Practice: Luôn vào nhóm Practice (được thi lại thoải mái)
                         groups.practice.push(exam);
                     } else {
-                        // 2. Nếu là Exam (Bài thi thật)
+                        // Nếu là Exam và User ĐÃ LÀM -> Khóa (Locked)
                         if (isTaken) {
-                            // Nếu đã làm rồi -> Đẩy thẳng vào Locked (Coi như đã kết thúc với user này)
-                            // Điều này ngăn việc bài thi hiện ở "Đang diễn ra" gây hiểu nhầm là được thi tiếp
                             groups.locked.push(exam);
                         } else {
-                            // Nếu chưa làm -> Xét thời gian như bình thường
                             const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
                             const due = exam.dueTime ? new Date(exam.dueTime).getTime() : Infinity;
 
@@ -127,7 +137,6 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
             } catch (error) {
                 console.error("Failed to fetch exams:", error);
             } finally {
-                // BƯỚC 3: Chỉ tắt loading khi CẢ 2 bước trên đã xong
                 setLoading(false);
             }
         };
@@ -178,12 +187,11 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
         return sortedGroups;
     }, [sortedGroups, filterMode]);
 
-    // Component hiển thị Section Header
     const SectionHeader = ({ title, icon, colorClass, count }: any) => {
         if (count === 0) return null;
         return (
             <div className={`flex items-center gap-2 mb-4 mt-8 pb-2 border-b border-gray-100 ${colorClass}`}>
-                {icon ? <span className="text-xl">{icon}</span> : null}
+                {icon && <span className="text-xl">{icon}</span>}
                 <h2 className="text-lg font-bold uppercase tracking-wide">{title}</h2>
                 <span className="ml-auto text-xs font-semibold bg-gray-100 px-2 py-1 rounded-full text-gray-500">{count} bài</span>
             </div>
@@ -192,8 +200,19 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
 
     return (
         <>
+            {/* Header & Sort Control */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">Danh sách kỳ thi</h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                        {searchQuery ? `Kết quả tìm kiếm cho "${searchQuery}"` : 'Cập nhật các bài thi mới nhất'}
+                    </p>
+                </div>
 
-            {/* --- PHẦN 2: DANH SÁCH BÀI THI THEO NHÓM --- */}
+            </div>
+
+            {loading && <Loading />}
+
             <div className="flex-1 overflow-y-auto pr-2 pb-6 custom-scrollbar p-2">
                 {!loading && (
                     <>
@@ -202,12 +221,7 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {visibleGroups.inProgress.map(exam => (
                                 <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
-                                    <ExamCard
-                                        exam={exam}
-                                        onSelect={() => setSelectedExam(exam)}
-                                        categoryContext="in_progress"
-                                        currentUserId={currentUserId}
-                                    />
+                                    <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="in_progress" currentUserId={currentUserId} />
                                 </div>
                             ))}
                         </div>
@@ -217,12 +231,7 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {visibleGroups.practice.map(exam => (
                                 <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
-                                    <ExamCard
-                                        exam={exam}
-                                        onSelect={() => setSelectedExam(exam)}
-                                        categoryContext="practice"
-                                        currentUserId={currentUserId}
-                                    />
+                                    <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="countdown" currentUserId={currentUserId} />
                                 </div>
                             ))}
                         </div>
@@ -262,12 +271,7 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {visibleGroups.upcoming.map(exam => (
                                 <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
-                                    <ExamCard
-                                        exam={exam}
-                                        onSelect={() => setSelectedExam(exam)}
-                                        categoryContext="upcoming"
-                                        currentUserId={currentUserId}
-                                    />
+                                    <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="practice" currentUserId={currentUserId} />
                                 </div>
                             ))}
                         </div>
