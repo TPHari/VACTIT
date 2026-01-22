@@ -6,13 +6,14 @@ import { api } from '@/lib/api-client';
 import ExamCard, { ExamData } from './ExamCard';
 import ExamModal from './ExamModal';
 import Loading from '../ui/LoadingSpinner';
+import { useCurrentUser } from '@/lib/swr-hooks';
 
 export default function ExamList() {
     const searchParams = useSearchParams();
     const searchQuery = searchParams.get('query')?.toLowerCase() || '';
 
-    // State lưu User ID
-    const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+    // ✅ Use shared SWR hook instead of direct fetch
+    const { userId: currentUserId } = useCurrentUser();
 
     // State lưu trữ các nhóm bài thi
     const [groupedExams, setGroupedExams] = useState<{
@@ -38,32 +39,15 @@ export default function ExamList() {
     // --- LOGIC FETCH DATA ---
     useEffect(() => {
         const initData = async () => {
-            setLoading(true); // Bắt đầu load
+            setLoading(true);
 
-            // ✅ OPTIMIZED: Fetch user and tests in PARALLEL instead of sequential
-            // First, get userId from session (fast, local call)
-            let fetchedUserId: string | undefined = undefined;
-
-            try {
-                const userRes = await fetch('/api/user');
-                const userData = await userRes.json();
-                const userObj = userData.user || userData.data?.user || userData;
-
-                if (userObj) {
-                    fetchedUserId = userObj.user_id || userObj.id || userObj.email;
-                    setCurrentUserId(fetchedUserId);
-                }
-            } catch (e) {
-                console.error("Failed to fetch user (guest mode)", e);
-            }
-
-            // Then fetch tests (now that we have userId for proper filtering)
+            // Fetch tests with userId from SWR hook
             try {
                 const response = await api.tests.getAll({
                     query: searchQuery,
                     category: 'all',
                     limit: 100,
-                    userId: fetchedUserId,
+                    userId: currentUserId,
                     sort: sortOrder,
                 });
 

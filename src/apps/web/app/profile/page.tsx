@@ -3,6 +3,7 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { type UserProfile, type Membership } from "@/lib/mock-user";
+import { useCurrentUser } from "@/lib/swr-hooks";
 
 const MEMBERSHIP_LABELS: Record<Membership, string> = {
   normal: "Thường",
@@ -41,26 +42,25 @@ export default function ProfilePage() {
   });
   const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Fetch user info on mount
+  // ✅ Use shared SWR hook for initial user data
+  const { user: swrUser, isLoading: swrLoading } = useCurrentUser();
+
+  // Sync SWR user data to local state (for editing)
   useEffect(() => {
-    fetch('/api/user')
-      .then(res => res.json())
-      .then(data => {
-        if (data.ok) {
-          const normalizedUser: UserProfile = {
-            id: data.user.id ?? data.user.user_id,
-            name: data.user.name,
-            email: data.user.email,
-            phone: data.user.phone || "",
-            membership: data.user.membership,
-            avatarUrl: data.user.avatarUrl || data.user.avatar_url,
-          };
-          setUser(normalizedUser);
-          setSavedUser(normalizedUser);
-          setAvatarPreview(normalizedUser.avatarUrl || "/assets/logos/avatar.png");
-        }
-      });
-  }, []);
+    if (swrUser && !user) {
+      const normalizedUser: UserProfile = {
+        id: swrUser.id ?? swrUser.user_id,
+        name: swrUser.name,
+        email: swrUser.email,
+        phone: swrUser.phone || "",
+        membership: swrUser.membership,
+        avatarUrl: swrUser.avatarUrl || swrUser.avatar_url,
+      };
+      setUser(normalizedUser);
+      setSavedUser(normalizedUser);
+      setAvatarPreview(normalizedUser.avatarUrl || "/assets/logos/avatar.png");
+    }
+  }, [swrUser, user]);
 
   // Controlled input handlers
   const handleFieldChange = (
@@ -254,11 +254,10 @@ export default function ProfilePage() {
                           key={option}
                           type="button"
                           onClick={() => handleAvatarSelect(option)}
-                          className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition-all ${
-                            avatarPreview === option
+                          className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition-all ${avatarPreview === option
                               ? "border-brand-primary ring-2 ring-brand-primary/30"
                               : "border-slate-200 hover:border-brand-primary"
-                          }`}
+                            }`}
                           aria-label="Chọn ảnh đại diện"
                         >
                           <img
@@ -445,9 +444,8 @@ export default function ProfilePage() {
                     </button>
                     {passwordMessage && (
                       <span
-                        className={`text-xs ${
-                          passwordMessage.type === "success" ? "text-green-600" : "text-red-600"
-                        }`}
+                        className={`text-xs ${passwordMessage.type === "success" ? "text-green-600" : "text-red-600"
+                          }`}
                       >
                         {passwordMessage.text}
                       </span>

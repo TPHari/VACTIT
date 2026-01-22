@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { api } from '@/lib/api-client';
+import { useCurrentUser, useLeaderboard, useUserStats } from '@/lib/swr-hooks';
 
 interface LeaderboardEntry {
   id: string;
@@ -24,46 +25,14 @@ interface UserStats {
 
 export default function OverviewTab() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [testInfo, setTestInfo] = useState<{ testId: string; title: string } | null>(null);
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  //  Use shared SWR hook instead of direct fetch
+  const { user } = useCurrentUser();
 
-  useEffect(() => {
-    fetch('/api/user')
-      .then(res => res.json())
-      .then(data => {
-        if (data.ok) setUser(data.user);
-      });
-  }, []);
+  // ✅ Use SWR hooks for data fetching (cached globally)
+  const { leaderboard, testInfo, isLoading: loadingLeaderboard } = useLeaderboard();
+  const { stats, isLoading: loadingStats } = useUserStats();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [leaderboardRes, statsRes] = await Promise.all([
-          api.leaderboard.getLatest(),
-          api.userStats.get()
-        ]);
-
-        if (leaderboardRes.data) {
-          setLeaderboard(leaderboardRes.data);
-          setTestInfo(leaderboardRes.testInfo);
-        }
-
-        if (statsRes.ok) {
-          setStats(statsRes.stats);
-        }
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const loading = loadingLeaderboard || loadingStats;
 
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -76,13 +45,13 @@ export default function OverviewTab() {
   };
 
   // Calculate progress percentage
-  const progressPercentage = stats 
+  const progressPercentage = stats
     ? Math.round((stats.testsCompleted / Math.max(stats.totalTests, 1)) * 100)
     : 0;
 
   // Get max count for chart scaling
-  const maxCount = stats 
-    ? Math.max(...stats.frequencyData.map(d => d.count), 1)
+  const maxCount = stats
+    ? Math.max(...(stats as UserStats).frequencyData.map((d: { count: number }) => d.count), 1)
     : 1;
 
   return (
@@ -121,7 +90,7 @@ export default function OverviewTab() {
             <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-[#2864d2]">Bảng xếp hạng</h2>
-                <button 
+                <button
                   onClick={() => router.push('/leaderboard')}
                   className="text-sm text-[#2864d2] hover:underline font-medium"
                 >
@@ -150,7 +119,7 @@ export default function OverviewTab() {
                       </tr>
                     </thead>
                     <tbody>
-                      {leaderboard.map((entry, index) => (
+                      {(leaderboard as LeaderboardEntry[]).map((entry: LeaderboardEntry, index: number) => (
                         <tr key={entry.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                           <td className="py-3">
                             {index < 3 ? (
@@ -165,8 +134,8 @@ export default function OverviewTab() {
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-blue-100 overflow-hidden flex-shrink-0">
                                 {entry.avatar ? (
-                                  <img 
-                                    src={entry.avatar} 
+                                  <img
+                                    src={entry.avatar}
                                     alt={entry.name}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
@@ -199,7 +168,7 @@ export default function OverviewTab() {
             <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-[#2864d2]">Thống kê</h2>
-                <button 
+                <button
                   onClick={() => router.push('/profile')}
                   className="text-sm text-[#2864d2] hover:underline font-medium"
                 >
@@ -264,11 +233,11 @@ export default function OverviewTab() {
                   <div>
                     <p className="text-sm text-gray-500 font-medium mb-4">Tần suất học</p>
                     <div className="flex items-end justify-between gap-2 h-32">
-                      {stats.frequencyData.map((day, index) => (
+                      {(stats as UserStats).frequencyData.map((day: { count: number; dayLabel: string }, index: number) => (
                         <div key={index} className="flex flex-col items-center flex-1">
-                          <div 
+                          <div
                             className="w-full bg-[#FFD700] rounded-t-md transition-all duration-300 hover:bg-[#FFC700]"
-                            style={{ 
+                            style={{
                               height: `${Math.max((day.count / maxCount) * 100, day.count > 0 ? 15 : 5)}%`,
                               minHeight: day.count > 0 ? '20px' : '8px'
                             }}
