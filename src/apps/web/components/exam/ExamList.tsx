@@ -23,7 +23,7 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
     const searchQuery = searchParams.get('query')?.toLowerCase() || '';
 
     // Lấy user info
-    const { user } = useCurrentUser();
+    const { user, isLoading: isAuthLoading } = useCurrentUser();
     // Fallback nhiều trường hợp để đảm bảo lấy được ID
     const currentUserId = user?.user_id || user?.id || user?.sub;
 
@@ -48,6 +48,9 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
 
     // --- LOGIC FETCH DATA ---
     useEffect(() => {
+        // Điều này đảm bảo API tests không bao giờ bị gọi với userId = undefined
+        if (isAuthLoading) return;
+
         const initData = async () => {
             setLoading(true);
 
@@ -143,8 +146,9 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
 
         initData();
 
-        // Bỏ currentUserId khỏi dependency để tránh loop, chỉ chạy lại khi search/sort đổi
-    }, [searchQuery, sortKey, sortDir]);
+        // Thêm isAuthLoading và currentUserId vào dependency
+        // Khi Auth load xong -> isAuthLoading false -> useEffect chạy lại -> gọi API đúng
+    }, [searchQuery, sortKey, sortDir, currentUserId, isAuthLoading]);
 
     const sortList = (list: ExamData[]) => {
         const sorted = [...list];
@@ -201,16 +205,6 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
     return (
         <>
             {/* Header & Sort Control */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Danh sách kỳ thi</h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        {searchQuery ? `Kết quả tìm kiếm cho "${searchQuery}"` : 'Cập nhật các bài thi mới nhất'}
-                    </p>
-                </div>
-
-            </div>
-
             {loading && <Loading />}
 
             <div className="flex-1 overflow-y-auto pr-2 pb-6 custom-scrollbar p-2">
@@ -271,7 +265,12 @@ export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {visibleGroups.upcoming.map(exam => (
                                 <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
-                                    <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="practice" currentUserId={currentUserId} />
+                                    <ExamCard
+                                        exam={exam}
+                                        onSelect={() => setSelectedExam(exam)}
+                                        categoryContext="upcoming"
+                                        currentUserId={currentUserId}
+                                    />
                                 </div>
                             ))}
                         </div>
