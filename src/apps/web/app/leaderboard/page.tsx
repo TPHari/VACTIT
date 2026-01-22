@@ -89,10 +89,10 @@ export default function LeaderboardPage() {
         
         {/* Header Section */}
         <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-6">
-           <div className="w-full md:flex-1 bg-[#2563EB] text-white p-8 rounded-[24px] shadow-lg relative overflow-hidden group transition-all duration-300 hover:scale-[1.01] hover:shadow-blue-200/50">
+           <div className="w-full md:flex-1 bg-[#2864d2] text-white p-8 rounded-[24px] shadow-lg relative overflow-hidden group transition-all duration-300 hover:scale-[1.01] hover:shadow-blue-200/50">
               <div className="relative z-10 w-full max-w-2xl">
-                <h1 className="text-3xl font-bold mb-3 leading-tight">
-                  Bảng Xếp Hạng 🏆
+                <h1 className="text-3xl font-bold mb-3 leading-tight text-[#ffd700]">
+                  Bảng Xếp Hạng
                 </h1>
                 <p className="text-blue-100 text-sm font-medium opacity-90 mb-4">
                   Vinh danh Top 10 chiến thần xuất sắc nhất.
@@ -119,8 +119,8 @@ export default function LeaderboardPage() {
 
               {/* Background Decoration */}
               <div className="absolute top-0 right-0 h-full w-40 pointer-events-none">
-                 <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-yellow-500 rounded-full opacity-90 group-hover:scale-125 transition-transform duration-700 ease-out shadow-lg shadow-black/10"></div>
-                 <div className="absolute bottom-[-10px] right-[40px] w-12 h-12 bg-yellow-500 rounded-full opacity-80 group-hover:-translate-y-4 transition-transform duration-500 shadow-md"></div>
+                 <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-[#ffd700] rounded-full group-hover:scale-125 transition-transform duration-700 ease-out shadow-lg shadow-black/10"></div>
+                 <div className="absolute bottom-[-10px] right-[40px] w-12 h-12 bg-[#ffd700] rounded-full group-hover:-translate-y-4 transition-transform duration-500 shadow-md"></div>
               </div>
            </div>
         </div>
@@ -146,7 +146,7 @@ export default function LeaderboardPage() {
               <div className="card bg-white border border-gray-100 bg-gradient-to-b from-blue-50/30 to-white pt-8 pb-2 px-6">
                   <div className="text-center mb-6">
                       <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wider">Top 3 Xuất Sắc Nhất</h2>
-                      <div className="h-1 w-12 bg-yellow-400 mx-auto mt-2 rounded-full"></div>
+                      <div className="h-3 w-12 mx-auto mt-2 rounded-full"></div>
                   </div>
                   <Podium top3={top3} />
               </div>
@@ -172,7 +172,7 @@ export default function LeaderboardPage() {
                              </div>
                              
                              <div className="col-span-5 md:col-span-4 flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex-shrink-0">
+                                <div className="w-10 h-10 rounded-full bg-gray-100 border border-[#2864d2] overflow-hidden flex-shrink-0">
                                    <img 
                                       src={user.avatar} 
                                       alt={user.name} 

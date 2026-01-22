@@ -12,6 +12,9 @@ const user_routes_1 = require("./routes/user.routes");
 const test_routes_1 = require("./routes/test.routes");
 const trial_routes_1 = require("./routes/trial.routes");
 const response_routes_1 = require("./routes/response.routes");
+const teacher_routes_1 = require("./routes/teacher.routes");
+const leaderboard_routes_1 = require("./routes/leaderboard.routes");
+const news_routes_1 = require("./routes/news.routes");
 // Initialize Prisma
 const prisma = new client_1.PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
@@ -42,21 +45,35 @@ const scoringQueue = redisConnection
 // Log Redis connection status
 if (redisConnection) {
     redisConnection.on('connect', () => {
-        console.log('✅ Redis connected');
+        console.log('Redis connected');
     });
     redisConnection.on('error', (err) => {
-        console.error('❌ Redis connection error:', err.message);
+        console.error('Redis connection error:', err.message);
     });
 }
 else {
-    console.warn('⚠️  Redis not configured - queue features disabled');
+    console.warn('Redis not configured - queue features disabled');
 }
+// Decorate server with redis for caching in routes
+server.decorate('redis', redisConnection);
 // ============ Plugins ============
 // CORS for frontend access
+const getAllowedOrigins = () => {
+    if (process.env.NODE_ENV !== 'production') {
+        return true; // Allow all in development
+    }
+    // Support multiple origins (comma-separated)
+    const frontendUrl = process.env.FRONTEND_URL || '';
+    const origins = frontendUrl.split(',').map(url => url.trim()).filter(Boolean);
+    console.log('[CORS] Allowed origins:', origins);
+    if (origins.length === 0) {
+        console.warn('[CORS] WARNING: No FRONTEND_URL configured, allowing all origins');
+        return true;
+    }
+    return origins;
+};
 server.register(require('@fastify/cors'), {
-    origin: process.env.NODE_ENV === 'production'
-        ? process.env.FRONTEND_URL
-        : true, // Allow all origins in development
+    origin: getAllowedOrigins(),
     credentials: true,
 });
 // ============ Request Logging ============
@@ -181,6 +198,9 @@ server.register(user_routes_1.userRoutes);
 server.register(test_routes_1.testRoutes);
 server.register(trial_routes_1.trialRoutes);
 server.register(response_routes_1.responseRoutes);
+server.register(teacher_routes_1.teacherRoutes);
+server.register(leaderboard_routes_1.leaderboardRoutes);
+server.register(news_routes_1.newsRoutes);
 // ============ Job Queue Endpoints ============
 // Submit scoring job
 server.post('/api/jobs/score-test', async (request, reply) => {

@@ -48,7 +48,14 @@ export async function trialRoutes(server: FastifyInstance) {
         where: { trial_id: request.params.id },
         include: {
           student: true,
-          test: true,
+          test: {
+            select: {
+              test_id: true,
+              title: true,
+              type: true,
+              duration: true,
+            },
+          },
           responses: true
         }
       });
@@ -58,7 +65,13 @@ export async function trialRoutes(server: FastifyInstance) {
         return { error: 'Trial not found' };
       }
 
-      return { data: trial };
+      // expose test duration directly for convenience
+      return {
+        data: {
+          ...trial,
+          testDuration: trial.test?.duration ?? null,
+        },
+      };
     } catch (error) {
       reply.status(500);
       return {
@@ -151,21 +164,21 @@ export async function trialRoutes(server: FastifyInstance) {
         return { error: 'missing_user_id' };
       }
 
-      // Verify student exists
-      const student = await server.prisma.user.findUnique({
-        where: { user_id: userId },
-        select: { user_id: true }
-      });
+      //  OPTIMIZED: Parallelize user and test verification
+      const [student, test] = await Promise.all([
+        server.prisma.user.findUnique({
+          where: { user_id: userId },
+          select: { user_id: true }
+        }),
+        server.prisma.test.findUnique({
+          where: { test_id: testId },
+        })
+      ]);
 
       if (!student) {
         reply.status(404);
         return { error: 'student_not_found' };
       }
-
-      // Verify test exists
-      const test = await server.prisma.test.findUnique({
-        where: { test_id: testId },
-      });
 
       if (!test) {
         reply.status(404);

@@ -96,7 +96,7 @@ export default function OverviewTab() {
             <div className="card--hero__left">
               <p className="hero__subtitle">Chào mừng đã trở lại, {user?.name || '...'}!</p>
               <p className="hero__text">
-                Hãy cùng xem kết quả của bạn và các bạn khác nhé!
+                Hãy coi mỗi bài thi thử là một mũi tiêm vắc-xin. Hơi đau một tí, nhưng giúp bạn miễn dịch với áp lực sau này.
               </p>
               <button
                 className="btn btn--primary hero__button"
@@ -120,10 +120,10 @@ export default function OverviewTab() {
             {/* Leaderboard Section - Takes 3 columns */}
             <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-[#2563EB]">Bảng xếp hạng</h2>
+                <h2 className="text-xl font-bold text-[#2864d2]">Bảng xếp hạng</h2>
                 <button 
                   onClick={() => router.push('/leaderboard')}
-                  className="text-sm text-[#2563EB] hover:underline font-medium"
+                  className="text-sm text-[#2864d2] hover:underline font-medium"
                 >
                   Xem tất cả
                 </button>
@@ -198,10 +198,10 @@ export default function OverviewTab() {
             {/* Stats Section - Takes 2 columns */}
             <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-[#2563EB]">Thống kê</h2>
+                <h2 className="text-xl font-bold text-[#2864d2]">Thống kê</h2>
                 <button 
                   onClick={() => router.push('/profile')}
-                  className="text-sm text-[#2563EB] hover:underline font-medium"
+                  className="text-sm text-[#2864d2] hover:underline font-medium"
                 >
                   Xem chi tiết
                 </button>
@@ -209,7 +209,7 @@ export default function OverviewTab() {
 
               {loading ? (
                 <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2864d2]"></div>
                 </div>
               ) : stats ? (
                 <div className="space-y-6">
@@ -229,7 +229,7 @@ export default function OverviewTab() {
                           cx="48"
                           cy="48"
                           r="40"
-                          stroke="#2563EB"
+                          stroke="#2864d2"
                           strokeWidth="8"
                           fill="none"
                           strokeLinecap="round"
@@ -237,7 +237,7 @@ export default function OverviewTab() {
                         />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xl font-bold text-[#2563EB]">{progressPercentage}%</span>
+                        <span className="text-xl font-bold text-[#2864d2]">{progressPercentage}%</span>
                       </div>
                     </div>
 
@@ -267,7 +267,7 @@ export default function OverviewTab() {
                       {stats.frequencyData.map((day, index) => (
                         <div key={index} className="flex flex-col items-center flex-1">
                           <div 
-                            className="w-full bg-[#FFC83A] rounded-t-md transition-all duration-300 hover:bg-[#FFB800]"
+                            className="w-full bg-[#FFD700] rounded-t-md transition-all duration-300 hover:bg-[#FFC700]"
                             style={{ 
                               height: `${Math.max((day.count / maxCount) * 100, day.count > 0 ? 15 : 5)}%`,
                               minHeight: day.count > 0 ? '20px' : '8px'

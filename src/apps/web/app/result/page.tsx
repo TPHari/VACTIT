@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { api } from "@/lib/api-client";
 import Loading from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
+import Image from "next/image";
 
 import type { TrialDetails, TrialListItem, StudentTrialsRes } from "./_types";
 import { TOTAL_QUESTIONS } from "./_types";
@@ -20,6 +21,22 @@ import {
   pickSubjectAdvice,
 } from "./_utils";
 
+// Color palette
+const COLORS = {
+  blue: "#2864D2",
+  yellow: "#FFD700",
+  red: "#CE3838",
+  gray: "#9CA3AF",
+};
+
+// Section card colors mapping
+const SECTION_COLORS: Record<string, string> = {
+  language: COLORS.red,
+  literature: COLORS.red,
+  math: COLORS.blue,
+  science: COLORS.yellow,
+};
+
 export default function ResultsPage() {
   const router = useRouter();
 
@@ -32,6 +49,24 @@ export default function ResultsPage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [selectedTrialDetails, setSelectedTrialDetails] =
     useState<TrialDetails | null>(null);
+
+  // State for expanded section analysis - multiple cards can be expanded
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
+  // State for analysis modal
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+
+  const toggleSectionAnalysis = (sectionId: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
+  };
 
   // 0) Load user
   const [user, setUser] = useState<any>(null);
@@ -258,149 +293,214 @@ export default function ResultsPage() {
     <DashboardLayout>
       <div className="flex min-h-screen bg-brand-bg">
         <div className="flex flex-1 flex-col">
-          {/* Main 2-column layout */}
-          <div className="flex px-6 pb-8 pt-4 lg:px-8">
-            {/* ========== MIDDLE COLUMN ========== */}
-            <div className="flex flex-1 flex-col border-r border-slate-200 pr-6">
-              {/* Subjects + Tổng điểm */}
-              <div className="flex gap-6 pb-4">
-                {/* Subjects */}
-                <div className="w-1/2">
-                  <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-muted">
-                    Phần thi
-                  </h2>
-
-                  <ul className="space-y-2 text-sm">
-                    {subjects.map((subject) => (
-                      <li
-                        key={subject.id}
-                        className="flex items-center justify-between rounded-xl bg-white px-3 py-2 shadow-sm"
-                      >
-                        <span className="font-medium text-brand-text">
-                          {subject.title}
-                        </span>
-                        <span className="text-xs text-brand-muted">
-                          {subject.correct}/30 câu đúng
-                          {isExam && subject.score0_300 != null && (
-                            <> · {subject.score0_300} điểm</>
-                          )}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Tổng điểm */}
-                <div className="flex flex-1 flex-col justify-between rounded-card rounded-xl bg-white p-4 shadow-card">
-                  <p className="text-xs font-medium text-brand-muted text-center">
-                    {selectedTrialDetails?.test.type === "exam"
-                      ? "Tổng điểm (IRT)"
-                      : "Tổng điểm luyện tập"}
-                  </p>
-
-                  <p className="mt-1 text-5xl font-bold text-brand-text text-center">
-                    {renderOverallScore(
-                      selectedTrialDetails?.test.type === "exam",
-                      selectedTrial?.raw_score,
-                      selectedTrial?.processed_score,
-                    )}
-                  </p>
-
-                  <p className="mt-1 text-xs text-brand-muted text-center">
-                    Số câu đúng:{" "}
-                    <span className="font-semibold text-brand-text">
-                      {totalCorrect}/{TOTAL_QUESTIONS}
-                    </span>
-                  </p>
-
-                  {detailsLoading && (
-                    <p className="mt-2 text-xs text-brand-muted">
-                      Đang tải chi tiết bài làm...
+          {/* Main layout */}
+          <div className="flex flex-col px-4 pb-6 pt-3 lg:px-6 gap-4">
+            {/* ========== TOP ROW: Tổng điểm (left) + Điểm từng phần (right) ========== */}
+            <div className="flex gap-4">
+              {/* Tổng điểm + Tổng điểm năng lực - Left side */}
+              <div className="w-[580px] flex-shrink-0">
+                <div className="rounded-2xl bg-white p-5 shadow-sm h-full flex flex-col">
+                  {/* Tổng điểm năng lực - Top row: Icon - Label - Score */}
+                  <div className="flex items-center justify-center gap-3 py-4 mb-4 border-b border-slate-100">
+                    <Image
+                      src="/assets/logos/total_score.png"
+                      alt="Total Score"
+                      width={100}
+                      height={100}
+                      className="object-contain"
+                    />
+                    <p className="text-xl text-brand-muted">
+                      {isExam ? "Tổng điểm năng lực:" : "Tổng điểm năng lực quy đổi:"}
                     </p>
-                  )}
+                    <p className="text-6xl font-bold text-brand-text">
+                      {renderOverallScore(
+                        selectedTrialDetails?.test.type === "exam",
+                        selectedTrial?.raw_score,
+                        selectedTrial?.processed_score,
+                      )}
+                    </p>
+                  </div>
+
+                  <h2 className="text-lg font-bold text-brand-text mb-1 line-clamp-2">
+                    {selectedTrial?.test?.title ?? "Kết quả bài thi"}
+                  </h2>
+                  <p className="text-xs text-brand-muted mb-3">Điểm tổng</p>
+                  
+                  <div className="flex items-start gap-5 mb-4">
+                    {/* Circular score display */}
+                    <div className="relative flex-shrink-0">
+                      <svg className="w-[90px] h-[90px] transform -rotate-90">
+                        <circle
+                          cx="45"
+                          cy="45"
+                          r="38"
+                          stroke="#E5E7EB"
+                          strokeWidth="6"
+                          fill="none"
+                        />
+                        <circle
+                          cx="45"
+                          cy="45"
+                          r="38"
+                          stroke={COLORS.yellow}
+                          strokeWidth="6"
+                          fill="none"
+                          strokeDasharray={`${(totalCorrect / TOTAL_QUESTIONS) * 239} 239`}
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-xl font-bold text-brand-text">{totalCorrect}</span>
+                        <span className="text-[10px] text-brand-muted">/{TOTAL_QUESTIONS}</span>
+                      </div>
+                    </div>
+
+                    {/* Section progress bars */}
+                    <div className="flex-1 space-y-2 pt-1">
+                      {subjects.map((subject) => (
+                        <div key={subject.id} className="flex items-center gap-2">
+                          <span className="text-xs text-brand-muted w-[65px] truncate">{subject.title}</span>
+                          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${(subject.correct / 30) * 100}%`,
+                                backgroundColor: subject.id === 'vie' ? COLORS.red : 
+                                                subject.id === 'eng' ? COLORS.yellow :
+                                                subject.id === 'math' ? '#CBD5E1' : COLORS.blue
+                              }}
+                            />
+                          </div>
+                          <span className="text-xs text-brand-muted w-[32px] text-right">{subject.correct}/30</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setShowAnalysisModal(true)}
+                    className="w-full py-3 rounded-xl text-sm font-medium text-white transition-colors mt-auto"
+                    style={{ backgroundColor: COLORS.blue }}
+                  >
+                    Phân tích chi tiết
+                  </button>
                 </div>
               </div>
 
-              {/* Phân tích + Lịch sử thi */}
-              <div className="mt-4 space-y-4">
-                {/* Phân tích */}
-                <section className="rounded-card bg-white p-4 shadow-card rounded-xl">
-                  <header className="mb-2 flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff4d6] text-sm">
-                      ★
-                    </div>
-                    <h2 className="text-sm font-semibold text-brand-text">
-                      Phân tích bài làm
-                    </h2>
-                  </header>
+              {/* Điểm từng phần - Right */}
+              <div className="flex gap-2 flex-1">
+                {subjectAnalyses.map((subject, index) => {
+                  // Background images for each subject
+                  const bgImages = [
+                    "/assets/background/vi_card.png",
+                    "/assets/background/eng_card.png", 
+                    "/assets/background/math_card.png",
+                    "/assets/background/sci_card.png"
+                  ];
+                  const bgImage = bgImages[index % bgImages.length];
+                  
+                  // Text colors per subject:
+                  // Tiếng Việt: white
+                  // Tiếng Anh: blue
+                  // Toán: red
+                  // Tư duy khoa học: yellow
+                  const textColors = ["#FFFFFF", COLORS.blue, COLORS.red, COLORS.yellow];
+                  const mainTextColor = textColors[index % textColors.length];
+                  
+                  // Sub text slightly transparent version of main color
+                  const subTextOpacity = index === 0 ? "text-white/70" : 
+                                        index === 1 ? "text-blue-600/70" :
+                                        index === 2 ? "text-red-600/70" : "text-yellow-400/70";
 
-                  <div className="space-y-3 text-sm">
-                    {subjectAnalyses.map((subject) => (
-                      <div
-                        key={subject.id}
-                        className="rounded-lg border border-slate-200 bg-[#f8fafc] px-3 py-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-brand-text">
-                            {subject.title}
+                  return (
+                    <div
+                      key={subject.id}
+                      className="flex-1 rounded-2xl px-4 py-5 flex flex-col items-center justify-center bg-cover bg-center bg-no-repeat overflow-hidden"
+                      style={{ 
+                        backgroundImage: `url(${bgImage})`,
+                      }}
+                    >
+                      <p className={`text-base font-bold ${subTextOpacity} mb-1`}>
+                        {subject.hasIrtScore ? "Năng lực" : "Năng lực quy đổi"}
+                      </p>
+                      <h3 className="text-2xl font-bold text-center mb-3 leading-tight" style={{ color: mainTextColor }}>
+                        {subject.title}
+                      </h3>
+                      <p className="text-6xl font-bold" style={{ color: mainTextColor }}>
+                        {subject.score ?? subject.correct * 10}
+                      </p>
+                      <p className={`text-base font-bold ${subTextOpacity} mt-2`}>
+                        trên 300
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ========== BOTTOM ROW: 2 columns ========== */}
+            <div className="flex gap-4">
+              {/* Đáp án 120 câu - Left */}
+              <div className="w-[800px] flex-shrink-0">
+                <div className="rounded-2xl bg-white p-5 shadow-sm h-full">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-bold text-brand-text">
+                      Đáp án 120 câu
+                    </h2>
+                    <button
+                      onClick={() => router.push(`/review/trial/${selectedTrialId}`)}
+                      className="text-sm font-medium hover:underline"
+                      style={{ color: COLORS.blue }}
+                    >
+                      Xem chi tiết →
+                    </button>
+                  </div>
+                  <p className="text-xs text-brand-muted mb-3">
+                    Màu xanh: đúng, màu đỏ: sai, dấu &quot;-&quot; là chưa chọn
+                  </p>
+                  
+                  <div className="max-h-[350px] overflow-y-auto pr-1">
+                    <div className="grid grid-cols-10 gap-1">
+                      {allAnswers.slice(0, 120).map((item) => (
+                        <div
+                          key={item.number}
+                          className="flex flex-col items-center"
+                        >
+                          <span className="text-[9px] text-brand-muted mb-0.5">
+                            {item.number}
                           </span>
-                          <span className="text-xs text-brand-muted">
-                            {subject.score != null
-                              ? subject.hasIrtScore
-                                ? `${subject.score} điểm`
-                                : `${subject.correct}/30 câu · ${subject.score} điểm quy đổi`
-                              : "Chưa có điểm"}
+                          <span
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-semibold text-white"
+                            style={{
+                              backgroundColor:
+                                item.answer === "-"
+                                  ? COLORS.gray
+                                  : item.correct
+                                    ? COLORS.blue
+                                    : COLORS.red,
+                            }}
+                          >
+                            {item.answer}
                           </span>
                         </div>
-                        <p className="mt-1 leading-relaxed text-brand-muted">
-                          {subject.advice
-                            ? subject.advice
-                                .split("\n")
-                                .map((line, idx, arr) => (
-                                  <span key={idx}>
-                                    {line}
-                                    {idx < arr.length - 1 && <br />}
-                                  </span>
-                                ))
-                            : "Chưa có dữ liệu lời khuyên cho phần thi này."}
-                        </p>
-                      </div>
-                    ))}
-
-                    {hasAdditionalSummary && (
-                      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">
-                          Ghi chú thêm
-                        </p>
-                        <p className="mt-1 leading-relaxed text-brand-muted">
-                          {tacticSummary}
-                        </p>
-                      </div>
-                    )}
-
-                    {!subjectAnalyses.length && !hasAdditionalSummary && (
-                      <p className="leading-relaxed text-brand-muted">
-                        Chưa có dữ liệu phân tích.
-                      </p>
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </section>
+                </div>
+              </div>
 
-                {/* Lịch sử thi – max 4 rows visible, then scroll */}
-                <section className="rounded-card bg-white p-4 shadow-card rounded-xl">
-                  <header className="mb-2 flex items-center justify-between">
-                    <h2 className="text-sm-center font-semibold text-brand-text">
-                      Lịch sử thi
-                    </h2>
-                  </header>
+              {/* Lịch sử thi - Right */}
+              <div className="flex-1">
+                <section className="rounded-2xl bg-white p-5 shadow-sm h-full">
+                  <h2 className="text-xl font-bold text-brand-text mb-4">
+                    Lịch sử thi
+                  </h2>
 
-                  <div className="mt-1 max-h-40 overflow-y-auto pr-1 text-xs">
-                    <div className="grid grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted">
-                      <div className="text-center">Tên đề thi</div>
+                  <div className="max-h-[350px] overflow-y-auto pr-1">
+                    <div className="grid grid-cols-[0.8fr_2fr_1fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted text-xs">
                       <div className="text-center">Điểm</div>
-                      <div className="text-center">Thời gian</div>
-                      <div className="text-center">Ngày thi</div>
-                      <div className="text-center"></div>
+                      <div>Tên Quiz</div>
+                      <div className="text-center">Ngày làm</div>
                     </div>
 
                     {trials.map((t) => {
@@ -410,43 +510,23 @@ export default function ResultsPage() {
                         <div
                           key={t.trial_id}
                           onClick={() => setSelectedTrialId(t.trial_id)}
-                          className={`grid w-full grid-cols-[2fr_0.4fr_0.7fr_1.5fr_1fr]
+                          className={`grid w-full grid-cols-[0.8fr_2fr_1fr]
                           items-center
-                          border-b border-slate-100 py-2 text-left transition cursor-pointer
+                          border-b border-slate-100 py-2.5 transition cursor-pointer text-xs
                           ${
                             isActive
-                              ? "rounded-md bg-[#eef4ff] font-semibold"
-                              : "bg-transparent"
+                              ? "rounded-lg bg-[#eef4ff] font-semibold"
+                              : "bg-transparent hover:bg-slate-50"
                           }`}
                         >
                           <div className="text-center">
+                            {inferTotalCorrectFromRawScore(t.raw_score)}/{TOTAL_QUESTIONS}
+                          </div>
+                          <div className="truncate pr-2">
                             {t.test?.title ?? t.test_id}
                           </div>
                           <div className="text-center">
-                            {renderOverallScore(
-                              t.test?.type === "exam",
-                              t.raw_score,
-                              t.processed_score,
-                            )}
-                          </div>
-                          <div className="text-center">
-                            {t.test?.duration != null
-                              ? formatDurationMMSS(t.test.duration)
-                              : "-"}
-                          </div>
-                          <div className="text-center">
-                            {formatDateVN(t.start_time)}
-                          </div>
-                          <div className="text-center">
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/review/trial/${t.trial_id}`);
-                              }}
-                              className="text-xs font-semibold text-blue-600 hover:underline"
-                            >
-                              Xem chi tiết
-                            </div>
+                            {formatDateVN(t.start_time).split(" ")[0]}
                           </div>
                         </div>
                       );
@@ -455,55 +535,77 @@ export default function ResultsPage() {
                 </section>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* ========== RIGHT COLUMN: Đáp án 120 câu ========== */}
-            <div className="ml-6 flex w-[320px] flex-col border-b border-slate-200">
-              <header className="border-b border-slate-200 pb-3">
-                <h2 className="text-base font-semibold text-brand-text">
-                  Đáp án 120 câu
-                </h2>
-                <p className="mt-1 text-xs text-brand-muted">
-                  Mỗi ô thể hiện một câu hỏi. Màu xanh: đúng, màu đỏ: sai, dấu
-                  &quot;-&quot; là chưa có đáp án.
-                </p>
-              </header>
-
-              <div className="mt-3 max-h-[460px] overflow-y-auto pr-1">
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {allAnswers.map((item) => (
+      {/* Analysis Modal */}
+      {showAnalysisModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl w-[90%] max-w-3xl max-h-[80vh] overflow-hidden shadow-xl">
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <h2 className="text-xl font-bold text-brand-text">Phân tích chi tiết</h2>
+              <button
+                onClick={() => setShowAnalysisModal(false)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto max-h-[calc(80vh-80px)]">
+              <div className="space-y-4">
+                {subjectAnalyses.map((subject, index) => {
+                  const colors = [COLORS.red, COLORS.yellow, "#94A3B8", COLORS.blue];
+                  const bgColor = colors[index % colors.length];
+                  
+                  return (
                     <div
-                      key={item.number}
-                      className="flex items-center justify-between rounded-full border border-slate-200 bg-white px-3 py-1.5"
+                      key={subject.id}
+                      className="rounded-xl p-4 border border-slate-200"
                     >
-                      <span className="text-[11px] text-brand-muted">
-                        Câu {item.number}
-                      </span>
-                      <span
-                        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${
-                          item.answer === "-"
-                            ? "bg-gray-200 text-gray-500"
-                            : item.correct
-                              ? "bg-green-500 text-white"
-                              : "bg-red-500 text-white"
-                        }`}
-                        title={
-                          item.answer === "-"
-                            ? "Chưa chọn"
-                            : item.correct
-                              ? "Đúng"
-                              : "Sai"
-                        }
-                      >
-                        {item.answer}
-                      </span>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div
+                          className="w-3 h-8 rounded"
+                          style={{ backgroundColor: bgColor }}
+                        />
+                        <div>
+                          <h3 className="font-semibold text-brand-text">{subject.title}</h3>
+                          <p className="text-sm text-brand-muted">
+                            {subject.correct}/30 câu đúng
+                            {subject.score != null && ` · ${subject.score} điểm`}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-brand-muted leading-relaxed pl-6">
+                        {subject.advice
+                          ? subject.advice.split("\n").map((line, idx, arr) => (
+                              <span key={idx}>
+                                {line}
+                                {idx < arr.length - 1 && <br />}
+                              </span>
+                            ))
+                          : "Chưa có dữ liệu lời khuyên cho phần thi này."}
+                      </p>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+
+                {hasAdditionalSummary && (
+                  <div className="rounded-xl p-4 border border-slate-200 bg-slate-50">
+                    <h3 className="font-semibold text-brand-text mb-2">Ghi chú thêm</h3>
+                    <p className="text-sm text-brand-muted leading-relaxed">
+                      {tacticSummary}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </DashboardLayout>
   );
 }
