@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import ExamCard, { ExamData } from './ExamCard';
@@ -8,7 +8,17 @@ import ExamModal from './ExamModal';
 import Loading from '../ui/LoadingSpinner';
 import { useCurrentUser } from '@/lib/swr-hooks';
 
-export default function ExamList() {
+type FilterMode = 'all' | 'inProgress' | 'practice';
+type SortKey = 'date' | 'title' | 'plays';
+type SortDir = 'asc' | 'desc';
+
+interface ExamListProps {
+    filterMode?: FilterMode;
+    sortKey?: SortKey;
+    sortDir?: SortDir;
+}
+
+export default function ExamList({ filterMode = 'all', sortKey = 'date', sortDir = 'desc' }: ExamListProps) {
     const searchParams = useSearchParams();
     const searchQuery = searchParams.get('query')?.toLowerCase() || '';
 
@@ -50,7 +60,7 @@ export default function ExamList() {
                     category: 'all',
                     limit: 100,
                     userId: currentUserId, 
-                    sort: sortOrder,
+                    sort: sortKey === 'date' ? (sortDir === 'desc' ? 'newest' : 'oldest') : undefined,
                 });
 
                 const rawData = response.data || [];
@@ -132,7 +142,50 @@ export default function ExamList() {
         };
 
         initData();
-    }, [searchQuery, sortOrder, currentUserId]);
+
+        // Bỏ currentUserId khỏi dependency để tránh loop, chỉ chạy lại khi search/sort đổi
+    }, [searchQuery, sortKey, sortDir]);
+
+    const sortList = (list: ExamData[]) => {
+        const sorted = [...list];
+        sorted.sort((a, b) => {
+            if (sortKey === 'title') {
+                return sortDir === 'asc'
+                    ? (a.title || '').localeCompare(b.title || '')
+                    : (b.title || '').localeCompare(a.title || '');
+            }
+            if (sortKey === 'plays') {
+                const aCount = a.totalTrials || 0;
+                const bCount = b.totalTrials || 0;
+                return sortDir === 'asc' ? aCount - bCount : bCount - aCount;
+            }
+            // default: date
+            const aDate = a.date ? new Date(a.date).getTime() : 0;
+            const bDate = b.date ? new Date(b.date).getTime() : 0;
+            return sortDir === 'asc' ? aDate - bDate : bDate - aDate;
+        });
+        return sorted;
+    };
+
+    const sortedGroups = useMemo(() => {
+        return {
+            inProgress: sortList(groupedExams.inProgress),
+            countdown: sortList(groupedExams.countdown),
+            upcoming: sortList(groupedExams.upcoming),
+            locked: sortList(groupedExams.locked),
+            practice: sortList(groupedExams.practice),
+        };
+    }, [groupedExams, sortKey, sortDir]);
+
+    const visibleGroups = useMemo(() => {
+        if (filterMode === 'inProgress') {
+            return { ...sortedGroups, countdown: [], upcoming: [], locked: [], practice: [] };
+        }
+        if (filterMode === 'practice') {
+            return { ...sortedGroups, inProgress: [], countdown: [], upcoming: [], locked: [] };
+        }
+        return sortedGroups;
+    }, [sortedGroups, filterMode]);
 
     const SectionHeader = ({ title, icon, colorClass, count }: any) => {
         if (count === 0) return null;
@@ -156,17 +209,6 @@ export default function ExamList() {
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white p-1.5 pl-4 rounded-xl border border-gray-200 shadow-sm">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Sắp xếp:</span>
-                    <select 
-                        value={sortOrder}
-                        onChange={(e) => setSortOrder(e.target.value)}
-                        className="bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg border-0 py-1.5 pl-3 pr-8 focus:ring-2 focus:ring-blue-500 cursor-pointer outline-none hover:bg-gray-100 transition-colors"
-                    >
-                        <option value="newest">Mới nhất</option>
-                        <option value="oldest">Cũ nhất</option>
-                    </select>
-                </div>
             </div>
 
             {loading && <Loading />}
@@ -174,57 +216,67 @@ export default function ExamList() {
             <div className="flex-1 overflow-y-auto pr-2 pb-6 custom-scrollbar p-2">
                 {!loading && (
                     <>
-                        {/* IN PROGRESS */}
-                        <SectionHeader title="Đang diễn ra" icon="🔥" colorClass="text-red-600 border-red-100" count={groupedExams.inProgress.length} />
+                        {/* 1. ĐANG DIỄN RA */}
+                        <SectionHeader title="Đang diễn ra" icon="" colorClass="text-red-600 border-red-100" count={visibleGroups.inProgress.length} />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {groupedExams.inProgress.map(exam => (
+                            {visibleGroups.inProgress.map(exam => (
                                 <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
                                     <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="in_progress" currentUserId={currentUserId} />
                                 </div>
                             ))}
                         </div>
 
-                        {/* COUNTDOWN */}
-                        <SectionHeader title="Sắp bắt đầu (24h)" icon="⏳" colorClass="text-orange-600 border-orange-100" count={groupedExams.countdown.length} />
+                        {/* 2. LUYỆN TẬP */}
+                        <SectionHeader title="Kho đề luyện tập" icon="" colorClass="text-teal-600 border-teal-100" count={visibleGroups.practice.length} />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {groupedExams.countdown.map(exam => (
+                            {visibleGroups.practice.map(exam => (
                                 <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
                                     <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="countdown" currentUserId={currentUserId} />
                                 </div>
                             ))}
                         </div>
 
-                        {/* UPCOMING */}
-                        <SectionHeader title="Sự kiện sắp tới" icon="📅" colorClass="text-blue-600 border-blue-100" count={groupedExams.upcoming.length} />
+                        {/* 3. ĐÃ KẾT THÚC */}
+                        <SectionHeader title="Đã kết thúc" icon="" colorClass="text-gray-500 border-gray-200" count={visibleGroups.locked.length} />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {groupedExams.upcoming.map(exam => (
-                                <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
-                                    <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="upcoming" currentUserId={currentUserId} />
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* LOCKED */}
-                        <SectionHeader title="Đã kết thúc" icon="🔒" colorClass="text-gray-500 border-gray-200" count={groupedExams.locked.length} />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {groupedExams.locked.map(exam => (
+                            {visibleGroups.locked.map(exam => (
                                 <div key={exam.id} className="h-full opacity-90 hover:opacity-100 transition-opacity">
-                                    <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="locked" currentUserId={currentUserId} />
+                                    <ExamCard
+                                        exam={exam}
+                                        onSelect={() => setSelectedExam(exam)}
+                                        categoryContext="locked"
+                                        currentUserId={currentUserId}
+                                    />
                                 </div>
                             ))}
                         </div>
 
-                        {/* PRACTICE */}
-                        <SectionHeader title="Kho đề luyện tập" icon="📚" colorClass="text-teal-600 border-teal-100" count={groupedExams.practice.length} />
+                        {/* 4. SẮP BẮT ĐẦU*/}
+                        <SectionHeader title="Sắp bắt đầu (24h)" icon="" colorClass="text-orange-600 border-orange-100" count={visibleGroups.countdown.length} />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {groupedExams.practice.map(exam => (
+                            {visibleGroups.countdown.map(exam => (
+                                <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
+                                    <ExamCard
+                                        exam={exam}
+                                        onSelect={() => setSelectedExam(exam)}
+                                        categoryContext="countdown"
+                                        currentUserId={currentUserId}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* 5. SẮP TỚI */}
+                        <SectionHeader title="Sự kiện sắp tới" icon=""  colorClass="text-blue-600 border-blue-100" count={visibleGroups.upcoming.length} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {visibleGroups.upcoming.map(exam => (
                                 <div key={exam.id} className="h-full transform transition-all duration-300 hover:scale-105 hover:z-10">
                                     <ExamCard exam={exam} onSelect={() => setSelectedExam(exam)} categoryContext="practice" currentUserId={currentUserId} />
                                 </div>
                             ))}
                         </div>
 
-                        {Object.values(groupedExams).every(arr => arr.length === 0) && (
+                        {Object.values(visibleGroups).every(arr => arr.length === 0) && (
                             <div className="flex flex-col items-center justify-center h-64 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200 mt-8">
                                 <p className="font-medium">Chưa có bài thi nào phù hợp.</p>
                             </div>
