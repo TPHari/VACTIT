@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Link from "next/link";
@@ -55,6 +55,13 @@ export default function ResultsPage() {
 
   // Selected trial state
   const [selectedTrialId, setSelectedTrialId] = useState<string>("");
+
+  // If nothing is selected, default to the most recent trial once data arrives
+  useEffect(() => {
+    if (!selectedTrialId && trials.length) {
+      setSelectedTrialId(trials[0].trial_id);
+    }
+  }, [selectedTrialId, trials]);
 
   // Auto-select first trial when trials load
   const effectiveTrialId = selectedTrialId || trials[0]?.trial_id || "";
@@ -409,7 +416,7 @@ export default function ResultsPage() {
                     </div>
 
                     {trials.map((t) => {
-                      const isActive = t.trial_id === selectedTrialId;
+                      const isActive = t.trial_id === effectiveTrialId;
                       const [datePart = ""] = formatDateVN(t.start_time).split(" ");
                       const durationSec = (() => {
                         if (!t.start_time || !t.end_time) return null;
