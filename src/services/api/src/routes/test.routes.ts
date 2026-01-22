@@ -9,7 +9,7 @@ import { createClient } from '@supabase/supabase-js';
 // Định nghĩa kiểu dữ liệu cho Query Params
 interface GetTestsQuery {
   query?: string;
-  type?: string; 
+  type?: string;
   category?: 'upcoming' | 'countdown' | 'in_progress' | 'locked' | 'practice' | 'all';
   status?: 'completed' | 'not_started' | 'all';
   sort?: 'newest' | 'oldest';
@@ -24,27 +24,27 @@ export async function testRoutes(server: FastifyInstance) {
   );
   server.get<{ Querystring: GetTestsQuery }>('/api/tests', async (request, reply) => {
     try {
-      const { 
+      const {
         query, type, category = 'all', status = 'all', sort = 'newest',
         page = '1', limit = '12',
         userId
       } = request.query;
-      
+
       const pageInt = parseInt(page);
       const limitInt = parseInt(limit);
       const skip = (pageInt - 1) * limitInt;
 
       // --- LOGIC LẤY USER ID ---
       // Ưu tiên lấy từ Query Param do Frontend gửi xuống
-      const currentUserId = userId; 
-      const searchUserId = currentUserId; 
+      const currentUserId = userId;
+      const searchUserId = currentUserId;
 
       // --- Debug Log ---
       console.log(`[API] Fetching tests. UserID provided: ${currentUserId || 'Guest'}`);
 
       // --- B. Mốc thời gian ---
       const now = new Date();
-      const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
+      const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
       // --- C. Bộ lọc (WHERE) ---
       const where: any = {};
@@ -89,13 +89,13 @@ export async function testRoutes(server: FastifyInstance) {
       // --- D. Sắp xếp (ORDER BY) ---
       let orderBy: any = [];
       if (['upcoming', 'countdown', 'in_progress'].includes(category)) {
-         orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
+        orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
       } else {
-         if (sort === 'oldest') {
-            orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
-         } else {
-            orderBy = [{ start_time: 'desc' }, { test_id: 'desc' }];
-         }
+        if (sort === 'oldest') {
+          orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
+        } else {
+          orderBy = [{ start_time: 'desc' }, { test_id: 'desc' }];
+        }
       }
 
       // --- E. Truy vấn ---
@@ -107,23 +107,23 @@ export async function testRoutes(server: FastifyInstance) {
           orderBy: orderBy,
           include: {
             author: { select: { user_id: true, name: true, email: true } },
-            
+
             // Lấy danh sách lần thi của User này để Frontend đếm
             trials: {
               where: { student_id: searchUserId },
-              select: { trial_id: true } 
+              select: { trial_id: true }
             },
-            
+
             _count: { select: { trials: true } }
           }
         }),
         server.prisma.test.count({ where })
       ]);
 
-      return { 
-        data: tests, 
-        pagination: { 
-          total, page: pageInt, limit: limitInt, totalPages: Math.ceil(total / limitInt) 
+      return {
+        data: tests,
+        pagination: {
+          total, page: pageInt, limit: limitInt, totalPages: Math.ceil(total / limitInt)
         }
       };
 
@@ -263,17 +263,23 @@ export async function testRoutes(server: FastifyInstance) {
           });
 
         if (matched.length > 0) {
-          pages = (
-            await Promise.all(
-              matched.map(async (file: any) => {
-                const fullPath = `${folderPath}/${file.name}`;
-                const { data } = await supabase.storage
-                  .from(BUCKET)
-                  .createSignedUrl(fullPath, 60 * 5);
-                return (data as any)?.signedUrl || null;
-              })
-            )
-          ).filter(Boolean) as string[];
+          //  OPTIMIZED: Batch signed URL creation (1 request for all files)
+          const paths = matched.map((file: any) => `${folderPath}/${file.name}`);
+          const { data: signedUrls, error: signError } = await supabase.storage
+            .from(BUCKET)
+            .createSignedUrls(paths, 60 * 5);
+
+          if (signError) {
+            console.error('Batch signed URL error:', signError);
+            reply.status(500);
+            return { error: 'failed_to_create_signed_urls' };
+          }
+
+          if (signedUrls) {
+            pages = signedUrls
+              .map((item: any) => item.signedUrl)
+              .filter(Boolean) as string[];
+          }
           break;
         }
       }

@@ -15,7 +15,7 @@ const calculateTotalScore = (processedScore: any): number => {
 };
 
 export async function leaderboardRoutes(server: FastifyInstance) {
-  
+
   // 1. Lấy danh sách các bài thi thật (Exam) để hiển thị lên Dropdown
   server.get('/api/leaderboard/exams', async (request, reply) => {
     try {
@@ -40,9 +40,26 @@ export async function leaderboardRoutes(server: FastifyInstance) {
         return { data: [] }; // Không có testId thì trả về rỗng để tránh lỗi
       }
 
+      //  OPTIMIZED: Check Redis cache first
+      const CACHE_TTL = 60; // 60 seconds
+      const cacheKey = `leaderboard:${testId}`;
+
+      if (server.redis) {
+        try {
+          const cached = await server.redis.get(cacheKey);
+          if (cached) {
+            console.log(`Cache HIT for ${cacheKey}`);
+            return JSON.parse(cached);
+          }
+          console.log(`Cache MISS for ${cacheKey}`);
+        } catch (cacheErr) {
+          console.error('Cache read error:', cacheErr);
+        }
+      }
+
       // Lấy tất cả các lượt thi (trial) của bài thi này
       const trials = await server.prisma.trial.findMany({
-        where: { 
+        where: {
           test_id: testId,
           test: { type: 'exam' } // Chỉ lấy bài thi thật
         },
@@ -57,7 +74,7 @@ export async function leaderboardRoutes(server: FastifyInstance) {
       const results = trials.map(trial => {
         // Tính điểm từ processed_score (JSON)
         const totalScore = calculateTotalScore(trial.processed_score);
-        
+
         // Tính thời gian làm bài (phút)
         const start = new Date(trial.start_time).getTime();
         const end = trial.end_time ? new Date(trial.end_time).getTime() : new Date().getTime();
@@ -79,7 +96,7 @@ export async function leaderboardRoutes(server: FastifyInstance) {
 
       results.forEach(record => {
         const currentBest = bestResultsByUser.get(record.userId);
-        
+
         if (!currentBest) {
           bestResultsByUser.set(record.userId, record);
         } else {
@@ -104,12 +121,24 @@ export async function leaderboardRoutes(server: FastifyInstance) {
           name: item.name,
           avatar: item.avatar,
           score: item.score,
-          examCount: 1, 
+          examCount: 1,
           time: `${item.time}p`,
           trend: 'same'
         }));
 
-      return { data: leaderboard };
+      const response = { data: leaderboard };
+
+      // ✅ OPTIMIZED: Cache result
+      if (server.redis) {
+        try {
+          await server.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
+          console.log(`💾 Cached ${cacheKey} for ${CACHE_TTL}s`);
+        } catch (cacheErr) {
+          console.error('Cache write error:', cacheErr);
+        }
+      }
+
+      return response;
 
     } catch (error) {
       server.log.error(error);
@@ -168,8 +197,8 @@ export async function leaderboardRoutes(server: FastifyInstance) {
           bestResultsByUser.set(record.userId, record);
         } else if (record.score > currentBest.score) {
           bestResultsByUser.set(record.userId, record);
-        } else if (record.score === currentBest.score && 
-                   record.timeMinutes * 60 + record.timeSeconds < currentBest.timeMinutes * 60 + currentBest.timeSeconds) {
+        } else if (record.score === currentBest.score &&
+          record.timeMinutes * 60 + record.timeSeconds < currentBest.timeMinutes * 60 + currentBest.timeSeconds) {
           bestResultsByUser.set(record.userId, record);
         }
       });
@@ -190,7 +219,7 @@ export async function leaderboardRoutes(server: FastifyInstance) {
           date: item.date
         }));
 
-      return { 
+      return {
         data: leaderboard,
         testInfo: {
           testId: latestExam.test_id,
