@@ -4,9 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-
-
-
+import NotificationBell from "@/components/ui/NotificationBell";
 
 export default function Topbar() {
   const router = useRouter();
@@ -101,16 +99,10 @@ export default function Topbar() {
       </div>
       {/* Right: Notifications + Profile */}
       <div className="relative flex items-center gap-4" ref={menuRef}>
-        <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-          </svg>
-          <span className="absolute top-2 right-2.5 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-          </span>
-        </button>
+        <NotificationBell />
         <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
+        
+        {/* Profile Button */}
         <button
           type="button"
           onClick={() => setIsOpen((o) => !o)}
@@ -138,6 +130,8 @@ export default function Topbar() {
             <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
           </svg>
         </button>
+
+        {/* Dropdown Profile (Giữ nguyên) */}
         {isOpen && user && (
           <div className="absolute right-0 top-[120%] z-50 w-60 rounded-2xl bg-white p-1.5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] ring-1 ring-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="px-3 py-3 text-xs bg-slate-50 rounded-xl mb-1">

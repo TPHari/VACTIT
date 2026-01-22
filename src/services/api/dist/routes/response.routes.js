@@ -120,6 +120,7 @@ async function responseRoutes(server) {
                     where: { trial_id: trialId },
                     data: {
                         raw_score: tacticData, // Save JSON breakdown here
+                        end_time: new Date(),
                         // processed_score is reserved for IRT, not updated here
                     }
                 })
