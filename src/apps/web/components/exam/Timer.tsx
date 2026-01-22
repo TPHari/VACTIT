@@ -24,7 +24,8 @@ useEffect(() => {
   const clearedKey = `exam_cleared_${testId}`;
   const cleared = sessionStorage.getItem(clearedKey);
   if (cleared) {
-    sessionStorage.removeItem(clearedKey);
+    // Don't remove the flag here - Timer also uses it
+    // It will be cleared when user starts a new exam
     setEndTime(0);
     return;
   }
@@ -72,12 +73,20 @@ useEffect(() => {
     <div
       role="timer"
       aria-live="polite"
-      className={`inline-flex items-center gap-2 px-3 rounded font-medium text-xl ${
-        remaining <= 60 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-800'
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-base ${
+        remaining <= 60 ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-700'
       }`}
     >
-      <img src="/assets/icons/clock.svg" alt="Timer" className="w-6 h-6" />
-      <span>{formatTime(remaining)}</span>
+      <svg 
+        className="w-5 h-5" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <circle cx="12" cy="12" r="10" strokeWidth="2" />
+        <path strokeLinecap="round" strokeWidth="2" d="M12 6v6l4 2" />
+      </svg>
+      <span className="font-semibold">{formatTime(remaining)}</span>
     </div>
   );
 }

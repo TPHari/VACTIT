@@ -53,7 +53,7 @@ const MOCK_TEACHERS = [
       'Giải Ba HSG Tiếng Anh tỉnh Quảng Ngãi',
       'Thủ khoa khối D01 trường THPT Số 2 Tư Nghĩa',
       'Sinh viên chuyên ngành Kinh doanh quốc tế - Đại học Kinh tế TP.HCM',
-      'Phụ trách môn Tiếng Anh'
+      'Phụ trách phần Tiếng Anh'
     ]
   },
   {
@@ -68,7 +68,7 @@ const MOCK_TEACHERS = [
       'Sinh viên 5 tốt cấp UEH',
       'Cựu chuyên Toán THPT Chuyên Quốc Học - Huế',
       'Sinh viên chuyên ngành Marketing - Đại học Kinh tế TP.HCM',
-      'Phụ trách môn Tiếng Anh'
+      'Phụ trách phần Tiếng Anh'
     ]
   },
   {
@@ -84,7 +84,7 @@ const MOCK_TEACHERS = [
       'Có kinh nghiệm kèm IELTS (trong đó có 2 bạn 7.0)',
       'Cựu học sinh chuyên Anh trường THPT Chuyên Hùng Vương Bình Dương',
       'Sinh viên trường Đại học Kinh tế HCM',
-      'Phụ trách môn Tiếng Anh'
+      'Phụ trách phần Tiếng Anh'
     ]
   },
   {
@@ -97,7 +97,7 @@ const MOCK_TEACHERS = [
       'Thủ khoa HSG Toán TP Đà Nẵng 2023',
       'Cựu chuyên Toán THPT Chuyên Lê Quý Đôn Đà Nẵng',
       'Sinh viên Trường Y ĐH Y Dược TP HCM',
-      'Phụ trách môn Toán, TDKH'
+      'Phụ trách phần Toán học, Tư duy khoa học'
     ]
   },
   {
@@ -109,7 +109,7 @@ const MOCK_TEACHERS = [
       'Giải ba chung kết năm Đường lên đỉnh Olympia năm thứ 23',
       'Cựu học sinh chuyên Lý trường THPT chuyên Quốc Học Huế',
       'Sinh viên trường Đại học Công nghệ thông tin, ĐHQG - HCM',
-      'Phụ trách môn TDKH'
+      'Phụ trách phần Tư duy khoa học'
     ]
   },
   {
@@ -121,7 +121,7 @@ const MOCK_TEACHERS = [
       'Giải Nhất HSG Toán TP. Đà Nẵng 2024-2025',
       'Cựu chuyên Toán THPT Chuyên Lê Quý Đôn Đà Nẵng',
       'Sinh viên Khoa học máy tính - Trường ĐH KTHN - ĐHQG HCM',
-      'Phụ trách môn Toán'
+      'Phụ trách phần Toán học'
     ]
   },
   {
@@ -132,7 +132,7 @@ const MOCK_TEACHERS = [
       '1087 điểm ĐGNL HCM năm 2024',
       'Cựu chuyên Lý THPT Chuyên Quốc Học - Huế',
       'Sinh viên Trường Đại học Công nghệ Thông tin, ĐHQG-HCM',
-      'Phụ trách môn Tiếng Việt'
+      'Phụ trách phần Tiếng Việt'
     ]
   },
   {
@@ -144,7 +144,7 @@ const MOCK_TEACHERS = [
       'Thành viên Ban Đối ngoại chương trình Nguyệt Quế Đỏ (tìm kiếm, bồi dưỡng thí sinh Olympia)',
       'Cựu học sinh chuyên Toán THPT Chuyên Quốc Học Huế',
       'Sinh viên khoa Toán - Tin, chuyên ngành Khoa học dữ liệu, trường KHTN, ĐHQG-HCM',
-      'Phụ trách môn Toán'
+      'Phụ trách phần Toán học'
     ]
   },
   {
@@ -152,12 +152,12 @@ const MOCK_TEACHERS = [
     name: 'Nguyễn Phúc Tâm',
     image: '/uploads/teachers-test/teacher_12.png',
     badges: [
-      '1078 điểm ĐGNL HCM đợt 2 năm 2025 (300/300 điểm TDKH)',
+      '1078 điểm ĐGNL HCM đợt 2 năm 2025 (300/300 điểm Tư duy khoa học)',
       '28,5 điểm khối A00, tổng điểm 37,5/40 các môn kỳ thi Tốt nghiệp THPTQG 2025',
       'Huy chương Đồng môn Hóa học kỳ thi Olympic Khoa học Tự nhiên (HSGS) 2023',
       'Cựu chuyên Hóa THPT Chuyên Quốc Học - Huế',
       'Sinh viên ngành Công nghệ thông tin - Trường Đại học Khoa học Tự nhiên - ĐHQG-HCM',
-      'Phụ trách môn Tiếng Việt, TDKH'
+      'Phụ trách phần Tiếng Việt, Tư duy khoa học'
     ]
   },
   {
@@ -169,7 +169,7 @@ const MOCK_TEACHERS = [
       '28 điểm khối A00, tổng điểm 36,75/40 các môn kỳ thi Tốt nghiệp THPTQG 2025',
       'Cựu học sinh chuyên Lý trường THPT chuyên Quốc Học Huế',
       'Sinh viên trường Đại học Bách Khoa, ĐHQG - HCM',
-      'Phụ trách môn Tiếng Việt'
+      'Phụ trách phần Tiếng Việt'
     ]
   },
   {
@@ -181,7 +181,7 @@ const MOCK_TEACHERS = [
       'Top 1 Toán Kì thi Toán Logic FPT 2023',
       'Cựu chuyên Toán THPT Chuyên Lê Quý Đôn - Đà Nẵng',
       'Sinh viên Trường Đại học Công nghệ Thông tin, ĐHQG-HCM',
-      'Phụ trách môn Toán, TDKH'
+      'Phụ trách phần Toán học, Tư duy khoa học'
     ]
   },
   {
@@ -193,7 +193,7 @@ const MOCK_TEACHERS = [
       'Thủ khoa khối A01 trường THPT Chuyên Lê Quý Đôn - Bình Định năm 2024',
       'Cựu học sinh THPT Chuyên Lê Quý Đôn - Bình Định',
       'Sinh viên ngành Khoa học Máy tính - trường ĐH KHTN - ĐHQG-HCM',
-      'Phụ trách môn Toán, TDKH'
+      'Phụ trách phần Toán học, Tư duy khoa học'
     ]
   },
   {
@@ -201,7 +201,12 @@ const MOCK_TEACHERS = [
     name: 'Phạm Nguyễn Minh Quân',
     image: '/uploads/teachers-test/teacher_16.png',
     badges: [
-      'Thông tin đang cập nhật'
+      'Học bổng của Viện Nghiên cứu Cao cấp về Toán VIASM (2023)',
+      'Chứng chỉ Xác suất ranking 8/10 của Hiệp hội Actuary Hoa Kỳ (2023)',
+      'Chứng chỉ Toán tài chính ranking 8/10 của Hiệp hội Actuary Hoa Kỳ (2024)',
+      'Chuyên viên Vận hành số - Kiểm soát dữ liệu, Công ty cổ phần Hợp tác đầu tư & Công nghệ TECHCOOP',
+      'Tốt nghiệp loại Xuất sắc hệ Cử nhân Tài năng ngành Toán học, Đại học KHTN-TPHCM',
+      'Phụ trách phần Toán học'
     ]
   }
 ];
