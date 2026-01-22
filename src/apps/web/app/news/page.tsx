@@ -6,7 +6,6 @@ import NewsList from '@/components/news/NewsList';
 import NewsDetailModal from '@/components/news/NewsDetailModal';
 import { api } from '@/lib/api-client';
 
-// [SỬA 1]: Xóa views khỏi interface
 interface NewsItem {
   id: string;
   title: string;
@@ -59,16 +58,17 @@ export default function NewsPage() {
               className="p-6 h-full overflow-auto custom-scrollbar"
               style={{ maxHeight: 'calc(100vh - 72px)' }}
             >
-              <div className="card card-blue w-full mb-8 relative overflow-hidden flex-shrink-0 group shadow-lg rounded-2xl">
+              <div className="card card-blue w-full mb-8 relative overflow-hidden flex-shrink-0 shadow-lg rounded-2xl !transform-none !transition-none hover:!scale-100 hover:!translate-y-0">
                 <div className="relative z-10 max-w-3xl p-8">
                   <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
-                    Tin Tức & Sự Kiện 📰
+                    Tin Tức & Sự Kiện
                   </h1>
                   <p className="text-blue-100 text-sm md:text-base font-medium max-w-xl">
                     Cập nhật những thông tin tuyển sinh mới nhất, bí quyết ôn thi và các sự kiện giáo dục nổi bật.
                   </p>
                 </div>
-                <div className="absolute right-0 top-0 bottom-0 w-64 pointer-events-none">
+                
+                <div className="absolute right-0 top-0 bottom-0 w-64 pointer-events-auto group">
                   <div className="absolute top-[-20px] right-[40px] w-24 h-24 bg-yellow-400 rounded-full opacity-90 transition-transform duration-500 ease-out group-hover:scale-125 shadow-lg shadow-blue-900/20"></div>
                   <div className="absolute bottom-[-10px] right-[100px] w-20 h-20 bg-yellow-400 rounded-full opacity-80 transition-transform duration-700 ease-out group-hover:scale-110 shadow-lg shadow-blue-900/20"></div>
                   <div className="absolute top-[40px] right-[-30px] w-40 h-40 bg-yellow-400 rounded-full opacity-100 transition-transform duration-500 ease-out group-hover:scale-110 shadow-lg shadow-blue-900/20"></div>
