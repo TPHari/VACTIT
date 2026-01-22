@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 
 const MENU_ITEMS = [
-  { id: 'overview', label: 'Tổng quan', path: '/' },
+  { id: 'overview', label: 'Tổng quan', path: '/overview' },
   { id: 'exam', label: 'Vào thi', path: '/exam' },
   { id: 'result', label: 'Kết quả', path: '/result' },
   { id: 'leaderboard', label: 'Bảng xếp hạng', path: '/leaderboard' },
@@ -20,8 +20,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
-    if (path === '/') return pathname === '/';
-    return pathname.startsWith(path);
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   return (
