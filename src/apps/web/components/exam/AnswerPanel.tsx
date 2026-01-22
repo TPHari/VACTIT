@@ -19,84 +19,88 @@ export default function AnswerPanel({
   flags?: Record<number, boolean>;
   onToggleFlag?: (qid: number) => void;
 }) {
-
-  const divider = "border-b-2"
   return (
-    <aside className="flex-1 w-64 lg:w-96 bg-white border rounded-md shadow-sm flex flex-col h-full">
-      <div className="border-b flex items-center justify-between px-4 py-2">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center">
-            <button className="py-1 rounded-full bg-white text-sm font-medium">Điền đáp án</button>
-          </div>
-          <div className="text-xs text-gray-400 ml-2"> </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onSubmit}
-            className="text-sm bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 cursor-pointer transition-colors"
-            aria-label="Nộp bài"
-          >
-            Nộp bài
-          </button>
-        </div>
+    <aside className="flex-1 min-w-[320px] max-w-[400px] bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col h-full">
+      {/* Header - Centered */}
+      <div className="flex items-center justify-center gap-6 px-6 py-3 border-b border-gray-100">
+        <span className="text-sm font-[650] text-gray-700">Điền đáp án</span>
+        <button
+          onClick={onSubmit}
+          className="px-7 py-2 text-sm font-[450] text-black bg-[#F1F6FF] border border-gray-300 rounded-lg hover:bg-[#2864D2] hover:text-white  transition-colors cursor-pointer"
+          aria-label="Nộp bài"
+        >
+          Nộp bài
+        </button>
       </div>
 
-      <div className="px-4 flex-1 min-h-0">
-        <div className="overflow-y-auto h-full">
+      {/* Answer Grid - 3 Column Layout */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="py-1">
           {questions.map((q, idx) => (
             <div
-             key={q.id}
-             className={`px-1 py-3 flex items-center gap-4 ${((idx + 1) % 5 === 0 ? divider : '')}`}
-           >
-             <div className="shrink-0 text-sm text-gray-600 font-medium lg:pr-4 pr-2 text-right">
-               {q.id}
-             </div>
-             <div className="flex-1">
-               <div className="flex items-center gap-3">
-                  {q.options.map((opt) => {
-                    const selected = answers[q.id] === opt;
-                    return (
-                      <button
-                        key={opt}
-                        onClick={() => onSelect(q.id, opt)}
-                        aria-pressed={selected}
-                        className={`flex items-center justify-center w-7 h-7 lg:w-9 lg:h-9 rounded-full border transition-colors text-sm cursor-pointer 
-                          ${(selected
-                            ? 'bg-blue-600 border-blue-600 text-white shadow'
-                            : 'bg-white border-blue-200 text-blue-600 hover:bg-blue-100')
-                        }`}
-                        title={`Câu ${q.id}: ${opt}`}
-                      >
-                        <span className="text-xs font-semibold">{opt}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+              key={q.id}
+              className={`grid grid-cols-[40px_1fr_40px] items-center px-4 py-2.5 ${
+                (idx + 1) % 5 === 0 ? 'border-b border-gray-100' : ''
+              }`}
+            >
+              {/* Column 1: Question Number */}
+              <div className="text-center">
+                <span className="text-sm text-black">{q.id}</span>
               </div>
 
-              {/* flag toggle column */}
-              <div className="w-8 shrink-0">
+              {/* Column 2: Options A, B, C, D */}
+              <div className="flex items-center justify-center gap-6 px-4">
+                {q.options.map((opt) => {
+                  const selected = answers[q.id] === opt;
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => onSelect(q.id, opt)}
+                      aria-pressed={selected}
+                      className={`flex items-center justify-center w-7 h-7 rounded-full border border-2 transition-all text-base cursor-pointer
+                        ${selected
+                          ? 'bg-[#2864D2] border-[#2864D2] text-white'
+                          : 'bg-white border-[#2864D2] text-[#2864D2] hover:border-[#2864D2]'
+                        }`}
+                      title={`Câu ${q.id}: ${opt}`}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Column 3: Flag Button */}
+              <div className="flex justify-center">
                 <button
                   onClick={() => onToggleFlag?.(q.id)}
                   aria-pressed={!!flags?.[q.id]}
-                  className={
-                    'p-1 rounded hover:bg-gray-100 cursor-pointer ' + (flags?.[q.id] ? 'text-yellow-500' : 'text-gray-400')
-                  }
-                  title={flags?.[q.id] ? 'Đã đánh dấu' : 'Đánh dấu'}
+                  className={`p-1 transition-colors cursor-pointer ${
+                    flags?.[q.id] 
+                      ? 'text-[#CE3838]' 
+                      : 'text-black hover:text-[#FF8D28]'
+                  }`}
+                  title={flags?.[q.id] ? 'Đã đánh dấu' : 'Đánh dấu câu hỏi'}
                 >
-                  <img
-                  src={flags?.[q.id] ? "/assets/icons/marked_flag.svg" : "/assets/icons/unmarked_flag.svg"}
-                  alt="flag"
-                  />
+                  <svg 
+                    className="w-5 h-5" 
+                    fill={flags?.[q.id] ? 'currentColor' : 'none'} 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" 
+                    />
+                  </svg>
                 </button>
               </div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* footer actions (kept hidden in original) */}
     </aside>
   );
 }
