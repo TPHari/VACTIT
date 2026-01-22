@@ -30,13 +30,67 @@
   box-sizing: border-box;
 }
 
-html,
-body {
-  padding: 0;
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* =========================================
+   FIXED 2:1 ASPECT RATIO VIEWPORT
+   App always displays in 2:1 ratio
+   with letterboxing on non-matching screens
+   ========================================= */
+
+.aspect-viewport {
   margin: 0;
-  font-family: var(--font-sans);
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0f172a; /* Letterbox color (dark) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aspect-frame {
+  /* Calculate size to fit 2:1 within viewport */
+  --frame-width: min(100vw, 200vh);
+  --frame-height: min(100vh, 50vw);
+  
+  width: var(--frame-width);
+  height: var(--frame-height);
+  position: relative;
+  overflow: hidden;
   background: var(--color-bg);
+  box-shadow: 0 0 80px rgba(0, 0, 0, 0.4);
+}
+
+.aspect-content {
+  /* Fixed design size - will be scaled to fit frame */
+  width: 1920px;
+  height: 960px;
+  transform-origin: top left;
+  /* Scale factor = frame size / design size */
+  transform: scale(calc(var(--frame-width) / 1920));
+  overflow: auto;
+  background: var(--color-bg);
+  font-family: var(--font-sans);
   color: var(--color-text-main);
+}
+
+/* Hide scrollbar in aspect content but allow scroll */
+.aspect-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.aspect-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.aspect-content::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
 }
 
 button {
