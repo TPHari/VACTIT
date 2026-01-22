@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { api } from "@/lib/api-client";
-import Loading from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
 import Image from "next/image";
 
-import type { TrialDetails, TrialListItem, StudentTrialsRes } from "./_types";
+//  SWR hooks for instant loading with stale-while-revalidate
+import { useCurrentUser, useStudentTrials, useTrialDetails } from "@/lib/swr-hooks";
+import { ResultPageSkeleton } from "@/components/ui/Skeleton";
+
+import type { TrialDetails, TrialListItem } from "./_types";
 import { TOTAL_QUESTIONS } from "./_types";
 import {
   formatDateVN,
@@ -40,15 +42,32 @@ const SECTION_COLORS: Record<string, string> = {
 export default function ResultsPage() {
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // ✅ SWR: Instant loading with cached data
+  const { userId, isLoading: userLoading, isError: userError } = useCurrentUser();
+  const { trials: rawTrials, isLoading: trialsLoading, isError: trialsError } = useStudentTrials(userId);
 
-  const [trials, setTrials] = useState<TrialListItem[]>([]);
+  // Sort trials by start_time descending
+  const trials = useMemo(() => {
+    return [...rawTrials].sort(
+      (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+    ) as TrialListItem[];
+  }, [rawTrials]);
+
+  // Selected trial state
   const [selectedTrialId, setSelectedTrialId] = useState<string>("");
 
-  const [detailsLoading, setDetailsLoading] = useState(false);
-  const [selectedTrialDetails, setSelectedTrialDetails] =
-    useState<TrialDetails | null>(null);
+  // If nothing is selected, default to the most recent trial once data arrives
+  useEffect(() => {
+    if (!selectedTrialId && trials.length) {
+      setSelectedTrialId(trials[0].trial_id);
+    }
+  }, [selectedTrialId, trials]);
+
+  // Auto-select first trial when trials load
+  const effectiveTrialId = selectedTrialId || trials[0]?.trial_id || "";
+
+  // ✅ SWR: Fetch trial details with caching
+  const { details: selectedTrialDetails, isLoading: detailsLoading } = useTrialDetails(effectiveTrialId);
 
   // State for expanded section analysis - multiple cards can be expanded
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -68,128 +87,13 @@ export default function ResultsPage() {
     });
   };
 
-  // 0) Load user
-  const [user, setUser] = useState<any>(null);
-  useEffect(() => {
-    let cancelled = false;
+  // Derived state
+  const studentId = userId;
 
-    async function loadUser() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const res = await fetch("/api/user");
-        const data = await res.json();
-
-        if (cancelled) return;
-
-        if (data?.ok) {
-          setUser(data.user);
-        } else {
-          setError(data?.message || "Failed to load user");
-          setLoading(false);
-        }
-      } catch (e: any) {
-        if (!cancelled) {
-          setError(e?.message || "Failed to load user");
-          setLoading(false);
-        }
-      }
-    }
-
-    loadUser();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const studentId = user?.user_id;
-
-  // 1) Load trials list
-  useEffect(() => {
-    // don't fetch until we actually have a studentId
-    if (!studentId) return;
-
-    let cancelled = false;
-
-    async function load() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const res = await api.trials.getByStudent(studentId);
-        const data: StudentTrialsRes = res;
-
-        if (cancelled) return;
-
-        const list = data?.data || [];
-        list.sort(
-          (a, b) =>
-            new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
-        );
-
-        setTrials(list);
-
-        if (list.length > 0) {
-          setSelectedTrialId(list[0].trial_id);
-          // do NOT setLoading(false) here; details effect will end loading after details fetch
-        } else {
-          // critical: if no trials, details effect won't run, so stop loading here
-          setSelectedTrialId("");
-          setSelectedTrialDetails(null);
-          setDetailsLoading(false);
-          setLoading(false);
-        }
-      } catch (e: any) {
-        if (!cancelled) {
-          setError(e?.message || "Failed to load trials");
-          setLoading(false);
-        }
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [studentId]);
-
-  // 2) Load selected trial details (responses + question.correct_option + section)
-  useEffect(() => {
-    if (!selectedTrialId) return;
-
-    let cancelled = false;
-
-    async function loadDetails() {
-      try {
-        setDetailsLoading(true);
-        setLoading(true);
-        setError(null);
-
-        const res = await api.trials.getDetails(selectedTrialId);
-        const data: TrialDetails | null = res?.data ?? null;
-
-        if (cancelled) return;
-        setSelectedTrialDetails(data);
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Failed to load trial details");
-      } finally {
-        if (!cancelled) {
-          setDetailsLoading(false);
-          setLoading(false);
-        }
-      }
-    }
-
-    loadDetails();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedTrialId]);
-
+  // Selected trial (from list)
   const selectedTrial = useMemo(
-    () => trials.find((t) => t.trial_id === selectedTrialId) ?? null,
-    [trials, selectedTrialId],
+    () => trials.find((t) => t.trial_id === effectiveTrialId) ?? null,
+    [trials, effectiveTrialId],
   );
 
   const allAnswers = useMemo(() => {
@@ -238,7 +142,7 @@ export default function ResultsPage() {
     });
   }, [subjects]);
 
-  // You can replace this with a real AI analysis later
+  // Tactic summary
   const tacticSummary = useMemo(() => {
     if (!selectedTrialDetails) return "Đang tải phân tích...";
     const t = selectedTrialDetails.tactic as any;
@@ -256,15 +160,22 @@ export default function ResultsPage() {
     [tacticSummary],
   );
 
-  if (loading || detailsLoading) {
-    return <Loading />;
+  // ✅ SWR: Show skeleton immediately while loading (no more blank screen!)
+  const isInitialLoading = userLoading || (trialsLoading && trials.length === 0);
+
+  if (isInitialLoading) {
+    return (
+      <DashboardLayout>
+        <ResultPageSkeleton />
+      </DashboardLayout>
+    );
   }
 
-  if (error) {
+  if (userError || trialsError) {
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-brand-bg px-6 py-6 text-sm text-red-600">
-          Lỗi: {error}
+          Lỗi: {userError?.message || trialsError?.message || "Failed to load data"}
         </div>
       </DashboardLayout>
     );
@@ -325,7 +236,7 @@ export default function ResultsPage() {
                     {selectedTrial?.test?.title ?? "Kết quả bài thi"}
                   </h2>
                   <p className="text-xs text-brand-muted mb-3">Điểm tổng</p>
-                  
+
                   <div className="flex items-start gap-5 mb-4">
                     {/* Circular score display */}
                     <div className="relative flex-shrink-0">
@@ -365,9 +276,9 @@ export default function ResultsPage() {
                               className="h-full rounded-full"
                               style={{
                                 width: `${(subject.correct / 30) * 100}%`,
-                                backgroundColor: subject.id === 'vie' ? COLORS.red : 
-                                                subject.id === 'eng' ? COLORS.yellow :
-                                                subject.id === 'math' ? '#CBD5E1' : COLORS.blue
+                                backgroundColor: subject.id === 'vie' ? COLORS.red :
+                                  subject.id === 'eng' ? COLORS.yellow :
+                                    subject.id === 'math' ? '#CBD5E1' : COLORS.blue
                               }}
                             />
                           </div>
@@ -393,12 +304,12 @@ export default function ResultsPage() {
                   // Background images for each subject
                   const bgImages = [
                     "/assets/background/vi_card.png",
-                    "/assets/background/eng_card.png", 
+                    "/assets/background/eng_card.png",
                     "/assets/background/math_card.png",
                     "/assets/background/sci_card.png"
                   ];
                   const bgImage = bgImages[index % bgImages.length];
-                  
+
                   // Text colors per subject:
                   // Tiếng Việt: white
                   // Tiếng Anh: blue
@@ -406,17 +317,17 @@ export default function ResultsPage() {
                   // Tư duy khoa học: yellow
                   const textColors = ["#FFFFFF", COLORS.blue, COLORS.red, COLORS.yellow];
                   const mainTextColor = textColors[index % textColors.length];
-                  
+
                   // Sub text slightly transparent version of main color
-                  const subTextOpacity = index === 0 ? "text-white/70" : 
-                                        index === 1 ? "text-blue-600/70" :
-                                        index === 2 ? "text-red-600/70" : "text-yellow-400/70";
+                  const subTextOpacity = index === 0 ? "text-white/70" :
+                    index === 1 ? "text-blue-600/70" :
+                      index === 2 ? "text-red-600/70" : "text-yellow-400/70";
 
                   return (
                     <div
                       key={subject.id}
                       className="flex-1 rounded-2xl px-4 py-5 flex flex-col items-center justify-center bg-cover bg-center bg-no-repeat overflow-hidden"
-                      style={{ 
+                      style={{
                         backgroundImage: `url(${bgImage})`,
                       }}
                     >
@@ -441,7 +352,7 @@ export default function ResultsPage() {
             {/* ========== BOTTOM ROW: 2 columns ========== */}
             <div className="flex gap-4">
               {/* Đáp án 120 câu - Left */}
-              <div className="w-[800px] flex-shrink-0">
+              <div className="w-[750px] flex-shrink-0">
                 <div className="rounded-2xl bg-white p-5 shadow-sm h-full">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-bold text-brand-text">
@@ -458,7 +369,7 @@ export default function ResultsPage() {
                   <p className="text-xs text-brand-muted mb-3">
                     Màu xanh: đúng, màu đỏ: sai, dấu &quot;-&quot; là chưa chọn
                   </p>
-                  
+
                   <div className="max-h-[350px] overflow-y-auto pr-1">
                     <div className="grid grid-cols-10 gap-1">
                       {allAnswers.slice(0, 120).map((item) => (
@@ -497,27 +408,37 @@ export default function ResultsPage() {
                   </h2>
 
                   <div className="max-h-[350px] overflow-y-auto pr-1">
-                    <div className="grid grid-cols-[0.8fr_2fr_1fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted text-xs">
-                      <div className="text-center">Điểm</div>
-                      <div>Tên Quiz</div>
+                    <div className="grid grid-cols-[0.8fr_1.8fr_1fr_1fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted text-sm">
+                      <div className="text-center">Số câu đúng</div>
+                      <div>Tên bài thi</div>
                       <div className="text-center">Ngày làm</div>
+                      <div className="text-center">Thời gian làm bài</div>
                     </div>
 
                     {trials.map((t) => {
-                      const isActive = t.trial_id === selectedTrialId;
+                      const isActive = t.trial_id === effectiveTrialId;
+                      const [datePart = ""] = formatDateVN(t.start_time).split(" ");
+                      const durationSec = (() => {
+                        if (!t.start_time || !t.end_time) return null;
+                        const diffSec =
+                          (new Date(t.end_time).getTime() -
+                            new Date(t.start_time).getTime()) /
+                          1000;
+                        if (!Number.isFinite(diffSec)) return null;
+                        return Math.max(0, Math.round(diffSec));
+                      })();
 
                       return (
                         <div
                           key={t.trial_id}
                           onClick={() => setSelectedTrialId(t.trial_id)}
-                          className={`grid w-full grid-cols-[0.8fr_2fr_1fr]
+                          className={`grid w-full grid-cols-[0.8fr_1.8fr_1fr_1fr]
                           items-center
-                          border-b border-slate-100 py-2.5 transition cursor-pointer text-xs
-                          ${
-                            isActive
+                          border-b border-slate-100 py-2.5 transition cursor-pointer text-sm
+                          ${isActive
                               ? "rounded-lg bg-[#eef4ff] font-semibold"
                               : "bg-transparent hover:bg-slate-50"
-                          }`}
+                            }`}
                         >
                           <div className="text-center">
                             {inferTotalCorrectFromRawScore(t.raw_score)}/{TOTAL_QUESTIONS}
@@ -526,7 +447,10 @@ export default function ResultsPage() {
                             {t.test?.title ?? t.test_id}
                           </div>
                           <div className="text-center">
-                            {formatDateVN(t.start_time).split(" ")[0]}
+                            {datePart}
+                          </div>
+                          <div className="text-center">
+                            {formatDurationMMSS(durationSec)}
                           </div>
                         </div>
                       );
@@ -554,13 +478,13 @@ export default function ResultsPage() {
                 </svg>
               </button>
             </div>
-            
+
             <div className="p-5 overflow-y-auto max-h-[calc(80vh-80px)]">
               <div className="space-y-4">
                 {subjectAnalyses.map((subject, index) => {
                   const colors = [COLORS.red, COLORS.yellow, "#94A3B8", COLORS.blue];
                   const bgColor = colors[index % colors.length];
-                  
+
                   return (
                     <div
                       key={subject.id}
@@ -582,11 +506,11 @@ export default function ResultsPage() {
                       <p className="text-sm text-brand-muted leading-relaxed pl-6">
                         {subject.advice
                           ? subject.advice.split("\n").map((line, idx, arr) => (
-                              <span key={idx}>
-                                {line}
-                                {idx < arr.length - 1 && <br />}
-                              </span>
-                            ))
+                            <span key={idx}>
+                              {line}
+                              {idx < arr.length - 1 && <br />}
+                            </span>
+                          ))
                           : "Chưa có dữ liệu lời khuyên cho phần thi này."}
                       </p>
                     </div>

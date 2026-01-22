@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -48,6 +49,9 @@ model Test {
   author User    @relation("UserTests", fields: [author_id], references: [user_id])
   trials Trial[]
   questions Question[]
+  
+  @@index([type, start_time])
+  @@index([author_id])
 }
 
 model Trial {
@@ -65,6 +69,9 @@ model Trial {
   student   User       @relation("StudentTrials", fields: [student_id], references: [user_id], onDelete: Cascade)
   test      Test       @relation(fields: [test_id], references: [test_id], onDelete: Cascade)
   responses Response[]
+
+  @@index([student_id, start_time])
+  @@index([test_id])
 }
 
 model Response {
@@ -109,4 +116,19 @@ model News {
   image       String?  // URL ảnh thumbnail
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+}
+
+model Notification {
+  notification_id        String   @id @default(uuid())
+  title     String
+  message   String?
+  type      String   // 'exam', 'news', 'leaderboard', 'system'
+  link      String?  // Link for directing (ex: /exams)
+  created_at DateTime @default(now()) @map("created_at")
+  
+  // userId = null mearns Broadcast (notify to all users)
+  user_id    String?  @map("user_id") 
+
+  @@map("Notification")
+  @@index([user_id, created_at])
 }

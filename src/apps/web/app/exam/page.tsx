@@ -14,29 +14,26 @@ export default function ExamTab() {
             - Thêm 'card-blue': Để nhận nền xanh và chữ trắng từ globals.css (ghi đè lên màu trắng của .card).
             - Giữ 'card' & 'group': Để có bo góc, bóng đổ và hiệu ứng hover zoom.
         */}
-        <div className="card card-blue w-full mb-6 relative overflow-hidden flex-shrink-0 group">
-          
-          <div className="relative z-10 max-w-2xl p-6">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Kho Đề Thi <br /> ĐGNL & THPTQG
-            </h1>
-            <p className="text-blue-100 text-sm font-medium">
-              Hơn 1000+ đề thi thử được cập nhật liên tục từ các trường chuyên và sở giáo dục trên cả nước.
+        <div className="card card-no-hover w-full mb-6 relative overflow-visible flex-shrink-0 group bg-white border border-blue-100">
+          <div className="relative z-10 flex items-center gap-6 p-6">
+            <div className="min-w-[120px]">
+              <h1 className="text-2xl font-bold text-blue-600 leading-tight">
+                Thi thử <br /> ĐGNL
+              </h1>
+            </div>
+            <p className="text-slate-500 text-sm max-w-xl">
+              Lorem ipsum dolor sit amet consectetur. Vel vitae tellus vestibulum nunc.
+              Volutpat lacus sed ac aliquam adipiscing. Sagittis commodo massa in
+              ullamcorper congue velit. Vulputate bibendum quis interdum nec purus id.
             </p>
           </div>
 
-          {/* Figures (Các hình trang trí giữ nguyên màu Vàng) */}
-          <div className="absolute right-0 top-0 bottom-0 w-64 pointer-events-none">
-            
-            {/* Figure 1 */}
-            <div className="absolute top-[-20px] right-[40px] w-20 h-20 bg-yellow-400 rounded-full opacity-90 transition-transform duration-500 ease-out group-hover:scale-125 shadow-lg shadow-blue-900/20"></div>
-            
-            {/* Figure 2 */}
-            <div className="absolute bottom-[-10px] right-[100px] w-16 h-16 bg-yellow-400 rounded-full opacity-80 transition-transform duration-700 ease-out group-hover:scale-110 shadow-lg shadow-blue-900/20"></div>
-            
-            {/* Figure 3 */}
-            <div className="absolute top-[40px] right-[-30px] w-32 h-32 bg-yellow-400 rounded-full opacity-100 transition-transform duration-500 ease-out group-hover:scale-110 shadow-lg shadow-blue-900/20"></div>
-          
+          {/* Figures (Giữ tone vàng như mẫu) */}
+          <div className="absolute right-2 top-[-14px] bottom-[-14px] w-64 pointer-events-none flex items-center justify-center">
+            <img
+              src="/assets/icons/exam_icon.svg"
+              className="w-56 h-auto overflow-visible"
+            />
           </div>
         </div>
 

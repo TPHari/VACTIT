@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 
 const MENU_ITEMS = [
-  { id: 'overview', label: 'Tổng quan', path: '/' },
+  { id: 'overview', label: 'Tổng quan', path: '/overview' },
   { id: 'exam', label: 'Vào thi', path: '/exam' },
   { id: 'result', label: 'Kết quả', path: '/result' },
   { id: 'leaderboard', label: 'Bảng xếp hạng', path: '/leaderboard' },
@@ -20,27 +20,13 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
-    if (path === '/') return pathname === '/';
-    return pathname.startsWith(path);
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   return (
-    <aside className="sidebar fixed top-4 left-4 h-[calc(100vh-2rem)] rounded-3xl z-50 overflow-hidden overflow-x-hidden transition-all duration-300">
-
-      {/* Logo Section */}
-      <Link href="/" className="sidebar__logo h-20 mb-4 border-b border-black/5 flex items-center cursor-pointer">
-        <Image
-          src="/assets/logos/logo.png"
-          alt="BAI-LEARN logo"
-          width={36}
-          height={36}
-          className="object-contain"
-        />
-        <span className="sidebar__logo-text ml-3">BAI·LEARN</span>
-      </Link>
-
+    <aside className="sidebar fixed top-20 left-4 h-[calc(100vh-6rem)] rounded-3xl z-40 overflow-hidden overflow-x-hidden transition-all duration-300">
       {/* Nav Section */}
-      <nav className="sidebar__nav flex-1 overflow-y-auto overflow-x-hidden py-2 custom-scrollbar">
+      <nav className="sidebar__nav flex-1 overflow-y-auto overflow-x-hidden py-2 custom-scrollbar pt-4">
         {MENU_ITEMS.map((item) => {
           const active = isActive(item.path);
           return (

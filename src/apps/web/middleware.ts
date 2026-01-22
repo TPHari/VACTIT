@@ -11,11 +11,8 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.redirect(new URL('/auth/login', req.url));
 
-  // Role check - allow both Admin and Student
-  const allowedRoles = ['Admin', 'Student'];
-  if (!allowedRoles.includes(token.role as string)) {
-    return NextResponse.redirect(new URL('/auth/login', req.url));
-  }
+  // Optional role check
+  if (token.role !== 'Student') return NextResponse.redirect(new URL('/auth/login', req.url));
 
   return NextResponse.next();
 }

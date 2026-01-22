@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import './globals.css';
 import KeepAliveProvider from '../components/KeepAliveProvider';
 import NavigationLoading from '../components/NavigationLoading';
+import SWRProvider from '../components/SWRProvider';
 
 export const metadata: Metadata = {
   title: 'VACTIT – Thi thử Đánh giá năng lực ĐHQG-HCM V-ACT',
@@ -18,13 +19,15 @@ export default function RootLayout({
   return (
     <html lang="vi" className="h-full">
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
-        <KeepAliveProvider>
-          <Suspense fallback={null}>
-            <NavigationLoading />
-          </Suspense>
-          {/* Không còn Sidebar, Topbar. Chỉ render nội dung trần. */}
-          {children}
-        </KeepAliveProvider>
+        {/* ✅ SWRProvider: Global cache persists across page navigations */}
+        <SWRProvider>
+          <KeepAliveProvider>
+            <Suspense fallback={null}>
+              <NavigationLoading />
+            </Suspense>
+            {children}
+          </KeepAliveProvider>
+        </SWRProvider>
       </body>
     </html>
   );
