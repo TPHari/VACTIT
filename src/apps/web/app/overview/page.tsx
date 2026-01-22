@@ -174,7 +174,7 @@ export default function OverviewTab() {
             </div>
 
             {/* Stats Section */}
-            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-[1.5rem]">
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-[1.5rem] max-h-[24rem]">
               <div className="flex justify-between items-center mb-[1.5rem]">
                 <h2 className="text-xl font-bold text-[#2864d2]">Thống kê</h2>
                 {/* <button
@@ -240,7 +240,7 @@ export default function OverviewTab() {
 
                   {/* Frequency Chart */}
                   <div>
-                    <p className="text-sm text-gray-500 font-medium mb-[1rem]">Tần suất học</p>
+                    <p className="text-sm text-gray-500 font-medium mb-[1rem]">Tần suất thi thử</p>
                     <div className="flex items-end justify-between gap-[0.5rem] h-[8rem] rounded-lg bg-[#2864d2] px-[0.75rem] py-[0.75rem]">
                       {(stats as UserStats).frequencyData.map((day: { count: number; dayLabel: string }, index: number) => (
                         <div key={index} className="flex flex-col items-center flex-1 group">
