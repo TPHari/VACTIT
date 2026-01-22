@@ -1,12 +1,10 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Image from 'next/image';
 
 const MENU_ITEMS = [
-  { id: 'overview', label: 'Tổng quan', path: '/' },
+  { id: 'overview', label: 'Tổng quan', path: '/overview' },
   { id: 'exam', label: 'Vào thi', path: '/exam' },
   { id: 'result', label: 'Kết quả', path: '/result' },
   { id: 'leaderboard', label: 'Bảng xếp hạng', path: '/leaderboard' },

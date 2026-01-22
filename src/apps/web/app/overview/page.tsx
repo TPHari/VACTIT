@@ -123,9 +123,11 @@ export default function OverviewTab() {
                         <tr key={entry.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                           <td className="py-3">
                             {index < 3 ? (
-                              <span className="text-xl">
-                                {index === 0 ? '👑' : index === 1 ? '🥈' : '🥉'}
-                              </span>
+                              <img
+                                src={`/assets/icons/top${index + 1}.svg`}
+                                alt={`Hạng ${index + 1}`}
+                                className="w-6 h-6"
+                              />
                             ) : (
                               <span className="text-gray-500 font-medium">{index + 1}</span>
                             )}
@@ -198,7 +200,7 @@ export default function OverviewTab() {
                           cx="48"
                           cy="48"
                           r="40"
-                          stroke="#2864d2"
+                          stroke="#FFD700"
                           strokeWidth="8"
                           fill="none"
                           strokeLinecap="round"
@@ -206,7 +208,7 @@ export default function OverviewTab() {
                         />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xl font-bold text-[#2864d2]">{progressPercentage}%</span>
+                        <span className="text-xl font-bold text-[#000000]">{progressPercentage}%</span>
                       </div>
                     </div>
 
@@ -232,23 +234,23 @@ export default function OverviewTab() {
                   {/* Frequency Chart */}
                   <div>
                     <p className="text-sm text-gray-500 font-medium mb-4">Tần suất học</p>
-                    <div className="flex items-end justify-between gap-2 h-32">
+                    <div className="flex items-end justify-between gap-2 h-32 rounded-lg bg-[#2864d2] px-3 py-3">
                       {(stats as UserStats).frequencyData.map((day: { count: number; dayLabel: string }, index: number) => (
                         <div key={index} className="flex flex-col items-center flex-1">
                           <div
-                            className="w-full bg-[#FFD700] rounded-t-md transition-all duration-300 hover:bg-[#FFC700]"
+                            className="w-full bg-[#FFD700] rounded-t-md transition-all duration-300 hover:bg-white/80"
                             style={{
                               height: `${Math.max((day.count / maxCount) * 100, day.count > 0 ? 15 : 5)}%`,
                               minHeight: day.count > 0 ? '20px' : '8px'
                             }}
                           >
                             {day.count > 0 && (
-                              <div className="text-center text-xs font-bold text-gray-700 -mt-5">
+                              <div className="text-center text-xs font-bold text-[#FFD700] -mt-5">
                                 {day.count}
                               </div>
                             )}
                           </div>
-                          <span className="text-xs text-gray-500 mt-2">{day.dayLabel}</span>
+                          <span className="text-xs text-white mt-2">{day.dayLabel}</span>
                         </div>
                       ))}
                     </div>
