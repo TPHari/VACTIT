@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import NotificationBell from "@/components/ui/NotificationBell";
+import { useCurrentUser } from "@/lib/swr-hooks";
 
 export default function Topbar() {
   const router = useRouter();
@@ -12,16 +13,10 @@ export default function Topbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [user, setUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("query")?.toString() || "");
 
-  useEffect(() => {
-    fetch('/api/user')
-      .then(res => res.json())
-      .then(data => {
-        if (data.ok) setUser(data.user);
-      });
-  }, []);
+  // ✅ Use shared SWR hook instead of direct fetch
+  const { user } = useCurrentUser();
 
   // Đóng menu profile khi click ra ngoài
   useEffect(() => {
@@ -101,7 +96,7 @@ export default function Topbar() {
       <div className="relative flex items-center gap-4" ref={menuRef}>
         <NotificationBell />
         <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
-        
+
         {/* Profile Button */}
         <button
           type="button"
