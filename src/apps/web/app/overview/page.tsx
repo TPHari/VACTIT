@@ -49,37 +49,37 @@ export default function OverviewTab() {
   return (
     <DashboardLayout>
       <div className="flex flex-row">
-        <div className="flex flex-col flex-1 px-6 pt-6 pb-6 overflow-auto custom-scrollbar">
+        <div className="flex flex-col flex-1 px-[1.5rem] pt-[1.5rem] pb-[1.5rem] overflow-auto custom-scrollbar">
           
-          <div className="relative mb-6 overflow-hidden pt-8 px-1">
+          <div className="relative mb-[1.5rem] overflow-hidden pt-[2rem] px-[0.25rem]">
             
             {/* 1. Page Title */}
-            <h1 className="page-title mb-6 relative z-10">Tổng quan</h1>
+            <h1 className="page-title mb-[1.5rem] relative z-10">Tổng quan</h1>
 
             {/* 2. Welcome Section (Blue Card) */}
-            <section className="w-full bg-[#2864d2] rounded-2xl p-8 flex items-center justify-between shadow-sm min-h-[180px] relative z-10">
+            <section className="w-full bg-[#2864d2] rounded-2xl p-[2rem] flex items-center justify-between shadow-sm min-h-[11.25rem] relative z-10">
               <div className="max-w-2xl text-white">
-                <p className="text-xl md:text-2xl font-bold mb-2">
+                <p className="text-xl md:text-2xl font-bold mb-[0.5rem]">
                   Chào mừng đã trở lại, {user?.name || '...'}!
                 </p>
-                <p className="text-blue-100 text-sm md:text-base mb-6 leading-relaxed opacity-90">
+                <p className="text-blue-100 text-sm md:text-base mb-[1.5rem] leading-relaxed opacity-90">
                   Hãy coi mỗi bài thi thử là một mũi tiêm vắc-xin. Hơi đau một tí, nhưng giúp bạn miễn dịch với áp lực sau này.
                 </p>
                 <button
-                  className="px-6 py-2.5 bg-white text-blue-600 font-bold rounded-full shadow-md hover:bg-blue-50 transition-colors transform active:scale-95"
+                  className="px-[1.5rem] py-[0.625rem] bg-white text-blue-600 font-bold rounded-full shadow-md hover:bg-blue-50 transition-colors transform active:scale-95"
                   onClick={() => router.push('/exam')}
                 >
                   Bắt đầu ngay
                 </button>
               </div>
               {/* Bên phải để trống cho text không đè lên vùng logo (trên mobile/tablet) */}
-              <div className="hidden md:block w-32 shrink-0"></div>
+              <div className="hidden md:block w-[8rem] shrink-0"></div>
             </section>
 
             {/* 3. Logo (Nằm cùng cấp với Section, nhưng Absolute theo Parent Div) */}
             {/* Logic: bottom-0 sẽ căn theo đáy của Parent Div (tức là đáy của Blue Card) */}
-            <div className="absolute right-20 bottom-0 pointer-events-none md:pointer-events-auto z-20">
-               <div className="relative w-48 h-48 md:w-80 md:h-80 translate-x-10 translate-y-6 md:translate-x-0 md:translate-y-10">
+            <div className="absolute right-[5rem] bottom-0 pointer-events-none md:pointer-events-auto z-20">
+               <div className="relative w-[12rem] h-[12rem] md:w-[20rem] md:h-[20rem] translate-x-[2.5rem] translate-y-[1.5rem] md:translate-x-0 md:translate-y-[2.5rem]">
                   <img
                     src="/assets/logos/hero-illustration.png"
                     alt="Hero Illustration"
@@ -92,10 +92,10 @@ export default function OverviewTab() {
 
 
           {/* Main Grid: Leaderboard + Stats */}
-          <section className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <section className="grid grid-cols-1 lg:grid-cols-5 gap-[1.5rem]">
             {/* Leaderboard Section */}
-            <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex justify-between items-center mb-4">
+            <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-[1.5rem]">
+              <div className="flex justify-between items-center mb-[1rem]">
                 <h2 className="text-xl font-bold text-[#2864d2]">Bảng xếp hạng</h2>
                 <button
                   onClick={() => router.push('/leaderboard')}
@@ -106,11 +106,11 @@ export default function OverviewTab() {
               </div>
 
               {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="flex items-center justify-center h-[16rem]">
+                  <div className="animate-spin rounded-full h-[2rem] w-[2rem] border-b-2 border-blue-600"></div>
                 </div>
               ) : leaderboard.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">
+                <div className="text-center py-[2.5rem] text-gray-500">
                   Chưa có dữ liệu bảng xếp hạng
                 </div>
               ) : (
@@ -118,30 +118,30 @@ export default function OverviewTab() {
                   <table className="w-full">
                     <thead>
                       <tr className="text-left text-sm text-gray-500 border-b border-gray-100">
-                        <th className="pb-3 font-semibold">#</th>
-                        <th className="pb-3 font-semibold">Họ và tên</th>
-                        <th className="pb-3 font-semibold text-center">Điểm thi</th>
-                        <th className="pb-3 font-semibold text-center">Thời gian làm bài</th>
-                        <th className="pb-3 font-semibold text-center">Ngày thi</th>
+                        <th className="pb-[0.75rem] font-semibold">#</th>
+                        <th className="pb-[0.75rem] font-semibold">Họ và tên</th>
+                        <th className="pb-[0.75rem] font-semibold text-center">Điểm thi</th>
+                        <th className="pb-[0.75rem] font-semibold text-center">Thời gian làm bài</th>
+                        <th className="pb-[0.75rem] font-semibold text-center">Ngày thi</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(leaderboard as LeaderboardEntry[]).map((entry: LeaderboardEntry, index: number) => (
                         <tr key={entry.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                          <td className="py-3">
+                          <td className="py-[0.75rem]">
                             {index < 5 ? (
                               <img
                                 src={`/assets/icons/top${index + 1}.svg`}
                                 alt={`Hạng ${index + 1}`}
-                                className="w-6 h-6"
+                                className="w-[1.5rem] h-[1.5rem]"
                               />
                             ) : (
-                              <span className="text-gray-500 font-medium ml-2">{index + 1}</span>
+                              <span className="text-gray-500 font-medium ml-[0.5rem]">{index + 1}</span>
                             )}
                           </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-blue-100 overflow-hidden flex-shrink-0 border border-blue-50">
+                          <td className="py-[0.75rem]">
+                            <div className="flex items-center gap-[0.75rem]">
+                              <div className="w-[2rem] h-[2rem] rounded-full bg-blue-100 overflow-hidden flex-shrink-0 border border-blue-50">
                                 {entry.avatar ? (
                                   <img
                                     src={entry.avatar}
@@ -157,12 +157,12 @@ export default function OverviewTab() {
                                   </div>
                                 )}
                               </div>
-                              <span className="font-medium text-gray-800 text-sm truncate max-w-[120px] sm:max-w-xs" title={entry.name}>{entry.name}</span>
+                              <span className="font-medium text-gray-800 text-sm truncate max-w-[7.5rem] sm:max-w-xs" title={entry.name}>{entry.name}</span>
                             </div>
                           </td>
-                          <td className="py-3 text-center font-bold text-gray-800">{entry.score}</td>
-                          <td className="py-3 text-center text-gray-600 text-sm">{entry.time}</td>
-                          <td className="py-3 text-center text-gray-500 text-sm">
+                          <td className="py-[0.75rem] text-center font-bold text-gray-800">{entry.score}</td>
+                          <td className="py-[0.75rem] text-center text-gray-600 text-sm">{entry.time}</td>
+                          <td className="py-[0.75rem] text-center text-gray-500 text-sm">
                             {formatDate(entry.date)}
                           </td>
                         </tr>
@@ -174,8 +174,8 @@ export default function OverviewTab() {
             </div>
 
             {/* Stats Section */}
-            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex justify-between items-center mb-6">
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-[1.5rem]">
+              <div className="flex justify-between items-center mb-[1.5rem]">
                 <h2 className="text-xl font-bold text-[#2864d2]">Thống kê</h2>
                 {/* <button
                   onClick={() => router.push('/profile')}
@@ -186,15 +186,15 @@ export default function OverviewTab() {
               </div>
 
               {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2864d2]"></div>
+                <div className="flex items-center justify-center h-[16rem]">
+                  <div className="animate-spin rounded-full h-[2rem] w-[2rem] border-b-2 border-[#2864d2]"></div>
                 </div>
               ) : stats ? (
-                <div className="space-y-6">
+                <div className="space-y-[1.5rem]">
                   {/* Progress Circle */}
-                  <div className="flex items-center gap-6">
-                    <div className="relative w-24 h-24 flex-shrink-0">
-                      <svg className="w-24 h-24 transform -rotate-90">
+                  <div className="flex items-center gap-[1.5rem]">
+                    <div className="relative w-[6rem] h-[6rem] flex-shrink-0">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 96 96">
                         <circle
                           cx="48"
                           cy="48"
@@ -219,9 +219,9 @@ export default function OverviewTab() {
                       </div>
                     </div>
 
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-[0.5rem]">
                       <p className="text-sm text-gray-500 font-medium">Tiến độ hoàn thành bài tập</p>
-                      <div className="space-y-1">
+                      <div className="space-y-[0.25rem]">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Số bài đã làm</span>
                           <span className="font-bold text-gray-800">{stats.testsCompleted}/{stats.totalTests}</span>
@@ -240,8 +240,8 @@ export default function OverviewTab() {
 
                   {/* Frequency Chart */}
                   <div>
-                    <p className="text-sm text-gray-500 font-medium mb-4">Tần suất học</p>
-                    <div className="flex items-end justify-between gap-2 h-32 rounded-lg bg-[#2864d2] px-3 py-3">
+                    <p className="text-sm text-gray-500 font-medium mb-[1rem]">Tần suất học</p>
+                    <div className="flex items-end justify-between gap-[0.5rem] h-[8rem] rounded-lg bg-[#2864d2] px-[0.75rem] py-[0.75rem]">
                       {(stats as UserStats).frequencyData.map((day: { count: number; dayLabel: string }, index: number) => (
                         <div key={index} className="flex flex-col items-center flex-1 group">
                           <div
@@ -253,19 +253,19 @@ export default function OverviewTab() {
                           >
                              {/* Tooltip on Hover */}
                             {day.count > 0 && (
-                              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                              <div className="absolute -top-[2rem] left-1/2 -translate-x-1/2 bg-black/80 text-white text-[0.625rem] py-[0.25rem] px-[0.5rem] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                 {day.count} bài
                               </div>
                             )}
                           </div>
-                          <span className="text-[10px] text-blue-100 mt-2 font-medium">{day.dayLabel}</span>
+                          <span className="text-[0.625rem] text-blue-100 mt-[0.5rem] font-medium">{day.dayLabel}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-10 text-gray-500">
+                <div className="text-center py-[2.5rem] text-gray-500">
                   Không thể tải thống kê
                 </div>
               )}
