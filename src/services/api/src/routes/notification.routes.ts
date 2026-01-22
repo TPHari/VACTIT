@@ -21,7 +21,7 @@ export async function notificationRoutes(server: FastifyInstance) {
   // Lấy danh sách thông báo broadcast (cached)
   server.get('/api/notifications', async (request, reply) => {
     try {
-      // ✅ Check Redis cache first
+      //  Check Redis cache first
       if (server.redis) {
         try {
           const cached = await server.redis.get(CACHE_KEY);
@@ -112,12 +112,12 @@ export async function notificationRoutes(server: FastifyInstance) {
         },
       });
 
-      // ✅ Invalidate cache & increment version
+      //  Invalidate cache & increment version
       if (server.redis) {
         try {
           await server.redis.del(CACHE_KEY);
           await server.redis.incr(VERSION_KEY);
-          console.log('🔄 Cache invalidated, version incremented');
+          console.log(' Cache invalidated, version incremented');
         } catch (err) {
           console.error('Redis invalidation error:', err);
         }
