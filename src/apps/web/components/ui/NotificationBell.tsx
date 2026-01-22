@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api-client';
 
 interface NotificationData {
   notification_id: string;
@@ -14,33 +13,57 @@ interface NotificationData {
   user_id: string | null;
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [lastVersion, setLastVersion] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Hàm gọi API lấy thông báo
+  // ✅ OPTIMIZED: Fetch chỉ version number (lightweight)
+  const checkVersion = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/notifications/version`, {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      const currentVersion = data.version || '0';
+
+      // Nếu version thay đổi → fetch full notifications
+      if (lastVersion !== null && currentVersion !== lastVersion) {
+        console.log('📢 Notification version changed, fetching new data...');
+        await fetchNotifications();
+      }
+
+      setLastVersion(currentVersion);
+    } catch (err) {
+      console.error("Failed to check notification version", err);
+    }
+  };
+
+  // Fetch full notifications
   const fetchNotifications = async () => {
     try {
-      const json = await api.notifications.getAll();
-      
+      const res = await fetch(`${API_BASE_URL}/api/notifications`, {
+        credentials: 'include',
+      });
+      const json = await res.json();
+
       if (json.data) {
         const data = json.data as NotificationData[];
         setNotifications(data);
-        
-        // --- LOGIC CHECK ĐÃ ĐỌC (LOCAL STORAGE) ---
+
+        // Logic check đã đọc từ localStorage
         const lastReadTime = localStorage.getItem('last_read_noti_time');
-        
+
         if (lastReadTime) {
-           // Chỉ đếm những thông báo mới hơn thời điểm xem lần cuối
-           const count = data.filter((n) => new Date(n.created_at).getTime() > new Date(lastReadTime).getTime()).length;
-           setUnreadCount(count);
+          const count = data.filter((n) => new Date(n.created_at).getTime() > new Date(lastReadTime).getTime()).length;
+          setUnreadCount(count);
         } else {
-           // Nếu chưa từng xem bao giờ -> Tất cả đều là mới
-           setUnreadCount(data.length);
+          setUnreadCount(data.length);
         }
-        // ------------------------------------------
       }
     } catch (err) {
       console.error("Failed to fetch notifications", err);
@@ -48,20 +71,24 @@ export default function NotificationBell() {
   };
 
   useEffect(() => {
+    // Initial fetch
     fetchNotifications();
 
-    // Polling: Cập nhật mỗi 30s
-    const intervalId = setInterval(fetchNotifications, 30000); 
+    // ✅ OPTIMIZED: Poll version mỗi 60s thay vì full data mỗi 30s
+    const intervalId = setInterval(checkVersion, 60000);
     return () => clearInterval(intervalId);
   }, []);
 
+  // Khi lastVersion thay đổi lần đầu, bắt đầu tracking
+  useEffect(() => {
+    if (lastVersion === null) {
+      checkVersion();
+    }
+  }, [lastVersion]);
+
   const handleToggle = () => {
     if (!isOpen) {
-      // KHI MỞ RA XEM:
-      // 1. Xóa số lượng chưa đọc (Mất chấm đỏ)
       setUnreadCount(0);
-      // 2. Lưu thời điểm hiện tại vào Local Storage
-      // (Lần sau reload trang, code sẽ so sánh với mốc thời gian này)
       localStorage.setItem('last_read_noti_time', new Date().toISOString());
     }
     setIsOpen(!isOpen);
@@ -96,8 +123,7 @@ export default function NotificationBell() {
         <div className="absolute right-0 top-[120%] z-50 w-80 sm:w-96 rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
             <h3 className="font-bold text-slate-800">Thông báo mới nhất</h3>
-            {/* Nút đánh dấu đã đọc thủ công (Optional) */}
-            <button 
+            <button
               onClick={() => {
                 setUnreadCount(0);
                 localStorage.setItem('last_read_noti_time', new Date().toISOString());
@@ -112,20 +138,19 @@ export default function NotificationBell() {
               <div className="p-4 text-center text-slate-500 text-sm">Chưa có thông báo nào</div>
             ) : (
               notifications.map((noti) => {
-                // Kiểm tra xem thông báo này có phải là "Mới" không để highlight (Optional)
                 const lastRead = localStorage.getItem('last_read_noti_time');
                 const isNew = !lastRead || new Date(noti.created_at).getTime() > new Date(lastRead).getTime();
 
                 return (
-                  <Link 
-                      key={noti.notification_id} 
-                      href={noti.link || '#'} 
-                      onClick={() => setIsOpen(false)} 
-                      className={`block p-3 border-b border-slate-50 transition-colors ${isNew ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-slate-50'}`}
+                  <Link
+                    key={noti.notification_id}
+                    href={noti.link || '#'}
+                    onClick={() => setIsOpen(false)}
+                    className={`block p-3 border-b border-slate-50 transition-colors ${isNew ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-slate-50'}`}
                   >
                     <div className="flex gap-3">
                       <div className="mt-1 text-xl">
-                          {noti.type === 'exam' ? '📝' : noti.type === 'news' ? '📰' : '🔔'}
+                        {noti.type === 'exam' ? '📝' : noti.type === 'news' ? '📰' : noti.type === 'score' ? '🏆' : '🔔'}
                       </div>
                       <div>
                         <p className={`text-sm text-slate-800 ${isNew ? 'font-bold' : 'font-semibold'}`}>
@@ -134,7 +159,7 @@ export default function NotificationBell() {
                         </p>
                         <p className="text-xs text-slate-500 line-clamp-2">{noti.message}</p>
                         <p className="text-[10px] text-slate-400 mt-1">
-                          {new Date(noti.created_at).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})} • {new Date(noti.created_at).toLocaleDateString('vi-VN')}
+                          {new Date(noti.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} • {new Date(noti.created_at).toLocaleDateString('vi-VN')}
                         </p>
                       </div>
                     </div>

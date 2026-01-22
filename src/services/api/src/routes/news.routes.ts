@@ -2,7 +2,7 @@
 import { FastifyInstance } from 'fastify';
 import { createBroadcastNotification } from '../utils/notification';
 export async function newsRoutes(server: FastifyInstance) {
-  
+
   // 1. GET /api/news - Lấy danh sách tin tức
   server.get('/api/news', async (request, reply) => {
     try {
@@ -25,12 +25,13 @@ export async function newsRoutes(server: FastifyInstance) {
       const newArticle = await server.prisma.news.create({
         data: request.body as any
       });
-      // LOGIC THÔNG BÁO
-      await createBroadcastNotification(server.prisma, {
+      // LOGIC THÔNG BÁO TỰ ĐỘNG
+      // ✅ Pass server.redis để invalidate cache
+      await createBroadcastNotification(server.prisma, server.redis, {
         title: 'Tin tức mới! 📰',
-        message: newArticle.title, // Lấy tiêu đề tin làm nội dung
+        message: newArticle.title,
         type: 'news',
-        link: `/news?id=${newArticle.news_id}` // Link trỏ tới tin đó
+        link: `/news?id=${newArticle.news_id}`
       });
 
       return { data: newArticle };

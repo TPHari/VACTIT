@@ -47,7 +47,10 @@ export async function trialRoutes(server: FastifyInstance) {
       const trial = await server.prisma.trial.findUnique({
         where: { trial_id: request.params.id },
         include: {
-          student: true,
+          //  OPTIMIZED: Only select necessary student fields
+          student: {
+            select: { user_id: true, name: true }
+          },
           test: {
             select: {
               test_id: true,
@@ -56,7 +59,8 @@ export async function trialRoutes(server: FastifyInstance) {
               duration: true,
             },
           },
-          responses: true
+          // ✅ OPTIMIZED: Removed responses include - not needed for initial load
+          // Use /api/trials/:id/details if responses are needed
         }
       });
 
@@ -80,12 +84,29 @@ export async function trialRoutes(server: FastifyInstance) {
     }
   });
 
-  // Get trials by student
+  // Get trials by student (with Redis cache)
   server.get<{ Params: { studentId: string } }>(
     '/api/students/:studentId/trials',
     async (request, reply) => {
       try {
         const { studentId } = request.params;
+
+        // ✅ Check Redis cache first (30s TTL)
+        const cacheKey = `student:${studentId}:trials`;
+        const CACHE_TTL = 30;
+
+        if (server.redis) {
+          try {
+            const cached = await server.redis.get(cacheKey);
+            if (cached) {
+              console.log(`✅ Cache HIT for student trials: ${studentId}`);
+              return JSON.parse(cached);
+            }
+            console.log(`❌ Cache MISS for student trials: ${studentId}`);
+          } catch (cacheErr) {
+            console.error('Cache read error:', cacheErr);
+          }
+        }
 
         const trials = await server.prisma.trial.findMany({
           where: { student_id: studentId },
@@ -96,7 +117,18 @@ export async function trialRoutes(server: FastifyInstance) {
           },
         });
 
-        return { data: trials, count: trials.length };
+        const response = { data: trials, count: trials.length };
+
+        // ✅ Cache result
+        if (server.redis) {
+          try {
+            await server.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
+          } catch (cacheErr) {
+            console.error('Cache write error:', cacheErr);
+          }
+        }
+
+        return response;
       } catch (error) {
         reply.status(500);
         return {
@@ -106,11 +138,29 @@ export async function trialRoutes(server: FastifyInstance) {
     }
   );
 
+  // Get trial details with responses (with Redis cache)
   server.get<{ Params: { id: string } }>(
     "/api/trials/:id/details",
     async (request, reply) => {
       try {
         const trialId = request.params.id;
+
+        // ✅ Check Redis cache first (60s TTL - longer since details rarely change)
+        const cacheKey = `trial:${trialId}:details`;
+        const CACHE_TTL = 60;
+
+        if (server.redis) {
+          try {
+            const cached = await server.redis.get(cacheKey);
+            if (cached) {
+              console.log(`✅ Cache HIT for trial details: ${trialId}`);
+              return JSON.parse(cached);
+            }
+            console.log(`❌ Cache MISS for trial details: ${trialId}`);
+          } catch (cacheErr) {
+            console.error('Cache read error:', cacheErr);
+          }
+        }
 
         const trial = await server.prisma.trial.findUnique({
           where: { trial_id: trialId },
@@ -121,7 +171,7 @@ export async function trialRoutes(server: FastifyInstance) {
                 question_id: true,
                 chosen_option: true,
                 response_time: true,
-                question: { // requires Prisma relation Response -> Question
+                question: {
                   select: {
                     question_id: true,
                     correct_option: true,
@@ -137,7 +187,18 @@ export async function trialRoutes(server: FastifyInstance) {
           return { error: "Trial not found" };
         }
 
-        return { data: trial };
+        const response = { data: trial };
+
+        // ✅ Cache result
+        if (server.redis) {
+          try {
+            await server.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
+          } catch (cacheErr) {
+            console.error('Cache write error:', cacheErr);
+          }
+        }
+
+        return response;
       } catch (error) {
         reply.status(500);
         return { error: error instanceof Error ? error.message : "Failed to fetch trial details" };

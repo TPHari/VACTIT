@@ -1,26 +1,46 @@
+// Redis keys (shared with notification.routes.ts)
+const CACHE_KEY = 'notifications:broadcast';
+const VERSION_KEY = 'notifications:version';
+
 export const createBroadcastNotification = async (
   prisma: any,
-  data: any
+  redis: any,
+  data: {
+    title: string;
+    message?: string;
+    type: 'exam' | 'news' | 'score' | 'system';
+    link?: string;
+    userId?: string;
+  }
 ) => {
   try {
-    console.log('5. [DEBUG] Service nhận data:', data); // Log 5
-
-    // Kiểm tra xem prisma.notification có tồn tại không
-    if (!prisma.notification) {
-       throw new Error("Prisma Notification model is undefined! Did you run 'npx prisma generate'?");
-    }
+    console.log('📢 Creating broadcast notification:', data.title);
 
     const result = await prisma.notification.create({
       data: {
         title: data.title,
-        message: data.message,
+        message: data.message || null,
         type: data.type,
-        link: data.link,
-        user_id: null,
+        link: data.link || null,
+        user_id: data.userId || null,
       },
     });
-    console.log('6. [DEBUG] Đã INSERT vào DB thành công:', result); // Log 6
+
+    // ✅ Invalidate cache & increment version for real-time update
+    if (redis) {
+      try {
+        await redis.del(CACHE_KEY);
+        await redis.incr(VERSION_KEY);
+        console.log('🔄 Notification cache invalidated, version incremented');
+      } catch (redisErr) {
+        console.error('Redis invalidation error:', redisErr);
+      }
+    }
+
+    console.log('✅ Notification created:', result.notification_id);
+    return result;
   } catch (error) {
-    console.error('❌ [ERROR] Lỗi tạo thông báo:', error); // Log Lỗi
+    console.error('❌ Failed to create notification:', error);
+    return null;
   }
 };

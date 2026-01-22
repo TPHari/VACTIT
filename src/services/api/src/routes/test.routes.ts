@@ -189,14 +189,15 @@ export async function testRoutes(server: FastifyInstance) {
       const test = await server.prisma.test.create({ data: request.body as any });
       console.log('2. [DEBUG] Tạo Test thành công:', test.test_id); // Log 2
       console.log('3. [DEBUG] Loại đề thi (type) là:', test.type); // Log 3
-      //  LOGIC THÔNG BÁO
+      //  LOGIC THÔNG BÁO TỰ ĐỘNG
       if (test.type === 'exam') {
-        console.log('4. [DEBUG] Điều kiện đúng (test.type === exam). Đang gọi notification service...'); // Log 4
-        await createBroadcastNotification(server.prisma, {
+        console.log('4. [DEBUG] Đang gọi notification service...');
+        // ✅ Pass server.redis để invalidate cache khi tạo notification
+        await createBroadcastNotification(server.prisma, server.redis, {
           title: 'Đề thi mới đã lên kệ! 📝',
           message: `Thử sức ngay với đề thi: ${test.title}`,
           type: 'exam',
-          link: `/exam/${test.test_id}` // Link trỏ tới trang làm bài
+          link: `/exam/${test.test_id}`
         });
       } else {
         console.log('4. [DEBUG] BỎ QUA thông báo vì type không phải là "exam". Type thực tế:', test.type); // Log 4 (Else)

@@ -20,7 +20,7 @@ export class ApiClient {
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-      } catch (e) {}
+      } catch (e) { }
       console.error(`GET ${endpoint} failed:`, errorMessage);
       throw new Error(errorMessage);
     }
@@ -35,13 +35,13 @@ export class ApiClient {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-         let errorMessage = `API Error: ${response.status}`;
-         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
-         throw new Error(errorMessage);
+      let errorMessage = `API Error: ${response.status}`;
+      try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) { }
+      throw new Error(errorMessage);
     }
     return response.json();
   }
-  
+
   async put<T>(endpoint: string, data: any): Promise<T> {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method: 'PUT',
@@ -50,9 +50,9 @@ export class ApiClient {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-         let errorMessage = `API Error: ${response.status}`;
-         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
-         throw new Error(errorMessage);
+      let errorMessage = `API Error: ${response.status}`;
+      try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) { }
+      throw new Error(errorMessage);
     }
     return response.json();
   }
@@ -65,9 +65,9 @@ export class ApiClient {
       body: JSON.stringify(data),
     });
     if (!response.ok) {
-         let errorMessage = `API Error: ${response.status}`;
-         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
-         throw new Error(errorMessage);
+      let errorMessage = `API Error: ${response.status}`;
+      try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) { }
+      throw new Error(errorMessage);
     }
     return response.json();
   }
@@ -79,9 +79,9 @@ export class ApiClient {
       credentials: 'include',
     });
     if (!response.ok) {
-         let errorMessage = `API Error: ${response.status}`;
-         try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) {}
-         throw new Error(errorMessage);
+      let errorMessage = `API Error: ${response.status}`;
+      try { const errorData = await response.json(); errorMessage = errorData.message || errorData.error; } catch (e) { }
+      throw new Error(errorMessage);
     }
     return response.json();
   }
@@ -99,28 +99,28 @@ export const api = {
   },
 
   tests: {
-    getAll: (params?: { 
-        query?: string; 
-        type?: string; 
-        category?: string; 
-        status?: string;
-        sort?: string;
-        page?: number; 
-        limit?: number;
-        userId?: string;
+    getAll: (params?: {
+      query?: string;
+      type?: string;
+      category?: string;
+      status?: string;
+      sort?: string;
+      page?: number;
+      limit?: number;
+      userId?: string;
     }) => {
-        const searchParams = new URLSearchParams();
-        if (params) {
-            if (params.query) searchParams.set('query', params.query);
-            if (params.category && params.category !== 'all') searchParams.set('category', params.category);
-            if (params.status && params.status !== 'all') searchParams.set('status', params.status);
-            if (params.sort) searchParams.set('sort', params.sort);
-            if (params.userId) searchParams.set('userId', params.userId); // <--- THÊM
-            
-            if (params.page) searchParams.set('page', params.page.toString());
-            if (params.limit) searchParams.set('limit', params.limit.toString());
-        }
-        return apiClient.get<any>(`/api/tests?${searchParams.toString()}`);
+      const searchParams = new URLSearchParams();
+      if (params) {
+        if (params.query) searchParams.set('query', params.query);
+        if (params.category && params.category !== 'all') searchParams.set('category', params.category);
+        if (params.status && params.status !== 'all') searchParams.set('status', params.status);
+        if (params.sort) searchParams.set('sort', params.sort);
+        if (params.userId) searchParams.set('userId', params.userId); // <--- THÊM
+
+        if (params.page) searchParams.set('page', params.page.toString());
+        if (params.limit) searchParams.set('limit', params.limit.toString());
+      }
+      return apiClient.get<any>(`/api/tests?${searchParams.toString()}`);
     },
     getById: (id: string) => apiClient.get<any>(`/api/tests/${id}`),
     create: (data: any) => apiClient.post<any>('/api/tests', data),
@@ -128,7 +128,7 @@ export const api = {
     delete: (id: string) => apiClient.delete<any>(`/api/tests/${id}`),
     getPages: (trialId: string) => apiClient.get<any>(`/api/exam/${trialId}/pages`),
   },
-  
+
   trials: {
     getAll: () => apiClient.get<any[]>('/api/trials'),
     getById: (id: string) => apiClient.get<any>(`/api/trials/${id}`),
@@ -251,15 +251,15 @@ export const api = {
     },
   },
   teachers: {
-      getAll: () => apiClient.get<any>('/api/teachers'),
-      create: (data: any) => apiClient.post<any>('/api/teachers', data),
-      update: (data: any) => apiClient.put<any>('/api/teachers', data),
-      delete: (teacherId: string) => apiClient.delete<any>(`/api/teachers?teacher_id=${encodeURIComponent(teacherId)}`),
+    getAll: () => apiClient.get<any>('/api/teachers'),
+    create: (data: any) => apiClient.post<any>('/api/teachers', data),
+    update: (data: any) => apiClient.put<any>('/api/teachers', data),
+    delete: (teacherId: string) => apiClient.delete<any>(`/api/teachers?teacher_id=${encodeURIComponent(teacherId)}`),
   },
   leaderboard: {
     get: (testId?: string) => {
-        const query = testId ? `?testId=${testId}` : '';
-        return apiClient.get<any>(`/api/leaderboard${query}`);
+      const query = testId ? `?testId=${testId}` : '';
+      return apiClient.get<any>(`/api/leaderboard${query}`);
     },
     getExams: () => apiClient.get<any>('/api/leaderboard/exams'),
     getLatest: () => apiClient.get<any>('/api/leaderboard/latest'),
@@ -277,6 +277,9 @@ export const api = {
   },
   notifications: {
     getAll: () => apiClient.get<any>('/api/notifications'),
+    getVersion: () => apiClient.get<any>('/api/notifications/version'),
+    create: (data: { title: string; message?: string; type: string; link?: string; userId?: string }) =>
+      apiClient.post<any>('/api/notifications', data),
   },
 };
 
