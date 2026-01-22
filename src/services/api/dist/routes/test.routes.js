@@ -47,55 +47,94 @@ async function testRoutes(server) {
     const supabase = (0, supabase_js_1.createClient)(process.env.NEXT_PUBLIC_API, process.env.SUPABASE_SERVICE_ROLE_KEY);
     server.get('/api/tests', async (request, reply) => {
         try {
-            // 1. Lấy tham số từ URL
-            const { query, type, page = '1', limit = '20' } = request.query;
+            const { query, type, category = 'all', status = 'all', sort = 'newest', page = '1', limit = '12', userId } = request.query;
             const pageInt = parseInt(page);
             const limitInt = parseInt(limit);
             const skip = (pageInt - 1) * limitInt;
-            // 2. Xây dựng bộ lọc (Where clause)
+            // --- LOGIC LẤY USER ID ---
+            // Ưu tiên lấy từ Query Param do Frontend gửi xuống
+            const currentUserId = userId;
+            const searchUserId = currentUserId;
+            // --- Debug Log ---
+            console.log(`[API] Fetching tests. UserID provided: ${currentUserId || 'Guest'}`);
+            // --- B. Mốc thời gian ---
+            const now = new Date();
+            const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            // --- C. Bộ lọc (WHERE) ---
             const where = {};
-            // Tìm kiếm theo tên đề (Title)
-            if (query) {
-                where.title = {
-                    contains: query,
-                    mode: 'insensitive', // Không phân biệt hoa thường
-                };
+            if (query)
+                where.title = { contains: query, mode: 'insensitive' };
+            // Filter theo Category
+            switch (category) {
+                case 'upcoming':
+                    where.type = 'exam';
+                    where.start_time = { gt: oneDayLater };
+                    break;
+                case 'countdown':
+                    where.type = 'exam';
+                    where.start_time = { gt: now, lte: oneDayLater };
+                    break;
+                case 'in_progress':
+                    where.type = 'exam';
+                    where.start_time = { lte: now };
+                    where.due_time = { gte: now };
+                    break;
+                case 'locked':
+                    where.type = 'exam';
+                    where.due_time = { lt: now };
+                    break;
+                case 'practice':
+                    where.type = 'practice';
+                    break;
+                case 'all':
+                default:
+                    if (type && type !== 'all')
+                        where.type = type;
+                    break;
             }
-            // Lọc theo loại (exam/practice)
-            if (type && type !== 'all') {
-                where.type = type;
+            // Filter theo Status (Dựa trên searchUserId)
+            if (status === 'completed') {
+                where.trials = { some: { student_id: searchUserId } };
             }
-            // 3. Truy vấn Database (Lấy data + đếm tổng số)
+            else if (status === 'not_started') {
+                where.trials = { none: { student_id: searchUserId } };
+            }
+            // --- D. Sắp xếp (ORDER BY) ---
+            let orderBy = [];
+            if (['upcoming', 'countdown', 'in_progress'].includes(category)) {
+                orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
+            }
+            else {
+                if (sort === 'oldest') {
+                    orderBy = [{ start_time: 'asc' }, { test_id: 'asc' }];
+                }
+                else {
+                    orderBy = [{ start_time: 'desc' }, { test_id: 'desc' }];
+                }
+            }
+            // --- E. Truy vấn ---
             const [tests, total] = await Promise.all([
                 server.prisma.test.findMany({
                     where,
                     skip: skip,
                     take: limitInt,
-                    orderBy: { test_id: 'desc' }, // Đề mới nhất lên đầu
+                    orderBy: orderBy,
                     include: {
-                        author: {
-                            select: {
-                                user_id: true,
-                                name: true,
-                                email: true
-                            }
+                        author: { select: { user_id: true, name: true, email: true } },
+                        // Lấy danh sách lần thi của User này để Frontend đếm
+                        trials: {
+                            where: { student_id: searchUserId },
+                            select: { trial_id: true }
                         },
-                        _count: {
-                            // Lấy số lượng trials để hiển thị 'lượt thi' trên UI
-                            select: { trials: true }
-                        }
+                        _count: { select: { trials: true } }
                     }
                 }),
                 server.prisma.test.count({ where })
             ]);
-            // 4. Trả về kết quả
             return {
                 data: tests,
                 pagination: {
-                    total,
-                    page: pageInt,
-                    limit: limitInt,
-                    totalPages: Math.ceil(total / limitInt)
+                    total, page: pageInt, limit: limitInt, totalPages: Math.ceil(total / limitInt)
                 }
             };
         }
@@ -107,39 +146,32 @@ async function testRoutes(server) {
             };
         }
     });
-    // Get test by ID -> /api/tests/:id
     server.get('/api/tests/:id', async (request, reply) => {
         try {
             const test = await server.prisma.test.findUnique({
                 where: { test_id: request.params.id },
-                include: {
-                    author: true,
-                    trials: true
-                }
+                include: { author: true, trials: true }
             });
-            if (!test) {
-                reply.status(404);
-                return { error: 'Test not found' };
-            }
+            if (!test)
+                return reply.status(404).send({ error: 'Test not found' });
             return { data: test };
         }
         catch (error) {
+            server.log.error(error);
             reply.status(500);
             return {
                 error: error instanceof Error ? error.message : 'Failed to fetch test'
             };
         }
     });
-    // Create test -> /api/tests
     server.post('/api/tests', async (request, reply) => {
         try {
-            const test = await server.prisma.test.create({
-                data: request.body
-            });
+            const test = await server.prisma.test.create({ data: request.body });
             reply.status(201);
             return { data: test };
         }
         catch (error) {
+            server.log.error(error);
             reply.status(400);
             return {
                 error: error instanceof Error ? error.message : 'Failed to create test'
@@ -179,6 +211,7 @@ async function testRoutes(server) {
             }
             const BUCKET = 'test_images';
             const EXTS = ['jpg', 'png', 'webp'];
+            const CACHE_TTL = 300; // 5 minutes (matches signed URL validity)
             // 0️⃣ Lấy test_id từ trial_id
             const trial = await server.prisma.trial.findUnique({
                 where: { trial_id },
@@ -188,6 +221,22 @@ async function testRoutes(server) {
             if (!trial) {
                 reply.status(404);
                 return { error: 'trial_not_found' };
+            }
+            const cacheKey = `exam-pages:${trial.test_id}`;
+            // 🔍 Check Redis cache first
+            if (server.redis) {
+                try {
+                    const cached = await server.redis.get(cacheKey);
+                    if (cached) {
+                        console.log(`Cache HIT for ${cacheKey}`);
+                        return JSON.parse(cached);
+                    }
+                    console.log(`Cache MISS for ${cacheKey}`);
+                }
+                catch (cacheErr) {
+                    console.error('Cache read error:', cacheErr);
+                    // Continue without cache on error
+                }
             }
             const folderPath = `${trial.test_id}`;
             // 1️⃣ Read files from Supabase Storage
@@ -213,13 +262,21 @@ async function testRoutes(server) {
                     return ai - bi;
                 });
                 if (matched.length > 0) {
-                    pages = (await Promise.all(matched.map(async (file) => {
-                        const fullPath = `${folderPath}/${file.name}`;
-                        const { data } = await supabase.storage
-                            .from(BUCKET)
-                            .createSignedUrl(fullPath, 60 * 5);
-                        return data?.signedUrl || null;
-                    }))).filter(Boolean);
+                    //  OPTIMIZED: Batch signed URL creation (1 request for all files)
+                    const paths = matched.map((file) => `${folderPath}/${file.name}`);
+                    const { data: signedUrls, error: signError } = await supabase.storage
+                        .from(BUCKET)
+                        .createSignedUrls(paths, 60 * 5);
+                    if (signError) {
+                        console.error('Batch signed URL error:', signError);
+                        reply.status(500);
+                        return { error: 'failed_to_create_signed_urls' };
+                    }
+                    if (signedUrls) {
+                        pages = signedUrls
+                            .map((item) => item.signedUrl)
+                            .filter(Boolean);
+                    }
                     break;
                 }
             }
@@ -227,8 +284,20 @@ async function testRoutes(server) {
                 reply.status(204);
                 return { error: 'No pages found' };
             }
+            const result = { pages, totalPages: pages.length };
+            // 💾 Store in Redis cache
+            if (server.redis) {
+                try {
+                    await server.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(result));
+                    console.log(`💾 Cached ${cacheKey} for ${CACHE_TTL}s`);
+                }
+                catch (cacheErr) {
+                    console.error('Cache write error:', cacheErr);
+                    // Continue without caching on error
+                }
+            }
             console.log('Found pages:', pages.length);
-            return { pages, totalPages: pages.length };
+            return result;
         }
         catch (err) {
             server.log.error(err);
