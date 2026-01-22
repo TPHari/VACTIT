@@ -17,7 +17,7 @@ export default function ExamTab() {
         <div className="card card-no-hover w-full mb-6 relative overflow-visible flex-shrink-0 group bg-white border border-blue-100">
           <div className="relative z-10 flex items-center gap-6 p-6">
             <div className="min-w-[120px]">
-              <h1 className="text-2xl font-bold text-blue-600 leading-tight">
+              <h1 className="text-2xl font-bold text-[#2864D2] leading-tight">
                 Thi thử <br /> ĐGNL
               </h1>
             </div>

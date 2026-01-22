@@ -819,3 +819,31 @@ input[type="date"], input[type="time"], input[type="number"] {
 .results-history-cell:nth-child(2), .results-history-cell:nth-child(3), .results-history-cell:nth-child(4) { text-align: center; }
 @media (max-width: 1024px) { .results-grid-top { grid-template-columns: 1fr; } .results-grid-middle { grid-template-columns: 1fr; } .results-answers-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 768px) { .results-subjects { grid-template-columns: 1fr; } }
+
+/* Scrollbar styling */
+
+.custom-scrollbar-light::-webkit-scrollbar-track {
+  background: transparent;
+  /*border-radius: 999px;*/
+}
+.custom-scrollbar-light::-webkit-scrollbar-thumb {
+  background: transparent;
+  /*border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;*/
+}
+.custom-scrollbar-light::-webkit-scrollbar-thumb:hover {
+  background: transparent;
+}
+.custom-scrollbar-light::-webkit-scrollbar-button,
+.custom-scrollbar-light::-webkit-scrollbar-button:single-button,
+.custom-scrollbar-light::-webkit-scrollbar-button:vertical:decrement,
+.custom-scrollbar-light::-webkit-scrollbar-button:vertical:increment,
+.custom-scrollbar-light::-webkit-scrollbar-button:horizontal:decrement,
+.custom-scrollbar-light::-webkit-scrollbar-button:horizontal:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  color: transparent !important;
+}
