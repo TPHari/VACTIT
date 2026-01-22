@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -57,15 +58,23 @@ export default function Topbar() {
   };
 
   return (
-    <header className="fixed top-4 right-4 left-72 z-40 flex h-16 items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-md px-6 shadow-sm transition-all duration-300">
-      {/* Left: Search Bar */}
-      <div className="flex flex-1 items-center gap-3">
-        <div className="relative w-full max-w-md group">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <svg className="w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
-            </svg>
-          </div>
+    <header className="sticky top-0 right-0 left-0 z-50 flex h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white/95 backdrop-blur-md px-6 shadow-sm">
+      {/* Left: Logo + Brand Name + Search Bar */}
+      <div className="flex items-center gap-4">
+        <Link href="/" className="flex flex-col items-center gap-0.5 cursor-pointer hover:opacity-80 transition-opacity">
+          <Image
+            src="/assets/logos/logo.png"
+            alt="BAI-LEARN logo"
+            width={32}
+            height={32}
+            className="object-contain"
+          />
+          <span className="text-xs font-bold text-blue-600 tracking-wide">BAI·LEARN</span>
+        </Link>
+
+        {/* Search Bar */}
+        {/* Search Bar */}
+        <div className="relative w-full max-w-lg group flex items-center">
           <input
             type="text"
             value={searchTerm}
@@ -75,23 +84,32 @@ export default function Topbar() {
                 handleSearch();
               }
             }}
-            placeholder="Tìm kiếm đề thi..."
-            className="block w-full p-2.5 pl-10 text-sm text-slate-800 border border-slate-200 rounded-full bg-slate-50 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+            placeholder="Tìm kiếm từ khóa"
+            className="block w-full py-2 pr-30 text-sm text-slate-800 border border-slate-200 rounded-l-full bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
           />
           {searchTerm && (
             <button
               onClick={() => {
                 setSearchTerm("");
               }}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+              className="absolute right-17 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                 <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
               </svg>
             </button>
           )}
+          <button
+            onClick={handleSearch}
+            className="flex items-center justify-center px-5 py-2 bg-blue-600 hover:bg-blue-700 rounded-r-full border border-blue-600 transition-colors"
+          >
+            <svg className="w-5 h-5 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+            </svg>
+          </button>
         </div>
       </div>
+      
       {/* Right: Notifications + Profile */}
       <div className="relative flex items-center gap-4" ref={menuRef}>
         <NotificationBell />
