@@ -169,13 +169,19 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
         {/* Header */}
         <div className="flex items-center mb-3">
           <span className="text-[10px] text-gray-600 font-semibold bg-white px-2 py-1 rounded-full border border-gray-100">
-            {new Date(exam.date).toLocaleDateString('vi-VN')}
+            {exam.startTime
+              ? `${new Date(exam.startTime).toLocaleDateString('vi-VN')} - ${exam.dueTime ? new Date(exam.dueTime).toLocaleDateString('vi-VN') : 'Không giới hạn'}`
+              : new Date(exam.date).toLocaleDateString('vi-VN')}
           </span>
         </div>
 
         {/* Content */}
         <div className={`rounded-2xl p-4 mb-4 relative overflow-hidden ${isLockedVisual ? 'bg-gray-100' : 'bg-blue-50'}`}>
-          <div className="absolute right-0 bottom-0 w-28 h-28 bg-blue-100 rounded-full translate-x-10 translate-y-10"></div>
+          <img
+            src="/assets/icons/triangle_exam.svg"
+            alt=""
+            className="absolute right-0 bottom-0 w-20 h-20 translate-x-3 translate-y-1 opacity-80"
+          />
           <h3
             className={`font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] relative z-10 ${
               isLockedVisual
@@ -212,7 +218,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
           <button
             onClick={() => onSelect(exam)}
             disabled={isLockedVisual}
-            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors border ${isLockedVisual
+            className={`flex-1 py-2 text-xs font-medium rounded-lg cursor-pointer transition-colors border ${isLockedVisual
                 ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed' // Luôn xám nếu bị khóa
                 : isCompleted
                   ? 'text-green-700 bg-white border-green-200 hover:bg-green-50'
@@ -235,9 +241,9 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
             <button
               onClick={handleTakeTest}
               disabled={loading}
-              className={`flex-1 py-2 text-white text-xs font-medium rounded-full transition-all shadow-sm transform active:scale-95 ${isCompleted
-                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
-                  : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
+              className={`flex-1 py-2 text-white text-xs cursor-pointer font-medium rounded-full transition-all shadow-sm transform active:scale-95 ${isCompleted
+                  ? 'bg-[#2864D2] hover:bg-[#255BBD] shadow-blue-200 hover:shadow-blue-300'
+                  : 'bg-[#2864D2] hover:bg-[#255BBD] shadow-blue-200 hover:shadow-blue-300'
                 } ${loading ? 'opacity-70 cursor-wait' : ''}`}>
               {getButtonText()}
             </button>
