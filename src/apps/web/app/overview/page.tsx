@@ -129,7 +129,7 @@ export default function OverviewTab() {
                       {(leaderboard as LeaderboardEntry[]).map((entry: LeaderboardEntry, index: number) => (
                         <tr key={entry.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                           <td className="py-3">
-                            {index < 3 ? (
+                            {index < 5 ? (
                               <img
                                 src={`/assets/icons/top${index + 1}.svg`}
                                 alt={`Hạng ${index + 1}`}
