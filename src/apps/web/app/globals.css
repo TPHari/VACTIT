@@ -1,3 +1,32 @@
+@font-face {
+  font-family: "Mona Sans";
+  src: url("/fonts/static/MonaSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Mona Sans";
+  src: url("/fonts/static/MonaSans-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Mona Sans";
+  src: url("/fonts/static/MonaSans-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Mona Sans";
+  src: url("/fonts/static/MonaSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -21,7 +50,7 @@
   --radius-md: 1.125rem;
   --shadow-soft: 0 0.875rem 2.5rem rgba(15, 35, 95, 0.08);
   --shadow-hover: 0 1.25rem 2.5rem rgba(15, 35, 95, 0.12);
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", sans-serif;
+  --font-sans: "Mona Sans";
 }
 
 *,

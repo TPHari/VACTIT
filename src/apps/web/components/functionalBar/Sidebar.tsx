@@ -8,10 +8,10 @@ const MENU_ITEMS = [
   { id: 'exam', label: 'Vào thi', path: '/exam' },
   { id: 'result', label: 'Kết quả', path: '/result' },
   { id: 'leaderboard', label: 'Bảng xếp hạng', path: '/leaderboard' },
-  { id: 'teachers', label: 'Giáo viên', path: '/teachers' },
+  { id: 'teachers', label: 'Đội ngũ chuyên môn', path: '/teachers' },
   //{ id: 'guide', label: 'Hướng dẫn thi', path: '/guide' },
   //{ id: 'faq', label: 'Câu hỏi thường gặp', path: '/faq' },
-  { id: 'news', label: 'Tin tức mới nhất', path: '/news' },
+  { id: 'news', label: 'Tin tức', path: '/news' },
 ];
 
 export default function Sidebar() {

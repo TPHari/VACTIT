@@ -99,7 +99,7 @@ export default function LeaderboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto space-y-[2rem] fade-in pb-[2.5rem]">
+      <div className="max-w-5xl pt-[1rem] mx-auto space-y-[2rem] fade-in pb-[2.5rem]">
         
         {/* Header Section */}
         <div className="relative w-full bg-[#2864d2] text-white p-[2rem] rounded-[1.5rem] shadow-lg overflow-hidden group">
@@ -108,7 +108,7 @@ export default function LeaderboardPage() {
                 Bảng Xếp Hạng
               </h1>
               <p className="text-blue-100 text-sm font-medium opacity-90 max-w-xl">
-                Vinh danh Top 10 chiến thần xuất sắc nhất trong các kỳ thi.
+                Vinh danh Top 10 chiến thần xuất sắc nhất trong các bài thi.
               </p>
             </div>
 
@@ -119,16 +119,14 @@ export default function LeaderboardPage() {
             </div>
         </div>
 
-        {/* MAIN CARD CONTAINER */}
-        <div className="bg-white border border-gray-100 rounded-[1.5rem] shadow-sm bg-gradient-to-b from-blue-50/30 to-white pt-[2.5rem] pb-[2rem] px-[1.5rem] relative min-h-[25rem]">
-            
-            {/* --- CUSTOM DROPDOWN (Thay thế Select mặc định) --- */}
-            <div className="absolute top-[1.5rem] right-[1.5rem] z-30" ref={dropdownRef}>
-                <div className="relative w-[16rem] sm:w-[21.5rem]">
+        {/* Dropdown NGOÀI container - Góc phải */}
+        <div className="relative z-[999] flex justify-end mb-[0.75rem]" ref={dropdownRef}>
+          <div className="relative w-[16rem] sm:w-[21.5rem]">
                     {/* Nút bấm mở Dropdown */}
                     <button 
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         disabled={exams.length === 0}
+                      type="button"
                         className={`w-full pl-[1rem] pr-[2.5rem] py-[0.5rem] text-sm bg-white border rounded-full shadow-sm text-left flex items-center justify-between transition-all outline-none
                             ${isDropdownOpen ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300'}
                             ${exams.length === 0 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 cursor-pointer font-medium'}
@@ -150,31 +148,64 @@ export default function LeaderboardPage() {
 
                     {/* Danh sách xổ xuống (Custom List) */}
                     {isDropdownOpen && exams.length > 0 && (
-                        <div className="absolute right-0 mt-[0.5rem] w-full bg-white border border-gray-100 rounded-2xl shadow-xl max-h-[15rem] overflow-y-auto z-40 animate-in fade-in zoom-in-95 duration-100 custom-scrollbar">
+                      <div className="absolute right-0 mt-[0.5rem] w-full bg-white border border-gray-100 rounded-2xl shadow-xl max-h-[15rem] overflow-y-auto z-[1000] animate-in fade-in zoom-in-95 duration-100 custom-scrollbar">
                             <div className="py-[0.25rem]">
                                 {exams.map((ex) => (
-                                    <div 
-                                        key={ex.test_id}
-                                        onClick={() => {
-                                            setSelectedExamId(ex.test_id);
-                                            setIsDropdownOpen(false);
-                                        }}
-                                        className={`px-[1rem] py-[0.5rem] text-sm cursor-pointer transition-colors truncate
-                                            ${selectedExamId === ex.test_id 
-                                                ? 'bg-blue-50 text-blue-700 font-bold' 
-                                                : 'text-gray-700 hover:bg-gray-50'
-                                            }
-                                        `}
-                                    >
-                                        {ex.title}
-                                    </div>
+                                  <div 
+                                    key={ex.test_id}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault(); // tránh blur/close trước khi chọn
+                                      setSelectedExamId(ex.test_id);
+                                      setIsDropdownOpen(false);
+                                    }}
+                                    className={`px-[1rem] py-[0.5rem] text-sm cursor-pointer transition-colors truncate
+                                      ${selectedExamId === ex.test_id 
+                                        ? 'bg-blue-50 text-blue-700 font-bold' 
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                      }
+                                    `}
+                                  >
+                                    {ex.title}
+                                  </div>
                                 ))}
                             </div>
                         </div>
                     )}
                 </div>
+        </div>
+        {/* ------------------------------------------------ */}
+
+        {/* Hall of Fame Banner - NGOÀI container để overflow, tăng 30% */}
+        {!loading && leaderboardData.length > 0 && (
+          <div className="relative flex justify-center mb-[-2rem] z-50">
+            <div className="relative">
+              <img 
+                src="/assets/icons/hall_of_fame_background.svg" 
+                alt="Hall of Fame" 
+                className="h-[3.9rem] w-auto"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[#2864D2] font-bold text-[2.3rem]">
+                  Hall of Fame
+                </span>
+              </div>
             </div>
-            {/* ------------------------------------------------ */}
+          </div>
+        )}
+
+        {/* MAIN CARD CONTAINER - Viền xanh đậm */}
+        <div className="relative border-[3px] border-[#2864D2] rounded-[1.5rem] shadow-sm pt-[5rem] pb-[0] relative h-[28rem] overflow-hidden">
+
+            {/* Sun decoration - top 20%, tăng 50%, nằm sau stage (z-0) */}
+            {!loading && leaderboardData.length > 0 && (
+              <div className="absolute -left-[6rem] top-[20%] w-[18rem] h-[18rem] z-0 pointer-events-none">
+                <img 
+                  src="/assets/icons/sun.svg" 
+                  alt="Sun" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
 
             {loading ? (
                <div className="flex flex-col items-center justify-center h-[16rem] mt-[3rem]">
@@ -192,10 +223,7 @@ export default function LeaderboardPage() {
                </div>
             ) : (
                <>
-                  <div className="text-center mb-[3.75rem] mt-[3rem] sm:mt-[0.5rem]">
-                      <h2 className="text-lg font-bold text-gray-800 uppercase tracking-wider">Top 3 Xuất Sắc Nhất</h2>
-                      <div className="h-[0.25rem] w-[3rem] bg-blue-500 mx-auto mt-[0.5rem] rounded-full opacity-20"></div>
-                  </div>
+                  {/* Podium - Cards và Stage */}
                   <Podium top3={top3} />
                </>
             )}
