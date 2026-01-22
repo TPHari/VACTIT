@@ -47,12 +47,12 @@ export default function ExamTab() {
   return (
     <DashboardLayout>
       <div className="exam-container fade-in relative min-h-full">
-        <div className="flex flex-col lg:flex-row gap-6 pt-6">
-          <div className="flex-1 min-w-0 flex flex-col gap-4">
+        <div className="flex flex-col lg:flex-row gap-[1.5rem] pt-[1.5rem]">
+          <div className="flex-1 min-w-0 flex flex-col gap-[1rem]">
             {/* 1. Header Banner */}
             <div className="card card-no-hover w-full relative overflow-visible flex-shrink-0 group bg-white border border-blue-100">
-              <div className="relative z-10 flex items-center gap-6 px-6 py-1 pr-32">
-                <div className="min-w-[120px]">
+              <div className="relative z-10 flex items-center gap-[1.5rem] px-[1.5rem] py-[0.25rem] pr-[8rem]">
+                <div className="min-w-[7.5rem]">
                   <h1 className="text-3xl font-bold text-[#2864D2] leading-tight">
                     Thi thử <br /> V-ACT
                   </h1>
@@ -67,10 +67,10 @@ export default function ExamTab() {
 
               {/* Figures*/}
               <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute right-6 top-[-32px] bottom-0 w-73 overflow-hidden flex items-start justify-center">
+                <div className="absolute right-[1.5rem] top-[-2rem] bottom-0 w-[18.25rem] overflow-hidden flex items-start justify-center">
                   <img
                     src="/assets/icons/exam_icon.svg"
-                    className="w-63 h-auto"
+                    className="w-[15.75rem] h-auto"
                     alt="Exam icon"
                   />
                 </div>
@@ -80,8 +80,8 @@ export default function ExamTab() {
             {/* Tái sử dụng Grid và Logic */}
             <div className="flex-1 min-h-0">
               {/* Filter & Sort Bar */}
-              <div className="bg-blue-50/60 border border-blue-100 rounded-2xl px-4 py-3 mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div className="flex items-center gap-2">
+              <div className="bg-blue-50/60 border border-blue-100 rounded-2xl px-[1rem] py-[0.75rem] mb-[1rem] flex flex-col md:flex-row md:items-center md:justify-between gap-[0.75rem]">
+                <div className="flex items-center gap-[0.5rem]">
                   {[
                     { key: 'all', label: 'Tất cả' },
                     { key: 'inProgress', label: 'Đang thi' },
@@ -90,7 +90,7 @@ export default function ExamTab() {
                     <button
                       key={opt.key}
                       onClick={() => setFilterMode(opt.key as any)}
-                      className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors border ${
+                      className={`px-[1rem] py-[0.5rem] rounded-full text-sm font-semibold transition-colors border ${
                         filterMode === opt.key
                           ? 'bg-white text-[#2864D2] border-blue-200 shadow-sm'
                           : 'bg-transparent text-slate-600 border-transparent hover:bg-white hover:border-blue-100'
@@ -101,7 +101,7 @@ export default function ExamTab() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-[0.5rem] flex-wrap">
                   {sortButtons.map(btn => {
                     const active = sortOption.key === btn.key;
                     const isDesc = sortOption.direction === 'desc';
@@ -109,7 +109,7 @@ export default function ExamTab() {
                       <button
                         key={btn.key}
                         onClick={() => handleSortClick(btn.key)}
-                        className={`px-4 py-2 rounded-xl text-sm border flex items-center gap-2 transition-colors ${
+                        className={`px-[1rem] py-[0.5rem] rounded-xl text-sm border flex items-center gap-[0.5rem] transition-colors ${
                           active ? 'border-blue-300 text-[#2864D2] bg-white shadow-sm' : 'border-slate-200 text-slate-700 bg-white'
                         }`}
                       >
@@ -117,7 +117,7 @@ export default function ExamTab() {
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
-                          className={`w-4 h-4 transition-transform ${active && !isDesc ? 'rotate-180' : ''}`}
+                          className={`w-[1rem] h-[1rem] transition-transform ${active && !isDesc ? 'rotate-180' : ''}`}
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -134,22 +134,22 @@ export default function ExamTab() {
             </div>
           </div>
 
-          <aside className="w-full lg:w-[320px] xl:w-[360px] flex-shrink-0 self-start lg:sticky lg:top-6 space-y-4">
-            <div className="bg-white border border-blue-100 rounded-2xl shadow-sm p-4">
-              <div className="flex items-start justify-between mb-3 gap-2">
+          <aside className="w-full lg:w-[20rem] xl:w-[22.5rem] flex-shrink-0 self-start lg:sticky lg:top-[1.5rem] space-y-[1rem]">
+            <div className="bg-white border border-blue-100 rounded-2xl shadow-sm p-[1rem]">
+              <div className="flex items-start justify-between mb-[0.75rem] gap-[0.5rem]">
                 <div className="min-w-0">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">Top 5</p>
+                  <p className="text-[0.6875rem] uppercase tracking-wide text-slate-500 font-semibold">Top 5</p>
                   <h3 className="text-sm font-bold text-[#2864D2] truncate" title={examTitle}>{examTitle}</h3>
                 </div>
                 {examDate ? (
-                  <span className="text-[11px] text-slate-400 whitespace-nowrap">{formatDate(examDate)}</span>
+                  <span className="text-[0.6875rem] text-slate-400 whitespace-nowrap">{formatDate(examDate)}</span>
                 ) : null}
               </div>
 
               {isLoading ? (
-                <div className="space-y-2">
+                <div className="space-y-[0.5rem]">
                   {[...Array(5)].map((_, idx) => (
-                    <div key={idx} className="h-10 rounded-xl bg-slate-100 animate-pulse" />
+                    <div key={idx} className="h-[2.5rem] rounded-xl bg-slate-100 animate-pulse" />
                   ))}
                 </div>
               ) : top5.length === 0 ? (
@@ -157,19 +157,19 @@ export default function ExamTab() {
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {top5.map((entry, index) => (
-                    <li key={entry.id || index} className="flex items-center gap-3 py-3">
-                      <div className="w-7 text-center flex-shrink-0">
+                    <li key={entry.id || index} className="flex items-center gap-[0.75rem] py-[0.75rem]">
+                      <div className="w-[1.75rem] text-center flex-shrink-0">
                         {index < 5 ? (
-                          <img src={`/assets/icons/top${index + 1}.svg`} alt={`Hạng ${index + 1}`} className="w-6 h-6 mx-auto" />
+                          <img src={`/assets/icons/top${index + 1}.svg`} alt={`Hạng ${index + 1}`} className="w-[1.5rem] h-[1.5rem] mx-auto" />
                         ) : (
                           <span className="text-slate-500 font-semibold">{index + 1}</span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-800 truncate">{entry.name || 'Ẩn danh'}</p>
-                        {entry.time ? <p className="text-[11px] text-slate-500">Thời gian: {entry.time}</p> : null}
+                        {entry.time ? <p className="text-[0.6875rem] text-slate-500">Thời gian: {entry.time}</p> : null}
                       </div>
-                      <div className="text-sm font-bold text-[#2864D2] flex items-center gap-1">
+                      <div className="text-sm font-bold text-[#2864D2] flex items-center gap-[0.25rem]">
                         {entry.score ?? '—'}
                       </div>
                     </li>
