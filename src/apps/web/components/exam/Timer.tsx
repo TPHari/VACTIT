@@ -24,7 +24,8 @@ useEffect(() => {
   const clearedKey = `exam_cleared_${testId}`;
   const cleared = sessionStorage.getItem(clearedKey);
   if (cleared) {
-    sessionStorage.removeItem(clearedKey);
+    // Don't remove the flag here - Timer also uses it
+    // It will be cleared when user starts a new exam
     setEndTime(0);
     return;
   }

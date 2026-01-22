@@ -1,8 +1,9 @@
 'use client';
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ExamContainer from "@/components/exam/ExamContainer";
 import { api } from "@/lib/api-client";
 import Loading from "./loading";
+import { useRouter } from "next/navigation";
 
 type Params = Promise<{ testId: string }>
 
@@ -15,31 +16,37 @@ export default function ExamPage(props: {
   const [pages, setPages] = useState<string[]>([]);
   const [trialData, setTrialData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
+  const router = useRouter();
+  const hasChecked = useRef(false);
 
   useEffect(() => {
-    try {
-      // Fetch both pages and trial details (which contains test info)
-      Promise.all([
-        api.tests.getPages(testId),
-        api.trials.getById(testId)
-      ])
-        .then(([pagesRes, trialRes]) => {
-          setPages(pagesRes.pages || []);
-          setTrialData(trialRes.data);
-        })
-        .catch((err) => {
-          console.error(err);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setLoading(false);
-    }
-  }, [testId]);
+    // Prevent double execution (React Strict Mode)
+    if (hasChecked.current) return;
+    hasChecked.current = true;
 
+    // Quick client-side check (can be bypassed, but prevents accidental back nav)
+    const wasSubmitted = sessionStorage.getItem(`exam_cleared_${testId}`);
+    if (wasSubmitted) {
+      router.replace('/overview');
+      return;
+    }
+    
+    // Fetch exam data
+    Promise.all([
+      api.tests.getPages(testId),
+      api.trials.getById(testId)
+    ])
+      .then(([pagesRes, trialRes]) => {
+        setPages(pagesRes.pages || []);
+        setTrialData(trialRes.data);
+      })
+      .catch((err) => {
+        console.error(err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [testId, router]);
 
   if (loading) {
     return <Loading></Loading>

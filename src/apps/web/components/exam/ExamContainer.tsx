@@ -171,7 +171,7 @@ export default function ExamContainer({
   }
 
   function handleSuccessRedirect() {
-    router.push('/overview');
+    router.replace('/overview');
   }
 
   function handleExpire() {
@@ -208,7 +208,7 @@ export default function ExamContainer({
       console.error('Failed to remove practice trial on exit:', err);
     }
 
-    router.push('/exam');
+    router.replace('/exam');
   }
   function cancelExit() {
     setShowExitModal(false);
@@ -298,7 +298,7 @@ export default function ExamContainer({
               </p>
 
               <button
-                onClick={() => router.push('/result')}
+                onClick={() => router.replace('/result')}
                 className="w-full px-6 py-3 text-base font-semibold text-[#FFD700] bg-[#2864d2] hover:bg-[#1e4fc0] cursor-pointer rounded-lg transition-colors mb-4"
                 type="button"
               >
@@ -353,7 +353,7 @@ export default function ExamContainer({
               </button>
               <button
                 onClick={confirmExitLeaveWithoutSubmit}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#CE3838] hover:bg-yellow-700 rounded-lg cursor-pointer"
+                className="px-4 py-2 text-sm font-medium text-white bg-[#CE3838] hover:bg-red-700 rounded-lg cursor-pointer"
                 type="button"
               >
                 Thoát
