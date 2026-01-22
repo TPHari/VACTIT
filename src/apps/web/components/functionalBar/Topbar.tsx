@@ -84,8 +84,8 @@ export default function Topbar() {
                 handleSearch();
               }
             }}
-            placeholder="Tìm kiếm từ khóa"
-            className="block w-full py-2 pr-30 text-sm text-slate-800 border border-slate-200 rounded-l-full bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+            placeholder="Tìm kiếm bài thi"
+            className="block w-full py-2 pl-4 pr-30 text-sm text-slate-800 border border-slate-200 rounded-l-full bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
           />
           {searchTerm && (
             <button
