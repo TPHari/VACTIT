@@ -11,7 +11,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar />
       
       {/* Đây là phần giữ khoảng cách để nội dung không bị che */}
-      <main className="pl-[18rem] pr-6 pb-6 transition-all duration-300">
+      <main className="pl-[18rem] pr-6 pb-6  transition-all duration-300">
         {children}
       </main>
     </>

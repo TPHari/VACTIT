@@ -1,10 +1,7 @@
 'use client';
 
 import React from 'react';
-// import Image from 'next/image'; // Tạm thời dùng thẻ <img> thường để tránh lỗi domain config nếu avatar từ nguồn ngoài (Google/UI Avatars)
 
-// 1. Định nghĩa lại Interface tại đây (hoặc chuyển vào file types chung)
-// Để khớp với dữ liệu từ API
 export interface LeaderboardUser {
   id: string;
   name: string;
@@ -12,23 +9,41 @@ export interface LeaderboardUser {
   score: number;
 }
 
-// Component hiển thị 1 người trên bục
 const PodiumStep = ({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) => {
-  // Config màu sắc và chiều cao cho từng hạng
+  // Config chi tiết cho từng hạng
   const config = {
-    1: { height: 'h-40', color: 'bg-yellow-100 border-yellow-300', icon: '👑', ring: 'ring-yellow-400' },
-    2: { height: 'h-32', color: 'bg-gray-100 border-gray-300', icon: '🥈', ring: 'ring-gray-300' },
-    3: { height: 'h-24', color: 'bg-orange-100 border-orange-300', icon: '🥉', ring: 'ring-orange-300' },
+    1: { 
+        height: 'h-40', 
+        color: 'bg-[#FFF9C4] border-yellow-300', 
+        trophy: '/assets/logos/trophy.png',
+        iconPosition: '-top-8 left-4  w-14 h-14',
+        avatarRing: 'ring-4 ring-[#FFD700]', 
+    },
+    2: { 
+        height: 'h-32', 
+        color: 'bg-gray-100 border-gray-300', 
+        trophy: '/assets/logos/trophy2.png',
+        iconPosition: '-top-5 right-1 w-8 h-8',
+        avatarRing: 'ring-0',
+    },
+    3: { 
+        height: 'h-24', 
+        color: 'bg-[#FFCCBC] border-orange-300', 
+        trophy: '/assets/logos/trophy3.png',
+        // Top 3: Chính giữa avatar (Centered)
+        iconPosition: '-top-3 left-1/2 -translate-x-1/2 w-4 h-4',
+        avatarRing: 'ring-0',
+    },
   };
 
   const style = config[rank];
 
   return (
     <div className="flex flex-col items-center justify-end group w-full">
-      {/* Avatar bay lên bay xuống animation nhẹ */}
-      <div className={`relative mb-2 transition-transform duration-300 group-hover:-translate-y-2`}>
-        <div className={`w-16 h-16 rounded-full border-4 ${style.ring} overflow-hidden shadow-lg bg-white`}>
-            {/* Sử dụng img thường để tránh lỗi Next.js Image Domain config với ảnh external */}
+      {/* Avatar Section */}
+      <div className={`relative mb-4 transition-transform duration-300 group-hover:-translate-y-2`}>
+        {/* Avatar Circle */}
+        <div className={`w-16 h-16 rounded-full overflow-hidden shadow-md bg-white ${style.avatarRing}`}>
             <img 
               src={user.avatar || '/default-avatar.png'} 
               alt={user.name} 
@@ -38,8 +53,14 @@ const PodiumStep = ({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) 
               }} 
             />
         </div>
-        <div className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md text-lg">
-           {style.icon}
+        
+        {/* Trophy/Crown Icon */}
+        <div className={`absolute flex items-center justify-center filter drop-shadow-sm z-20 ${style.iconPosition}`}>
+           <img 
+             src={style.trophy} 
+             alt={`Top ${rank}`} 
+             className="w-full h-full object-contain"
+           />
         </div>
       </div>
 
@@ -53,51 +74,37 @@ const PodiumStep = ({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) 
         </p>
       </div>
 
-      {/* Cái bục */}
+      {/* Podium Block */}
       <div className={`w-full ${style.height} ${style.color} border-t-4 rounded-t-xl flex items-end justify-center pb-4 shadow-sm relative overflow-hidden`}>
-         {/* Số hạng in mờ trên bục */}
-         <span className="text-4xl font-black opacity-20">{rank}</span>
+         {/* Số hạng hiển thị to và mờ */}
+         <span className="text-5xl font-black text-black/10 select-none">{rank}</span>
       </div>
     </div>
   );
 };
 
 export default function Podium({ top3 }: { top3: LeaderboardUser[] }) {
-  // Logic sắp xếp: Hạng 2 (Trái) - Hạng 1 (Giữa) - Hạng 3 (Phải)
-  
-  // Nếu không có ai thì ẩn luôn
   if (!top3 || top3.length === 0) return null;
 
-  // An toàn lấy user từng hạng (có thể undefined nếu chưa đủ 3 người)
   const first = top3[0];
   const second = top3[1];
   const third = top3[2];
 
   return (
-    <div className="flex items-end justify-center gap-4 w-full max-w-lg mx-auto mb-10 pt-8 px-4 h-64">
-      
-      {/* Cột Hạng 2 (Bên trái) */}
+    <div className="flex items-end justify-center gap-4 w-full max-w-lg mx-auto mb-8 pt-10 px-4 h-64">
+      {/* Hạng 2 */}
       <div className="w-1/3 order-1 flex justify-center">
-         {second ? (
-            <PodiumStep user={second} rank={2} />
-         ) : (
-            // Placeholder rỗng để giữ layout nếu chưa có hạng 2
-            <div className="w-full h-32"></div> 
-         )}
+         {second ? <PodiumStep user={second} rank={2} /> : <div className="w-full h-32"></div>}
       </div>
 
-      {/* Cột Hạng 1 (Ở giữa - Cao nhất) */}
-      <div className="w-1/3 order-2 -mt-8 flex justify-center z-10"> 
+      {/* Hạng 1 */}
+      <div className="w-1/3 order-2 -mt-10 flex justify-center z-10"> 
          {first && <PodiumStep user={first} rank={1} />}
       </div>
 
-      {/* Cột Hạng 3 (Bên phải) */}
+      {/* Hạng 3 */}
       <div className="w-1/3 order-3 flex justify-center">
-         {third ? (
-            <PodiumStep user={third} rank={3} />
-         ) : (
-            <div className="w-full h-24"></div>
-         )}
+         {third ? <PodiumStep user={third} rank={3} /> : <div className="w-full h-24"></div>}
       </div>
     </div>
   );
