@@ -57,7 +57,7 @@ export default function ExamTab() {
                     Thi thử <br /> V-ACT
                   </h1>
                 </div>
-                <p className="text-slate-500 text-sm max-w-xl">
+                <p className="text-slate-500 text-sm max-w-3/5">
                   Bản lĩnh không tự nhiên sinh ra, nó phải được tôi luyện.
                   Hãy để tiếng đồng hồ đếm ngược rèn cho tim bạn nhịp đập thép, tập làm quen với cảm giác căng thẳng ngay tại nhà. 
                   Chỉ khi bạn đổ mồ hôi trên 'sân tập' với cường độ của một trận đấu thật, 
@@ -134,7 +134,7 @@ export default function ExamTab() {
             </div>
           </div>
 
-          <aside className="w-full lg:w-[320px] xl:w-[360px] flex-shrink-0 self-start lg:sticky lg:top-6 space-y-4">
+          <aside className="w-full lg:w-[200px] xl:w-[260px] flex-shrink-0 self-start lg:sticky lg:top-6 space-y-4">
             <div className="bg-white border border-blue-100 rounded-2xl shadow-sm p-4">
               <div className="flex items-start justify-between mb-3 gap-2">
                 <div className="min-w-0">
