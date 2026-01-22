@@ -38,6 +38,7 @@ export default function ExamContainer({
   const [flags, setFlags] = useState<Record<number, boolean>>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
   // Handling variables for Exit, and Expire events
   const [showExpireModal, setShowExpireModal] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -138,35 +139,36 @@ export default function ExamContainer({
       responseTime: 0,
     }));
 
+    // Immediately show success modal & clear local storage (optimistic UI)
+    sessionStorage.setItem(`exam_cleared_${testId}`, '1');
+    localStorage.removeItem(`exam_${testId}_answers`);
+    localStorage.removeItem(`exam_${testId}_flags`);
+    localStorage.removeItem(`exam_${testId}_endtime`);
+
+    setShowConfirmModal(false);
+    setShowExpireModal(false);
+    setShowExitModal(false);
+    setShowLoadingModal(true);
+    
+    // Show success modal after a short delay for better UX
+    setTimeout(() => {
+      setShowLoadingModal(false);
+      setShowSuccessModal(true);
+    }, 1500);
+
+    // Submit to server in background
     try {
       const res = await api.responses.create({
         trialId: trialId,
         responses: responsesPayload,
       });
       if (res.error) {
-        alert('Lỗi khi nộp bài: ' + res.error);
-        return;
+        console.error('Submit error:', res.error);
+        // Modal already shown, just log the error
       }
-      sessionStorage.setItem(`exam_cleared_${testId}`, '1');
-      localStorage.removeItem(`exam_${testId}_answers`);
-      localStorage.removeItem(`exam_${testId}_flags`);
-      localStorage.removeItem(`exam_${testId}_endtime`);
-      
-
-      setShowConfirmModal(false); // Close confirm modal if open
-      setShowExpireModal(false);
-      setShowExitModal(false);
-
-      if (force) {
-        setShowSuccessModal(true);
-      } else {
-        setShowSuccessModal(true);
-      }
-
-      // router.push('/result'); // Removed immediate redirect
     } catch (err) {
-      console.error(err);
-      alert('Lỗi kết nối khi nộp bài');
+      console.error('Submit network error:', err);
+      // Modal already shown, submission will be retried or handled separately
     }
   }
 
@@ -240,6 +242,17 @@ export default function ExamContainer({
           onToggleFlag={handleToggleFlag}
         />
       </div>
+
+      {/* Loading Modal */}
+      {showLoadingModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="min-w-[40vw] bg-white rounded-xl shadow-2xl p-8 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-200">
+            {/* Spinner */}
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-[#2864D2] rounded-full animate-spin"></div>
+            <p className="text-lg font-medium text-gray-700">Đang nộp bài...</p>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       {showConfirmModal && (

@@ -22,7 +22,7 @@ export default function AnswerPanel({
   return (
     <aside className="flex-1 min-w-[320px] max-w-[400px] bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col h-full">
       {/* Header - Centered */}
-      <div className="flex items-center justify-center gap-6 px-6 py-3 border-b border-gray-100">
+      <div className="flex items-center justify-center gap-6 px-6 py-3 border-b border-gray-300">
         <span className="text-sm font-[650] text-gray-700">Điền đáp án</span>
         <button
           onClick={onSubmit}
@@ -40,7 +40,7 @@ export default function AnswerPanel({
             <div
               key={q.id}
               className={`grid grid-cols-[40px_1fr_40px] items-center px-4 py-2.5 ${
-                (idx + 1) % 5 === 0 ? 'border-b border-gray-100' : ''
+                (idx + 1) % 5 === 0 ? 'border-b border-gray-300' : ''
               }`}
             >
               {/* Column 1: Question Number */}
