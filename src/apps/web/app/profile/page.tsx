@@ -29,7 +29,8 @@ const AVATAR_OPTIONS = [
 export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [savedUser, setSavedUser] = useState<UserProfile | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false); // edit basic info only
+  const [isAvatarEditing, setIsAvatarEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string>("/assets/logos/avatar.png");
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
@@ -72,6 +73,40 @@ export default function ProfilePage() {
   const handleAvatarSelect = (url: string) => {
     setAvatarPreview(url);
     setUser((prev) => prev ? { ...prev, avatarUrl: url } : prev);
+  };
+
+  const handleAvatarSave = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    setProfileMessage(null);
+    try {
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarUrl: user.avatarUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Cập nhật thất bại');
+      }
+      const updatedUser: UserProfile = {
+        id: data.user.id ?? data.user.user_id,
+        name: data.user.name,
+        email: data.user.email,
+        phone: data.user.phone || "",
+        membership: data.user.membership,
+        avatarUrl: data.user.avatarUrl || data.user.avatar_url,
+      };
+      setUser(updatedUser);
+      setSavedUser(updatedUser);
+      setAvatarPreview(updatedUser.avatarUrl || "/assets/logos/avatar.png");
+      setProfileMessage('Đã cập nhật ảnh đại diện.');
+      setIsAvatarEditing(false);
+    } catch (error: any) {
+      setProfileMessage(error?.message || 'Cập nhật thất bại');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -120,6 +155,7 @@ export default function ProfilePage() {
       setAvatarPreview(savedUser.avatarUrl || "/assets/logos/avatar.png");
     }
     setIsEditing(false);
+    setIsAvatarEditing(false);
   };
 
   const handlePasswordSubmit = async (e: FormEvent) => {
@@ -174,12 +210,26 @@ export default function ProfilePage() {
               {/* Left: avatar + basic info */}
               <div className="rounded-card bg-white p-6 shadow-card">
                 <div className="flex flex-col items-center gap-4">
-                  <div className="relative h-28 w-28 overflow-hidden rounded-full bg-slate-100">
-                    <img
-                      src={avatarPreview}
-                      alt={user.name}
-                      className="h-full w-full object-cover"
-                    />
+                  <div className="relative h-28 w-28">
+                    <div className="h-full w-full overflow-hidden rounded-full bg-slate-100">
+                      <img
+                        src={avatarPreview}
+                        alt={user.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarEditing(true)}
+                      className="absolute -top-1 -right-1 rounded-full bg-white p-1.5 shadow-md ring-1 ring-slate-200 hover:ring-brand-primary transition"
+                      aria-label="Chỉnh sửa ảnh đại diện"
+                    >
+                      <img
+                        src="/assets/icons/avatar_setting_icon.svg"
+                        alt="Chỉnh sửa avatar"
+                        className="h-4 w-4"
+                      />
+                    </button>
                   </div>
 
                   <div className="text-center">
@@ -193,7 +243,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {isEditing && (
+                {isAvatarEditing && (
                   <div className="mt-6">
                     <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted mb-3">
                       Chọn ảnh đại diện
@@ -222,6 +272,23 @@ export default function ProfilePage() {
                     <p className="mt-3 text-xs text-brand-muted">
                       Ảnh đại diện được chọn từ bộ có sẵn.
                     </p>
+                    <div className="mt-4 flex gap-3">
+                      <button
+                        type="button"
+                        onClick={handleAvatarSave}
+                        disabled={isSaving}
+                        className="inline-flex items-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                      >
+                        {isSaving ? "Đang lưu..." : "Lưu ảnh"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="inline-flex items-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                      >
+                        Hủy
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -236,8 +303,13 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => setIsEditing(true)}
-                      className="text-xs font-semibold text-brand-primary hover:underline"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand-primary hover:underline"
                     >
+                      <img
+                        src="/assets/icons/profile_setting_icon.svg"
+                        alt="Chỉnh sửa"
+                        className="h-4 w-4"
+                      />
                       Chỉnh sửa
                     </button>
                   )}

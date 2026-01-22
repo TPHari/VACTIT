@@ -441,7 +441,7 @@ export default function ResultsPage() {
             {/* ========== BOTTOM ROW: 2 columns ========== */}
             <div className="flex gap-4">
               {/* Đáp án 120 câu - Left */}
-              <div className="w-[800px] flex-shrink-0">
+              <div className="w-[750px] flex-shrink-0">
                 <div className="rounded-2xl bg-white p-5 shadow-sm h-full">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-bold text-brand-text">
@@ -497,22 +497,33 @@ export default function ResultsPage() {
                   </h2>
 
                   <div className="max-h-[350px] overflow-y-auto pr-1">
-                    <div className="grid grid-cols-[0.8fr_2fr_1fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted text-xs">
-                      <div className="text-center">Điểm</div>
-                      <div>Tên Quiz</div>
+                    <div className="grid grid-cols-[0.8fr_1.8fr_1fr_1fr] border-b border-slate-100 pb-2 font-semibold text-brand-muted text-sm">
+                      <div className="text-center">Số câu đúng</div>
+                      <div>Tên bài thi</div>
                       <div className="text-center">Ngày làm</div>
+                      <div className="text-center">Thời gian làm bài</div>
                     </div>
 
                     {trials.map((t) => {
                       const isActive = t.trial_id === selectedTrialId;
+                      const [datePart = ""] = formatDateVN(t.start_time).split(" ");
+                      const durationSec = (() => {
+                        if (!t.start_time || !t.end_time) return null;
+                        const diffSec =
+                          (new Date(t.end_time).getTime() -
+                            new Date(t.start_time).getTime()) /
+                          1000;
+                        if (!Number.isFinite(diffSec)) return null;
+                        return Math.max(0, Math.round(diffSec));
+                      })();
 
                       return (
                         <div
                           key={t.trial_id}
                           onClick={() => setSelectedTrialId(t.trial_id)}
-                          className={`grid w-full grid-cols-[0.8fr_2fr_1fr]
+                          className={`grid w-full grid-cols-[0.8fr_1.8fr_1fr_1fr]
                           items-center
-                          border-b border-slate-100 py-2.5 transition cursor-pointer text-xs
+                          border-b border-slate-100 py-2.5 transition cursor-pointer text-sm
                           ${
                             isActive
                               ? "rounded-lg bg-[#eef4ff] font-semibold"
@@ -526,7 +537,10 @@ export default function ResultsPage() {
                             {t.test?.title ?? t.test_id}
                           </div>
                           <div className="text-center">
-                            {formatDateVN(t.start_time).split(" ")[0]}
+                            {datePart}
+                          </div>
+                          <div className="text-center">
+                            {formatDurationMMSS(durationSec)}
                           </div>
                         </div>
                       );
