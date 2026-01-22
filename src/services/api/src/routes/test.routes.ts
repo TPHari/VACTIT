@@ -39,6 +39,24 @@ export async function testRoutes(server: FastifyInstance) {
       const currentUserId = userId;
       const searchUserId = currentUserId;
 
+      //  OPTIMIZED: Cache configuration
+      const CACHE_TTL = 30; // 30 seconds
+      const cacheKey = `tests:${query || ''}:${category}:${status}:${sort}:${page}:${limit}:${userId || 'guest'}`;
+
+      // Check Redis cache first
+      if (server.redis) {
+        try {
+          const cached = await server.redis.get(cacheKey);
+          if (cached) {
+            console.log(`Cache HIT for tests list`);
+            return JSON.parse(cached);
+          }
+          console.log(`Cache MISS for tests list`);
+        } catch (cacheErr) {
+          console.error('Cache read error:', cacheErr);
+        }
+      }
+
       // --- Debug Log ---
       console.log(`[API] Fetching tests. UserID provided: ${currentUserId || 'Guest'}`);
 
@@ -120,12 +138,24 @@ export async function testRoutes(server: FastifyInstance) {
         server.prisma.test.count({ where })
       ]);
 
-      return {
+      const response = {
         data: tests,
         pagination: {
           total, page: pageInt, limit: limitInt, totalPages: Math.ceil(total / limitInt)
         }
       };
+
+      // OPTIMIZED: Cache the result
+      if (server.redis) {
+        try {
+          await server.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
+          console.log(` Cached tests list: ${cacheKey}`);
+        } catch (cacheErr) {
+          console.error('Cache write error:', cacheErr);
+        }
+      }
+
+      return response;
 
     } catch (error) {
       server.log.error(error);
