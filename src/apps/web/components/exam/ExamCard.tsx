@@ -126,37 +126,6 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
     }
   };
 
-  // --- UI HELPERS ---
-  const renderStatusBadge = () => {
-    if (timeLeft) {
-      return (
-        <span className="text-[10px] font-bold px-2 py-1 rounded bg-orange-100 text-orange-600 flex items-center gap-1 animate-pulse border border-orange-200">
-          ⏳ {timeLeft}
-        </span>
-      );
-    }
-    // [Badge Màu Xám]: Cho trường hợp Exam đã hoàn thành
-    if (isRealExamDone) {
-      return <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded border border-gray-200">Đã hoàn thành</span>;
-    }
-    if (isCompleted) {
-      return <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded border border-green-200">Đã làm</span>;
-    }
-    if (categoryContext === 'in_progress' || (isExamOpen && !isPractice)) {
-      return <span className="text-[10px] font-bold px-2 py-1 rounded bg-red-100 text-red-600 animate-pulse border border-red-200">● Đang diễn ra</span>;
-    }
-    if (categoryContext === 'locked' || (!isExamOpen && !isPractice && !timeLeft)) {
-      const now = new Date().getTime();
-      const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
-      if (now < start) return <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-100 text-blue-600 border border-blue-200">📅 Sắp tới</span>;
-      return <span className="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200">🔒 Đã kết thúc</span>;
-    }
-    if (isPractice) {
-      return <span className="text-[10px] font-bold px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-100">📖 Luyện tập</span>;
-    }
-    return null;
-  };
-
   const getButtonText = () => {
     if (loading) return 'Đang xử lý...';
 
@@ -184,52 +153,55 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
 
   return (
     <>
-      <div className={`p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full border group relative ${
+      <div className={`p-4 rounded-xl shadow-sm transition-all duration-200 flex flex-col justify-between h-full border group relative ${
         // Nếu bị khóa (bất kể lý do gì) -> Màu xám
         isLockedVisual ? 'bg-gray-50/80 border-gray-200' :
           // Mặc định -> Màu trắng
-          'bg-white border-gray-100 hover:border-blue-300'
+          'bg-white border-blue-100 hover:border-blue-200'
         }`}>
 
+        {exam.isVip && (
+          <span className="absolute top-3 right-3 bg-gray-900 text-yellow-300 text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+            VIP
+          </span>
+        )}
+
         {/* Header */}
-        <div className="flex justify-between items-start mb-3">
-          <span className="text-[10px] text-gray-500 font-semibold bg-white/60 px-2 py-1 rounded border border-gray-100">
+        <div className="flex items-center mb-3">
+          <span className="text-[10px] text-gray-600 font-semibold bg-white px-2 py-1 rounded-full border border-gray-100">
             {new Date(exam.date).toLocaleDateString('vi-VN')}
           </span>
-          <div className="flex gap-1 items-center">
-            {renderStatusBadge()}
-            {exam.isVip && (
-              <span className="bg-gray-900 text-yellow-400 text-[10px] font-bold px-2 py-1 rounded border border-yellow-500 shadow-sm ml-1">VIP</span>
-            )}
-          </div>
         </div>
 
-        {/* Title */}
-        <h3
-          className={`font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] transition-colors ${
-            // Nếu bị khóa -> Title màu xám và không click được
-            isLockedVisual
-              ? 'text-gray-500 cursor-not-allowed'
-              : 'text-gray-800 group-hover:text-blue-600 cursor-pointer'
-            }`}
-          title={exam.title}
-          onClick={() => !isLockedVisual && onSelect(exam)}
-        >
-          {exam.title}
-        </h3>
+        {/* Content */}
+        <div className={`rounded-2xl p-4 mb-4 relative overflow-hidden ${isLockedVisual ? 'bg-gray-100' : 'bg-blue-50'}`}>
+          <div className="absolute right-0 bottom-0 w-28 h-28 bg-blue-100 rounded-full translate-x-10 translate-y-10"></div>
+          <h3
+            className={`font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] relative z-10 ${
+              isLockedVisual
+                ? 'text-gray-500 cursor-not-allowed'
+                : 'text-gray-900 cursor-pointer'
+              }`}
+            title={exam.title}
+            onClick={() => !isLockedVisual && onSelect(exam)}
+          >
+            {exam.title}
+          </h3>
 
-        {/* Info Stats */}
-        <div className="space-y-2 mb-4 border-t border-gray-100/50 pt-3">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            <span>Bạn đã thi: {exam.totalTrials} lần</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <svg className="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span>{exam.duration} phút</span>
+          <div className="space-y-2 relative z-10">
+            <div className="flex items-center gap-2 text-xs text-gray-700">
+              <svg className="w-4 h-4 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 4h9l3 3v13a1 1 0 01-1 1H6a1 1 0 01-1-1V5a1 1 0 011-1z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 9h6M9 12h6M9 15h3" />
+              </svg>
+              <span>{exam.totalTrials} lượt thi</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-700">
+              <svg className="w-4 h-4 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h12M7 2v4a5 5 0 005 5 5 5 0 005-5V2M7 22v-4a5 5 0 015-5 5 5 0 015 5v4M6 22h12" />
+              </svg>
+              <span>{exam.duration} phút</span>
+            </div>
           </div>
         </div>
 
@@ -263,7 +235,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
             <button
               onClick={handleTakeTest}
               disabled={loading}
-              className={`flex-1 py-2 text-white text-xs font-medium rounded-lg transition-all shadow-sm transform active:scale-95 ${isCompleted
+              className={`flex-1 py-2 text-white text-xs font-medium rounded-full transition-all shadow-sm transform active:scale-95 ${isCompleted
                   ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
                   : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 hover:shadow-blue-300'
                 } ${loading ? 'opacity-70 cursor-wait' : ''}`}>

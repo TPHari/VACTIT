@@ -288,6 +288,12 @@ button {
   z-index: 10;
   border-color: rgba(51, 102, 255, 0.1);
 }
+.card.card-no-hover:hover {
+  transform: none;
+  box-shadow: var(--shadow-soft);
+  z-index: auto;
+  border-color: transparent;
+}
 
 .card-blue {
   background: #2864D2 !important; /* Màu xanh đậm */
