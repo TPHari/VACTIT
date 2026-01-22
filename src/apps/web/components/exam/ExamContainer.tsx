@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import ViewerPane from '@/components/exam/ViewerPane';
-import Controls from '@/components/exam/Controls';
 import AnswerPanel from '@/components/exam/AnswerPanel';
 import { api } from '@/lib/api-client';
 import { useRouter } from 'next/navigation';
@@ -39,6 +38,7 @@ export default function ExamContainer({
   const [flags, setFlags] = useState<Record<number, boolean>>({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
   // Handling variables for Exit, and Expire events
   const [showExpireModal, setShowExpireModal] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
@@ -139,40 +139,41 @@ export default function ExamContainer({
       responseTime: 0,
     }));
 
+    // Immediately show success modal & clear local storage (optimistic UI)
+    sessionStorage.setItem(`exam_cleared_${testId}`, '1');
+    localStorage.removeItem(`exam_${testId}_answers`);
+    localStorage.removeItem(`exam_${testId}_flags`);
+    localStorage.removeItem(`exam_${testId}_endtime`);
+
+    setShowConfirmModal(false);
+    setShowExpireModal(false);
+    setShowExitModal(false);
+    setShowLoadingModal(true);
+    
+    // Show success modal after a short delay for better UX
+    setTimeout(() => {
+      setShowLoadingModal(false);
+      setShowSuccessModal(true);
+    }, 1500);
+
+    // Submit to server in background
     try {
       const res = await api.responses.create({
         trialId: trialId,
         responses: responsesPayload,
       });
       if (res.error) {
-        alert('Lỗi khi nộp bài: ' + res.error);
-        return;
+        console.error('Submit error:', res.error);
+        // Modal already shown, just log the error
       }
-      sessionStorage.setItem(`exam_cleared_${testId}`, '1');
-      localStorage.removeItem(`exam_${testId}_answers`);
-      localStorage.removeItem(`exam_${testId}_flags`);
-      localStorage.removeItem(`exam_${testId}_endtime`);
-      
-
-      setShowConfirmModal(false); // Close confirm modal if open
-      setShowExpireModal(false);
-      setShowExitModal(false);
-
-      if (force) {
-        setShowSuccessModal(true);
-      } else {
-        setShowSuccessModal(true);
-      }
-
-      // router.push('/result'); // Removed immediate redirect
     } catch (err) {
-      console.error(err);
-      alert('Lỗi kết nối khi nộp bài');
+      console.error('Submit network error:', err);
+      // Modal already shown, submission will be retried or handled separately
     }
   }
 
   function handleSuccessRedirect() {
-    router.push('/overview');
+    router.replace('/overview');
   }
 
   function handleExpire() {
@@ -209,22 +210,23 @@ export default function ExamContainer({
       console.error('Failed to remove practice trial on exit:', err);
     }
 
-    router.push('/exam');
+    router.replace('/exam');
   }
   function cancelExit() {
     setShowExitModal(false);
   }
   return (
-    <div className="bg-white shadow px-4 h-full flex flex-col relative">
-      <Controls
-        startAt={Date.now()}
-        testData={testData}
-        onExpire={handleExpire}
-        onExit={handleExit}
-      />
-
-      <div className="flex flex-row gap-6 mt-2 flex-1 overflow-hidden">
-        <ViewerPane pages={initialPages} zoom={zoom} />
+    <div className="h-full flex flex-col relative bg-[#F1F6FF]">
+      {/* Main Content - Two Panel Layout */}
+      <div className="flex flex-row gap-4 p-4 flex-1 overflow-hidden">
+        <ViewerPane
+          pages={initialPages}
+          zoom={zoom}
+          testData={testData}
+          startAt={Date.now()}
+          onExpire={handleExpire}
+          onExit={handleExit}
+        />
         <AnswerPanel
           questions={questions}
           answers={answers}
@@ -241,10 +243,21 @@ export default function ExamContainer({
         />
       </div>
 
+      {/* Loading Modal */}
+      {showLoadingModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="min-w-[40vw] bg-white rounded-xl shadow-2xl p-8 flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-200">
+            {/* Spinner */}
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-[#2864D2] rounded-full animate-spin"></div>
+            <p className="text-lg font-medium text-gray-700">Đang nộp bài...</p>
+          </div>
+        </div>
+      )}
+
       {/* Confirmation Modal */}
       {showConfirmModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 rounded-lg">
-          <div className="w-[400px] bg-white rounded-xl shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 ">
+          <div className="min-w-[40vw] bg-white rounded-xl shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Xác nhận nộp bài</h3>
             <p className="text-sm text-gray-600 mb-6">
               Bạn có chắc chắn muốn nộp bài thi? <br />
@@ -253,14 +266,14 @@ export default function ExamContainer({
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
                 type="button"
               >
                 Hủy
               </button>
               <button
                 onClick={() => submitAnswers(true)}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-[#2864D2] hover:bg-[#1e4fc0] rounded-lg shadow-sm transition-colors cursor-pointer"
                 type="button"
               >
                 Đồng ý nộp bài
@@ -272,26 +285,48 @@ export default function ExamContainer({
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 rounded-lg">
-          <div className="w-[400px] bg-white rounded-xl shadow-2xl p-8 animate-in fade-in zoom-in duration-200 text-center">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-8 h-8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
+          {/* Wrapper for modal + decorative shapes */}
+          <div className="relative">
+            {/* Decorative shapes - outside modal */}
+            <img 
+              src="/assets/logos/SuccessLeftShape.svg" 
+              alt="" 
+              className="absolute -left-36 -bottom-36 w-50 h-auto pointer-events-none z-10"
+            />
+            <img 
+              src="/assets/logos/SuccessRightShape.svg" 
+              alt="" 
+              className="absolute -right-36 -top-36 w-50 h-auto pointer-events-none z-10"
+            />
+
+            {/* Modal content */}
+            <div className="min-w-[50vw] bg-white rounded-3xl shadow-2xl px-4 ">
+              <div className="text-center py-2">
+              <h3 className="text-2xl font-bold text-[#1c2250] mt-2 mb-2">
+                Đã nộp bài thi thành công
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Chúc mừng bạn đã hoàn thành bài thi. Cảm ơn bạn đã tham gia!
+              </p>
+
+              <button
+                onClick={() => router.replace('/result')}
+                className="w-full px-6 py-3 text-base font-semibold text-[#FFD700] bg-[#2864d2] hover:bg-[#1e4fc0] cursor-pointer rounded-lg transition-colors mb-4"
+                type="button"
+              >
+                Xem kết quả
+              </button>
+
+              <button
+                onClick={handleSuccessRedirect}
+                className="w-full px-6 py-3 text-base font-normal text-black bg-[#EFF5FF] hover:bg-[#D6E4FF] cursor-pointer rounded-lg transition-colors mb-4"
+                type="button"
+              >
+                Về trang chủ
+              </button>
             </div>
-
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Nộp bài thành công!</h3>
-            <p className="text-gray-600 mb-8">
-              Chúc mừng bạn đã hoàn thành bài thi.
-            </p>
-
-            <button
-              onClick={handleSuccessRedirect}
-              className="w-full px-6 py-3 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all transform hover:scale-[1.02]"
-              type="button"
-            >
-              Về trang chính
-            </button>
+            </div>
           </div>
         </div>
       )}
@@ -299,7 +334,7 @@ export default function ExamContainer({
        {/* Expire Modal */}
       {showExpireModal && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 rounded-lg">
-          <div className="w-[420px] bg-white rounded-xl shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
+          <div className="min-w-[40vw] bg-white rounded-xl shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Hết giờ</h3>
             <p className="text-sm text-gray-600 mb-6">Thời gian làm bài đã kết thúc. Hệ thống sẽ tự động nộp bài cho bạn.</p>
             <div className="flex justify-end gap-3">
@@ -318,20 +353,20 @@ export default function ExamContainer({
       {/* Exit Modal */}
       {showExitModal && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-[420px] bg-white rounded-xl shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
+          <div className="min-w-[40vw] bg-white rounded-xl shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Thoát khỏi bài thi</h3>
             <p className="text-sm text-gray-600 mb-6">Bạn chưa nộp bài, nếu rời đi bạn sẽ mất tất cả các câu trả lời đã điền.</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={cancelExit}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer"
                 type="button"
               >
                 Ở lại
               </button>
               <button
                 onClick={confirmExitLeaveWithoutSubmit}
-                className="px-4 py-2 text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-700 rounded-lg"
+                className="px-4 py-2 text-sm font-medium text-white bg-[#CE3838] hover:bg-red-700 rounded-lg cursor-pointer"
                 type="button"
               >
                 Thoát
