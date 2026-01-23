@@ -520,6 +520,14 @@ export async function authRoutes(server: FastifyInstance) {
 
       console.log('[Login] DB query took:', Date.now() - startDbQuery, 'ms');
       console.log('[Login] User found:', !!user, 'Has password:', !!user?.hash_password);
+      
+      if (user?.hash_password) {
+        console.log('[Login] Hash format check:', {
+          length: user.hash_password.length,
+          startsWith: user.hash_password.substring(0, 4),
+          isBcrypt: user.hash_password.startsWith('$2a$') || user.hash_password.startsWith('$2b$')
+        });
+      }
 
       if (!user || !user.hash_password) {
         reply.status(401);

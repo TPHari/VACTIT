@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { Queue } from 'bullmq';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import IORedis from 'ioredis';
 import { logQueue, logError } from '../utils/logger';
 
@@ -59,7 +59,7 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
           },
           trials: {
             some: {
-              processed_score: null, // Has trials without IRT scores
+              processed_score: Prisma.DbNull, // Has trials without IRT scores (JSON null)
               end_time: { not: null }, // Only completed trials
             },
           },
@@ -70,7 +70,7 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
           due_time: true,
           trials: {
             where: {
-              processed_score: null,
+              processed_score: Prisma.DbNull,
               end_time: { not: null },
             },
             select: {
