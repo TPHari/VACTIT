@@ -60,7 +60,6 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
           trials: {
             some: {
               processed_score: { equals: Prisma.JsonNull }, // Has trials without IRT scores (JSON null)
-              end_time: { not: null }, // Only completed trials
             },
           },
         },
@@ -68,7 +67,6 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
           trials: {
             where: {
               processed_score: { equals: Prisma.JsonNull },
-              end_time: { not: null },
             },
             select: {
               trial_id: true,
