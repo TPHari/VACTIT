@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
+import { logExam, logError, logPerformance } from '../utils/logger';
 
 const createResponsesSchema = z.object({
   trialId: z.string().min(1),
@@ -44,6 +45,7 @@ export async function responseRoutes(server: FastifyInstance) {
 
   // Create response
   server.post('/api/responses', async (request, reply) => {
+    const startTime = Date.now();
     try {
       const parsed = createResponsesSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -52,7 +54,7 @@ export async function responseRoutes(server: FastifyInstance) {
       }
 
       const { trialId, responses } = parsed.data;
-      console.log('Creating responses for trialId:', trialId, 'responses count:', responses);
+      
       // ensure trial exists
       const trial = await server.prisma.trial.findUnique({
         where: { trial_id: trialId },
@@ -62,6 +64,11 @@ export async function responseRoutes(server: FastifyInstance) {
         reply.status(404);
         return { error: 'trial_not_found' };
       }
+
+      logExam('submit', trial.test_id, trial.student_id, { 
+        trialId,
+        responseCount: responses.length 
+      });
 
       // prepare rows
       const rows = responses.map(r => ({
@@ -140,9 +147,20 @@ export async function responseRoutes(server: FastifyInstance) {
         })
       ]);
 
+      const duration = Date.now() - startTime;
+      logPerformance('submit_exam', duration, 1000, { 
+        trialId,
+        totalScore,
+        responseCount: rows.length
+      });
+
       reply.status(201);
       return { data: { count: rows.length, scores: tacticData, total: totalScore } };
     } catch (error) {
+      logError(error as Error, { 
+        context: 'submit_exam',
+        trialId: (request.body as any)?.trialId 
+      });
       reply.status(500);
       return {
         error: error instanceof Error ? error.message : 'Failed to create responses'

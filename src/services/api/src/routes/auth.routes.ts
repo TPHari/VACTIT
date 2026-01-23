@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { hashPassword, verifyPassword } from '../utils/password';
+import { logAuth, logError } from '../utils/logger';
 
 // ----- Gmail SMTP for sending OTP emails -----
 const EMAIL_USER = process.env.EMAIL_USER;
@@ -510,24 +511,32 @@ export async function authRoutes(server: FastifyInstance) {
         return { error: captcha.error || 'Invalid captcha' };
       }
 
+      console.log('[Login] Finding user with email:', email);
+      const startDbQuery = Date.now();
 
       const user = await server.prisma.user.findUnique({
         where: { email },
       });
+
+      console.log('[Login] DB query took:', Date.now() - startDbQuery, 'ms');
+      console.log('[Login] User found:', !!user, 'Has password:', !!user?.hash_password);
 
       if (!user || !user.hash_password) {
         reply.status(401);
         return { error: 'Email hoặc mật khẩu không đúng' };
       }
 
+      console.log('[Login] Verifying password...');
       const isValid = await verifyPassword(password, user.hash_password);
+      console.log('[Login] Password valid:', isValid);
 
       if (!isValid) {
+        logAuth('login', email, false, { reason: 'invalid_password' });
         reply.status(401);
         return { error: 'Email hoặc mật khẩu không đúng' };
       }
-      console.log('OK');
-      console.log('User logged in successfully:', user);
+      
+      logAuth('login', user.user_id, true, { email, role: user.role });
       return {
         data: {
           user: {
@@ -540,6 +549,7 @@ export async function authRoutes(server: FastifyInstance) {
         },
       };
     } catch (error) {
+      logError(error as Error, { context: 'login', email: (request.body as any)?.email });
       reply.status(500);
       return { 
         error: error instanceof Error ? error.message : 'Đăng nhập thất bại' 
@@ -577,6 +587,7 @@ export async function authRoutes(server: FastifyInstance) {
     });
 
     if (existing) {
+      logAuth('oauth', existing.user_id, true, { email, provider: 'google', action: 'existing_user' });
       return { data: { user: existing } };
     }
 
@@ -604,8 +615,10 @@ export async function authRoutes(server: FastifyInstance) {
       },
     });
 
+    logAuth('oauth', created.user_id, true, { email, provider: 'google', action: 'new_user' });
     return { data: { user: created } };
   } catch (error) {
+    logError(error as Error, { context: 'oauth_google', email: (request.body as any)?.email });
     reply.status(500);
     return {
       error: error instanceof Error ? error.message : 'OAuth create failed',

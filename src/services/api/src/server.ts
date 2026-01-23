@@ -11,6 +11,7 @@ import { teacherRoutes } from './routes/teacher.routes';
 import { leaderboardRoutes } from './routes/leaderboard.routes';
 import { newsRoutes } from './routes/news.routes';
 import { notificationRoutes } from './routes/notification.routes';
+import { logger, logRequest } from './utils/logger';
 
 // Initialize Prisma
 const prisma = new PrismaClient({
@@ -47,13 +48,13 @@ const scoringQueue = redisConnection
 // Log Redis connection status
 if (redisConnection) {
   redisConnection.on('connect', () => {
-    console.log('Redis connected');
+    logger.info('Redis connected');
   });
   redisConnection.on('error', (err) => {
-    console.error('Redis connection error:', err.message);
+    logger.error('Redis connection error', { error: err.message });
   });
 } else {
-  console.warn('Redis not configured - queue features disabled');
+  logger.warn('Redis not configured - queue features disabled');
 }
 
 // Decorate server with redis for caching in routes
@@ -87,13 +88,20 @@ server.register(require('@fastify/cors'), {
 
 // ============ Request Logging ============
 server.addHook('onRequest', async (request) => {
-  console.log(`[${new Date().toISOString()}] ${request.method} ${request.url}`);
+  // Store start time for duration calculation
+  (request as any).startTime = Date.now();
 });
 
 server.addHook('onResponse', async (request, reply) => {
-  const responseTime = reply.elapsedTime || 0;
-  console.log(
-    `[${new Date().toISOString()}] ${request.method} ${request.url} - ${reply.statusCode} (${responseTime.toFixed(2)}ms)`
+  const duration = Date.now() - ((request as any).startTime || Date.now());
+  const userId = (request as any).user?.id || (request as any).user?.user_id;
+  
+  logRequest(
+    request.method,
+    request.url,
+    reply.statusCode,
+    duration,
+    userId
   );
 });
 
