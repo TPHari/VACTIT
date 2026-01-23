@@ -2,6 +2,7 @@ import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
+import { logIRT, logError, logPerformance } from './utils/logger';
 
 const prisma = new PrismaClient();
 
@@ -18,8 +19,12 @@ interface IRTJobData {
 const irtWorker = new Worker(
     'irt-queue',
     async (job: Job<IRTJobData>) => {
-        console.log(`Processing IRT job ${job.id} for test ${job.data.testId}`);
+        const startTime = Date.now();
         const { testId } = job.data;
+        
+        logIRT(job.id!, 'processing', testId, undefined, { 
+            attemptNumber: job.attemptsMade 
+        });
 
         try {
             await job.updateProgress(10);
@@ -150,12 +155,31 @@ const irtWorker = new Worker(
             // await prisma.test.update({ where: { test_id: testId }, data: { status: 'PROCESSED' } });
 
             await job.updateProgress(100);
-            console.log(`Successfully updated scores for test ${testId}`);
+            
+            const duration = Date.now() - startTime;
+            logIRT(job.id!, 'completed', testId, duration, {
+                trialsProcessed: studentsScores.length,
+                totalQuestions: questions.length
+            });
+            logPerformance('irt_processing', duration, 30000, { 
+                testId,
+                trialsCount: studentsScores.length 
+            });
 
             return { success: true, processed: studentsScores.length };
 
         } catch (error: any) {
-            console.error(`IRT Job ${job.id} failed:`, error.message);
+            const duration = Date.now() - startTime;
+            logIRT(job.id!, 'failed', testId, duration, {
+                error: error.message,
+                attemptNumber: job.attemptsMade
+            });
+            logError(error, { 
+                context: 'irt_processing',
+                testId,
+                jobId: job.id 
+            });
+            
             if (error.response) {
                 console.error('IRT Service Response:', error.response.data);
             }
