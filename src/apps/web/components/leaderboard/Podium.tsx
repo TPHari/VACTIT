@@ -1,10 +1,7 @@
 'use client';
 
 import React from 'react';
-// import Image from 'next/image'; // Tạm thời dùng thẻ <img> thường để tránh lỗi domain config nếu avatar từ nguồn ngoài (Google/UI Avatars)
 
-// 1. Định nghĩa lại Interface tại đây (hoặc chuyển vào file types chung)
-// Để khớp với dữ liệu từ API
 export interface LeaderboardUser {
   id: string;
   name: string;
@@ -12,92 +9,150 @@ export interface LeaderboardUser {
   score: number;
 }
 
-// Component hiển thị 1 người trên bục
-const PodiumStep = ({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) => {
-  // Config màu sắc và chiều cao cho từng hạng
+// Ribbon Card Component - Sử dụng SVG card (tăng 20%)
+const RibbonCard = ({ user, rank }: { user: LeaderboardUser; rank: 1 | 2 | 3 }) => {
+  // Config cho từng hạng - đã tăng 20%
   const config = {
-    1: { height: 'h-40', color: 'bg-yellow-100 border-yellow-300', icon: '👑', ring: 'ring-yellow-400' },
-    2: { height: 'h-32', color: 'bg-gray-100 border-gray-300', icon: '🥈', ring: 'ring-gray-300' },
-    3: { height: 'h-24', color: 'bg-orange-100 border-orange-300', icon: '🥉', ring: 'ring-orange-300' },
+    1: { 
+      cardSvg: '/assets/icons/top1_card.svg',
+      cardWidth: 'w-[10.8rem]',   // 9 * 1.2
+      cardHeight: 'h-[14.4rem]',  // 12 * 1.2
+      avatarSize: 'w-[4.8rem] h-[4.8rem]',  // 4 * 1.2
+      avatarTop: 'top-[1.8rem]',
+      nameTop: 'top-[7.2rem]',
+      scoreTop: 'top-[8.7rem]',
+      scoreSize: 'text-[2.7rem]',
+      marginTop: '-mt-[3.6rem]',
+      zIndex: 'z-20',
+      shadowWidth: 'w-[6rem]',
+      badgeRight: '-right-[-1rem]',  // TOP 1 dịch sang trái
+    },
+    2: { 
+      cardSvg: '/assets/icons/top23_card.svg',
+      cardWidth: 'w-[9rem]',      // 7.5 * 1.2
+      cardHeight: 'h-[12rem]',    // 10 * 1.2
+      avatarSize: 'w-[3.9rem] h-[3.9rem]',  // 3.25 * 1.2
+      avatarTop: 'top-[1.7rem]',
+      nameTop: 'top-[6rem]',
+      scoreTop: 'top-[7.7rem]',
+      scoreSize: 'text-[2.1rem]',
+      marginTop: 'mt-0',
+      zIndex: 'z-10',
+      shadowWidth: 'w-[4.8rem]',
+      badgeRight: '-right-[-0.4rem]',  // TOP 2 giữ nguyên
+    },
+    3: { 
+      cardSvg: '/assets/icons/top23_card.svg',
+      cardWidth: 'w-[9rem]',      // 7.5 * 1.2
+      cardHeight: 'h-[12rem]',    // 10 * 1.2
+      avatarSize: 'w-[3.9rem] h-[3.9rem]',  // 3.25 * 1.2
+      avatarTop: 'top-[1.7rem]',
+      nameTop: 'top-[6rem]',
+      scoreTop: 'top-[7.7rem]',
+      scoreSize: 'text-[2.1rem]',
+      marginTop: 'mt-0',
+      zIndex: 'z-10',
+      shadowWidth: 'w-[4.8rem]',
+      badgeRight: '-right-[-0.4rem]',  // TOP 3 giữ nguyên
+    },
   };
 
   const style = config[rank];
 
   return (
-    <div className="flex flex-col items-center justify-end group w-full">
-      {/* Avatar bay lên bay xuống animation nhẹ */}
-      <div className={`relative mb-2 transition-transform duration-300 group-hover:-translate-y-2`}>
-        <div className={`w-16 h-16 rounded-full border-4 ${style.ring} overflow-hidden shadow-lg bg-white`}>
-            {/* Sử dụng img thường để tránh lỗi Next.js Image Domain config với ảnh external */}
+    <div className={`flex flex-col items-center ${style.zIndex} ${style.marginTop}`}>
+      {/* Card Container */}
+      <div className={`relative ${style.cardWidth} ${style.cardHeight}`}>
+        {/* Card SVG Background */}
+        <img 
+          src={style.cardSvg}
+          alt={`Top ${rank} card`}
+          className="absolute inset-0 w-full h-full object-contain"
+        />
+        
+        {/* Badge TOP - Nền VÀNG, chữ XANH */}
+        <div className={`absolute ${style.badgeRight} z-30`}>
+          <div className="relative">
             <img 
-              src={user.avatar || '/default-avatar.png'} 
-              alt={user.name} 
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${user.name}&background=random`;
-              }} 
+              src="/assets/icons/badge.svg" 
+              alt="Badge" 
+              className="w-[2.1rem] h-[2.1rem] object-contain"
             />
+            {/* Text TOP trên badge - MÀU XANH */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pt-[0.1rem]">
+              <span className="text-[0.6rem] font-bold text-[#2864D2] leading-none">TOP</span>
+              <span className="text-[0.6rem] font-semibold text-[#2864D2] leading-none">{rank}</span>
+            </div>
+          </div>
         </div>
-        <div className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md text-lg">
-           {style.icon}
+
+        {/* Avatar với viền trắng */}
+        <div className={`absolute ${style.avatarTop} left-1/2 -translate-x-1/2 ${style.avatarSize} rounded-full overflow-hidden border-[3px] border-[#FFD700] bg-white shadow-md`}>
+          <img 
+            src={user.avatar || '/default-avatar.png'} 
+            alt={user.name} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${user.name}&background=e0e7ff&color=2864d2`;
+            }} 
+          />
         </div>
+
+        {/* Tên - màu TRẮNG */}
+        <p className={`absolute ${style.nameTop} left-1/2 -translate-x-1/2 text-white font-semibold text-[0.84rem] truncate max-w-[85%] text-center leading-tight`} title={user.name}>
+          {user.name}
+        </p>
+
+        {/* Điểm - màu VÀNG */}
+        <p className={`absolute ${style.scoreTop} left-1/2 -translate-x-1/2 text-[#FFD700] font-bold ${style.scoreSize} leading-none`}>
+          {user.score}
+        </p>
       </div>
 
-      {/* Info */}
-      <div className="text-center mb-2 w-full px-1">
-        <p className="font-bold text-gray-800 text-sm truncate w-full" title={user.name}>
-            {user.name}
-        </p>
-        <p className="font-extrabold text-blue-600 text-lg">
-            {user.score}
-        </p>
-      </div>
-
-      {/* Cái bục */}
-      <div className={`w-full ${style.height} ${style.color} border-t-4 rounded-t-xl flex items-end justify-center pb-4 shadow-sm relative overflow-hidden`}>
-         {/* Số hạng in mờ trên bục */}
-         <span className="text-4xl font-black opacity-20">{rank}</span>
-      </div>
+      {/* Shadow - sử dụng SVG */}
+      <img 
+        src="/assets/icons/shadow_card.svg"
+        alt="Shadow"
+        className={`${style.shadowWidth} h-auto mt-[0.6rem]`}
+      />
     </div>
   );
 };
 
 export default function Podium({ top3 }: { top3: LeaderboardUser[] }) {
-  // Logic sắp xếp: Hạng 2 (Trái) - Hạng 1 (Giữa) - Hạng 3 (Phải)
-  
-  // Nếu không có ai thì ẩn luôn
   if (!top3 || top3.length === 0) return null;
 
-  // An toàn lấy user từng hạng (có thể undefined nếu chưa đủ 3 người)
   const first = top3[0];
   const second = top3[1];
   const third = top3[2];
 
   return (
-    <div className="flex items-end justify-center gap-4 w-full max-w-lg mx-auto mb-10 pt-8 px-4 h-64">
-      
-      {/* Cột Hạng 2 (Bên trái) */}
-      <div className="w-1/3 order-1 flex justify-center">
-         {second ? (
-            <PodiumStep user={second} rank={2} />
-         ) : (
-            // Placeholder rỗng để giữ layout nếu chưa có hạng 2
-            <div className="w-full h-32"></div> 
-         )}
+    <div className="relative w-full">
+      {/* Podium Cards Container */}
+      <div className="relative flex items-end justify-center gap-[2rem] z-20 pb-[1rem] translate-y-[15%]">
+        {/* Hạng 2 - Bên trái */}
+        <div className="flex-shrink-0 translate-y-[15%]">
+          {second ? <RibbonCard user={second} rank={2} /> : <div className="w-[9rem] h-[12rem]"></div>}
+        </div>
+
+        {/* Hạng 1 - Chính giữa (cao hơn) */}
+        <div className="flex-shrink-0">
+          {first && <RibbonCard user={first} rank={1} />}
+        </div>
+
+        {/* Hạng 3 - Bên phải */}
+        <div className="flex-shrink-0 translate-y-[15%]">
+          {third ? <RibbonCard user={third} rank={3} /> : <div className="w-[9rem] h-[12rem]"></div>}
+        </div>
       </div>
 
-      {/* Cột Hạng 1 (Ở giữa - Cao nhất) */}
-      <div className="w-1/3 order-2 -mt-8 flex justify-center z-10"> 
-         {first && <PodiumStep user={first} rank={1} />}
-      </div>
-
-      {/* Cột Hạng 3 (Bên phải) */}
-      <div className="w-1/3 order-3 flex justify-center">
-         {third ? (
-            <PodiumStep user={third} rank={3} />
-         ) : (
-            <div className="w-full h-24"></div>
-         )}
+      {/* Stage SVG - Ở phần dưới, dịch xuống để bị cắt, tăng 30% */}
+      <div className="relative w-full mt-[0rem] scale-[1.1] translate-y-[-15%]">
+        <img 
+          src="/assets/icons/stage.svg"
+          alt="Stage"
+          className="w-full h-auto"
+        />
       </div>
     </div>
   );

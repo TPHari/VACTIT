@@ -262,13 +262,21 @@ async function testRoutes(server) {
                     return ai - bi;
                 });
                 if (matched.length > 0) {
-                    pages = (await Promise.all(matched.map(async (file) => {
-                        const fullPath = `${folderPath}/${file.name}`;
-                        const { data } = await supabase.storage
-                            .from(BUCKET)
-                            .createSignedUrl(fullPath, 60 * 5);
-                        return data?.signedUrl || null;
-                    }))).filter(Boolean);
+                    //  OPTIMIZED: Batch signed URL creation (1 request for all files)
+                    const paths = matched.map((file) => `${folderPath}/${file.name}`);
+                    const { data: signedUrls, error: signError } = await supabase.storage
+                        .from(BUCKET)
+                        .createSignedUrls(paths, 60 * 5);
+                    if (signError) {
+                        console.error('Batch signed URL error:', signError);
+                        reply.status(500);
+                        return { error: 'failed_to_create_signed_urls' };
+                    }
+                    if (signedUrls) {
+                        pages = signedUrls
+                            .map((item) => item.signedUrl)
+                            .filter(Boolean);
+                    }
                     break;
                 }
             }

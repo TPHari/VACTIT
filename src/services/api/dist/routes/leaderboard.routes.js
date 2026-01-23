@@ -36,6 +36,22 @@ async function leaderboardRoutes(server) {
             if (!testId) {
                 return { data: [] }; // Không có testId thì trả về rỗng để tránh lỗi
             }
+            //  OPTIMIZED: Check Redis cache first
+            const CACHE_TTL = 60; // 60 seconds
+            const cacheKey = `leaderboard:${testId}`;
+            if (server.redis) {
+                try {
+                    const cached = await server.redis.get(cacheKey);
+                    if (cached) {
+                        console.log(`Cache HIT for ${cacheKey}`);
+                        return JSON.parse(cached);
+                    }
+                    console.log(`Cache MISS for ${cacheKey}`);
+                }
+                catch (cacheErr) {
+                    console.error('Cache read error:', cacheErr);
+                }
+            }
             // Lấy tất cả các lượt thi (trial) của bài thi này
             const trials = await server.prisma.trial.findMany({
                 where: {
@@ -100,7 +116,18 @@ async function leaderboardRoutes(server) {
                 time: `${item.time}p`,
                 trend: 'same'
             }));
-            return { data: leaderboard };
+            const response = { data: leaderboard };
+            // ✅ OPTIMIZED: Cache result
+            if (server.redis) {
+                try {
+                    await server.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
+                    console.log(`💾 Cached ${cacheKey} for ${CACHE_TTL}s`);
+                }
+                catch (cacheErr) {
+                    console.error('Cache write error:', cacheErr);
+                }
+            }
+            return response;
         }
         catch (error) {
             server.log.error(error);

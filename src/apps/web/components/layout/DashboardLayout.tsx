@@ -5,13 +5,13 @@ import Topbar from '@/components/functionalBar/Topbar';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Sidebar />
       <Suspense fallback={null}>
         <Topbar />
       </Suspense>
+      <Sidebar />
       
       {/* Đây là phần giữ khoảng cách để nội dung không bị che */}
-      <main className="pl-[18rem] pt-24 pr-6 pb-6 min-h-screen transition-all duration-300">
+      <main className="pl-[18rem] pr-6 pb-6  transition-all duration-300">
         {children}
       </main>
     </>
