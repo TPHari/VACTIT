@@ -8,14 +8,14 @@ type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 interface BaseLogEntry {
   timestamp: string;
   level: LogLevel;
-  service: 'api';
+  service: string;
   environment: string;
   [key: string]: any;
 }
 
 class StructuredLogger {
   private isDevelopment = process.env.NODE_ENV === 'development';
-  private serviceName = 'api';
+  private serviceName = 'api' as const;
 
   private log(level: LogLevel, type: string, message: string, metadata?: Record<string, any>) {
     // Skip debug logs in production
