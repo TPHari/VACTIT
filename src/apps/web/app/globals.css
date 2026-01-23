@@ -79,7 +79,7 @@ html {
    * Min 10px để đảm bảo đọc được trên mobile
    * Max 18px để không quá to trên màn hình lớn
    */
-  font-size: clamp(2px, 0.833vw, 18px);
+  font-size: clamp(10px, 1vw, 18px); 
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }

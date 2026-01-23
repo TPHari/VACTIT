@@ -67,7 +67,7 @@ export default function ExamTab() {
 
               {/* Figures*/}
               <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute right-[1.5rem] top-[-2rem] bottom-0 w-[18.25rem] overflow-hidden flex items-start justify-center">
+                <div className="absolute right-[0.5rem] top-[-2rem] bottom-0 w-[18.25rem] overflow-hidden flex items-start justify-center">
                   <img
                     src="/assets/icons/exam_icon.svg"
                     className="w-[15.75rem] h-auto"
@@ -134,12 +134,12 @@ export default function ExamTab() {
             </div>
           </div>
 
-          <aside className="w-full lg:w-[20rem] xl:w-[22.5rem] flex-shrink-0 self-start lg:sticky lg:top-[1.5rem] space-y-[1rem]">
+          <aside className="w-full lg:w-[18rem] xl:w-[18rem] flex-shrink-0 self-start lg:sticky lg:top-[1.5rem] space-y-[1rem]">
             <div className="bg-white border border-blue-100 rounded-2xl shadow-sm p-[1rem]">
               <div className="flex items-start justify-between mb-[0.75rem] gap-[0.5rem]">
                 <div className="min-w-0">
                   <p className="text-[0.6875rem] uppercase tracking-wide text-slate-500 font-semibold">Top 5</p>
-                  <h3 className="text-sm font-bold text-[#2864D2] truncate" title={examTitle}>{examTitle}</h3>
+                  <h3 className="text-sm font-bold text-[#2864D2] leading-snug">{examTitle}</h3>
                 </div>
                 {examDate ? (
                   <span className="text-[0.6875rem] text-slate-400 whitespace-nowrap">{formatDate(examDate)}</span>
