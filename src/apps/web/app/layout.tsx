@@ -1,6 +1,7 @@
 // apps/web/app/layout.tsx
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import KeepAliveProvider from '../components/KeepAliveProvider';
 import NavigationLoading from '../components/NavigationLoading';
@@ -28,6 +29,7 @@ export default function RootLayout({
             {children}
           </KeepAliveProvider>
         </SWRProvider>
+        <Analytics />
       </body>
     </html>
   );
