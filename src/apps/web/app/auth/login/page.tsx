@@ -120,6 +120,7 @@ export default function LoginPage() {
     }
 
     try {
+      console.log('[Login] Attempting signIn with:', data.email);
       const res = await signIn('credentials', {
         redirect: false,
         email: data.email,
@@ -127,23 +128,40 @@ export default function LoginPage() {
         captchaToken,
       });
 
+      console.log('[Login] signIn response:', { 
+        ok: res?.ok, 
+        status: res?.status, 
+        error: res?.error,
+        url: res?.url 
+      });
+
       if (res?.error) {
+        console.error('[Login] signIn error:', res.error);
         setServerError(res.error);
         return;
       }
 
       // Important: make sure session is refreshed AFTER successful signIn
       // (sometimes the first getSession() is stale right after login)
+      console.log('[Login] Fetching session...');
       const session = await getSession();
 
+      console.log('[Login] Session data:', session ? {
+        hasUser: !!session.user,
+        email: (session.user as any)?.email,
+        role: (session.user as any)?.role,
+        id: (session.user as any)?.id
+      } : 'null');
+
       if (!session) {
-        console.log('No session token found after login');
+        console.error('[Login] No session token found after login');
         setServerError('Login succeeded but session was not created. Please try again.');
         return;
       }
       console.log('Session found after login:', !!session);
 
       const role = (session.user as any)?.role;
+      console.log('[Login] Redirecting to:', role === 'Admin' ? '/admin' : '/');
       if (role === 'Admin') router.replace('/admin');
       else router.replace('/');
     } finally {
