@@ -4,19 +4,23 @@ import { PrismaClient } from '@prisma/client';
 import IORedis from 'ioredis';
 import { logQueue, logError } from '../utils/logger';
 
-const prisma = new PrismaClient();
-
-// Redis client for distributed locking
-const redis = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-});
+let redis: IORedis | null = null;
+let prismaInstance: PrismaClient | null = null;
 
 /**
  * Scheduled job to check for exams that reached due_time and trigger IRT calculation
  * Runs every minute with distributed lock to prevent duplicate triggers
+ * @param prisma - Shared Prisma client instance from server
+ * @param redisClient - Optional shared Redis client (will create if not provided)
  */
-export function startIRTScheduler() {
+export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
+  // Store shared instances
+  prismaInstance = prisma;
+  redis = redisClient || new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  });
+  
   // Run every minute: '* * * * *'
   // Or every 5 minutes: '*/5 * * * *'
   const schedule = process.env.IRT_SCHEDULER_CRON || '* * * * *';
@@ -39,11 +43,15 @@ export function startIRTScheduler() {
       console.log(' Acquired scheduler lock, checking for exams...');
       const now = new Date();
       
+      if (!prismaInstance) {
+        throw new Error('Prisma instance not initialized');
+      }
+      
       // Find all exams that:
       // 1. type = 'exam'
       // 2. due_time has passed
       // 3. Has at least one trial with processed_score = null (IRT not calculated yet)
-      const examsNeedingIRT = await prisma.test.findMany({
+      const examsNeedingIRT = await prismaInstance.test.findMany({
         where: {
           type: 'exam',
           due_time: {
@@ -121,5 +129,9 @@ export function startIRTScheduler() {
  * Graceful shutdown handler
  */
 export async function stopIRTScheduler() {
-  await prisma.$disconnect();  await redis.quit();  console.log('⏹  IRT scheduler stopped');
+  // Only disconnect Redis if we created it locally (not shared)
+  if (redis) {
+    await redis.quit();
+  }
+  console.log('⏹  IRT scheduler stopped');
 }

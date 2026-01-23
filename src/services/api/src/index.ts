@@ -11,8 +11,8 @@ const start = async () => {
     console.log(`API server running on http://${HOST}:${PORT}`);
     console.log(`Health check: http://${HOST}:${PORT}/health`);
     
-    // Start IRT scheduler for automatic exam grading
-    startIRTScheduler();
+    // Start IRT scheduler for automatic exam grading (pass shared Prisma & Redis)
+    startIRTScheduler(server.prisma, server.redis);
   } catch (err) {
     server.log.error(err);
     process.exit(1);
