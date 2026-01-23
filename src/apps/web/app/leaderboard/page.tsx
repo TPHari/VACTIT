@@ -121,7 +121,7 @@ export default function LeaderboardPage() {
 
         {/* Dropdown NGOÀI container - Góc phải */}
         <div className="relative z-[999] flex justify-end mb-[0.75rem]" ref={dropdownRef}>
-          <div className="relative w-[16rem] sm:w-[21.5rem]">
+          <div className="relative w-[16rem] sm:w-[23rem]">
                     {/* Nút bấm mở Dropdown */}
                     <button 
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
