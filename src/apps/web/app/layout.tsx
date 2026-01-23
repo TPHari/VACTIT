@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" className="h-full">
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans">
         {/* ✅ SWRProvider: Global cache persists across page navigations */}
         <SWRProvider>
           <KeepAliveProvider>
