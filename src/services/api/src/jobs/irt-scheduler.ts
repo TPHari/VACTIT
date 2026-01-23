@@ -59,18 +59,15 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
           },
           trials: {
             some: {
-              processed_score: Prisma.DbNull, // Has trials without IRT scores (JSON null)
+              processed_score: { equals: Prisma.JsonNull }, // Has trials without IRT scores (JSON null)
               end_time: { not: null }, // Only completed trials
             },
           },
         },
-        select: {
-          test_id: true,
-          title: true,
-          due_time: true,
+        include: {
           trials: {
             where: {
-              processed_score: Prisma.DbNull,
+              processed_score: { equals: Prisma.JsonNull },
               end_time: { not: null },
             },
             select: {
