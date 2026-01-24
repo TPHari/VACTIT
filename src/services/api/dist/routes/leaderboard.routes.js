@@ -60,7 +60,7 @@ async function leaderboardRoutes(server) {
                 },
                 include: {
                     student: {
-                        select: { user_id: true, name: true } // Lấy thông tin sinh viên
+                        select: { user_id: true, name: true, avatar_url: true } // Lấy thông tin sinh viên
                     }
                 }
             });
@@ -75,7 +75,7 @@ async function leaderboardRoutes(server) {
                 return {
                     userId: trial.student_id,
                     name: trial.student?.name || 'Ẩn danh',
-                    avatar: null, // Có thể bổ sung avatar nếu DB có
+                    avatar: trial.student.avatar_url,
                     score: totalScore,
                     time: durationMinutes,
                     trialId: trial.trial_id

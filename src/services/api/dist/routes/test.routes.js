@@ -42,6 +42,7 @@ const fs_1 = require("fs");
 const path_1 = __importDefault(require("path"));
 const os_1 = __importDefault(require("os"));
 const promises_2 = require("stream/promises");
+const notification_1 = require("../utils/notification");
 const supabase_js_1 = require("@supabase/supabase-js");
 async function testRoutes(server) {
     const supabase = (0, supabase_js_1.createClient)(process.env.NEXT_PUBLIC_API, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -55,6 +56,23 @@ async function testRoutes(server) {
             // Ưu tiên lấy từ Query Param do Frontend gửi xuống
             const currentUserId = userId;
             const searchUserId = currentUserId;
+            //  OPTIMIZED: Cache configuration
+            const CACHE_TTL = 30; // 30 seconds
+            const cacheKey = `tests:${query || ''}:${category}:${status}:${sort}:${page}:${limit}:${userId || 'guest'}`;
+            // Check Redis cache first
+            if (server.redis) {
+                try {
+                    const cached = await server.redis.get(cacheKey);
+                    if (cached) {
+                        console.log(`Cache HIT for tests list`);
+                        return JSON.parse(cached);
+                    }
+                    console.log(`Cache MISS for tests list`);
+                }
+                catch (cacheErr) {
+                    console.error('Cache read error:', cacheErr);
+                }
+            }
             // --- Debug Log ---
             console.log(`[API] Fetching tests. UserID provided: ${currentUserId || 'Guest'}`);
             // --- B. Mốc thời gian ---
@@ -131,12 +149,23 @@ async function testRoutes(server) {
                 }),
                 server.prisma.test.count({ where })
             ]);
-            return {
+            const response = {
                 data: tests,
                 pagination: {
                     total, page: pageInt, limit: limitInt, totalPages: Math.ceil(total / limitInt)
                 }
             };
+            // OPTIMIZED: Cache the result
+            if (server.redis) {
+                try {
+                    await server.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
+                    console.log(` Cached tests list: ${cacheKey}`);
+                }
+                catch (cacheErr) {
+                    console.error('Cache write error:', cacheErr);
+                }
+            }
+            return response;
         }
         catch (error) {
             server.log.error(error);
@@ -166,7 +195,24 @@ async function testRoutes(server) {
     });
     server.post('/api/tests', async (request, reply) => {
         try {
+            console.log('1. [DEBUG] Bắt đầu tạo Test...'); // Log 1
             const test = await server.prisma.test.create({ data: request.body });
+            console.log('2. [DEBUG] Tạo Test thành công:', test.test_id); // Log 2
+            console.log('3. [DEBUG] Loại đề thi (type) là:', test.type); // Log 3
+            //  LOGIC THÔNG BÁO TỰ ĐỘNG
+            if (test.type === 'exam') {
+                console.log('4. [DEBUG] Đang gọi notification service...');
+                // ✅ Pass server.redis để invalidate cache khi tạo notification
+                await (0, notification_1.createBroadcastNotification)(server.prisma, server.redis, {
+                    title: 'Đề thi mới đã lên kệ! 📝',
+                    message: `Thử sức ngay với đề thi: ${test.title}`,
+                    type: 'exam',
+                    link: `/exam/${test.test_id}`
+                });
+            }
+            else {
+                console.log('4. [DEBUG] BỎ QUA thông báo vì type không phải là "exam". Type thực tế:', test.type); // Log 4 (Else)
+            }
             reply.status(201);
             return { data: test };
         }

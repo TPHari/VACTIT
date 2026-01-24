@@ -8,14 +8,14 @@ type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 interface BaseLogEntry {
   timestamp: string;
   level: LogLevel;
-  service: 'worker';
+  service: string;
   environment: string;
   [key: string]: any;
 }
 
 class StructuredLogger {
   private isDevelopment = process.env.NODE_ENV === 'development';
-  private serviceName = 'worker';
+  private serviceName = 'worker' as const;
 
   private log(level: LogLevel, type: string, message: string, metadata?: Record<string, any>) {
     if (!this.isDevelopment && level === 'debug') return;
@@ -129,10 +129,8 @@ class StructuredLogger {
 // Export singleton
 export const logger = new StructuredLogger();
 
-// Export functions
-export const {
-  irt: logIRT,
-  scoring: logScoring,
-  performance: logPerformance,
-  error: logError,
-} = logger;
+// Export functions (bind to preserve this context)
+export const logIRT = logger.irt.bind(logger);
+export const logScoring = logger.scoring.bind(logger);
+export const logPerformance = logger.performance.bind(logger);
+export const logError = logger.error.bind(logger);
