@@ -208,7 +208,7 @@ export default function SignupPage() {
   const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
   const fullName = useMemo(() => `${lastName} ${firstName}`.trim(), [firstName, lastName]);
 
-  const isGmail = (value: string) => /@gmail\.com$/i.test(value.trim());
+  const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -221,8 +221,8 @@ export default function SignupPage() {
         setConsentError('Vui lòng đồng ý với Điều khoản và Chính sách bảo mật trước khi tiếp tục.');
         return;
       }
-      if (!isGmail(normalizedEmail)) {
-        setError('Chỉ chấp nhận đăng ký bằng địa chỉ Gmail (@gmail.com).');
+      if (!isEmail(normalizedEmail)) {
+        setError('Email không hợp lệ. Vui lòng kiểm tra lại.');
         return;
       }
       if (!fullName.trim()) {
@@ -244,7 +244,7 @@ export default function SignupPage() {
         }
 
         setStep('otp');
-        setInfo('Đã gửi mã xác nhận tới Gmail của bạn. Vui lòng kiểm tra hộp thư hoặc spam.');
+        setInfo('Đã gửi mã xác nhận tới email của bạn. Vui lòng kiểm tra hộp thư hoặc spam.');
       } catch (err: any) {
         setError(err.message || 'Không thể gửi mã xác nhận.');
       }
@@ -323,8 +323,8 @@ export default function SignupPage() {
   async function handleResendOtp() {
     setError(null);
     setInfo(null);
-    if (!isGmail(normalizedEmail)) {
-      setError('Chỉ chấp nhận đăng ký bằng địa chỉ Gmail (@gmail.com).');
+    if (!isEmail(normalizedEmail)) {
+      setError('Email không hợp lệ. Vui lòng kiểm tra lại.');
       return;
     }
 
