@@ -237,7 +237,7 @@ export default function TeachersPage() {
 
             {/* 3. Logo (Nằm cùng cấp với Section, nhưng Absolute theo Parent Div) */}
             {/* Logic: bottom-0 sẽ căn theo đáy của Parent Div (tức là đáy của Blue Card) */}
-            <div className="absolute right-20 bottom-0 pointer-events-none md:pointer-events-auto z-[100]">
+            <div className="absolute right-20 bottom-0 pointer-events-none md:pointer-events-auto z-0">
                <div className="relative w-40 h-40 md:w-55 md:h-55 md:translate-x-0 md:translate-y-10 ">
                   <img
                     src="/assets/logos/hero-illustration-ver2.png"

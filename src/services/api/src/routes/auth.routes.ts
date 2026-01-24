@@ -11,10 +11,15 @@ const EMAIL_PASS = process.env.EMAIL_PASS;
 
 const transporter = EMAIL_USER && EMAIL_PASS
   ? nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // true for 465, false for other ports
       auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false, // Accept self-signed certs (for some hosting)
       },
     })
   : null;
@@ -520,6 +525,14 @@ export async function authRoutes(server: FastifyInstance) {
 
       console.log('[Login] DB query took:', Date.now() - startDbQuery, 'ms');
       console.log('[Login] User found:', !!user, 'Has password:', !!user?.hash_password);
+      
+      if (user?.hash_password) {
+        console.log('[Login] Hash format check:', {
+          length: user.hash_password.length,
+          startsWith: user.hash_password.substring(0, 4),
+          isBcrypt: user.hash_password.startsWith('$2a$') || user.hash_password.startsWith('$2b$')
+        });
+      }
 
       if (!user || !user.hash_password) {
         reply.status(401);

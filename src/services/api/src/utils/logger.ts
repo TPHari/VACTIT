@@ -8,14 +8,14 @@ type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 interface BaseLogEntry {
   timestamp: string;
   level: LogLevel;
-  service: 'api';
+  service: string;
   environment: string;
   [key: string]: any;
 }
 
 class StructuredLogger {
   private isDevelopment = process.env.NODE_ENV === 'development';
-  private serviceName = 'api';
+  private serviceName = 'api' as const;
 
   private log(level: LogLevel, type: string, message: string, metadata?: Record<string, any>) {
     // Skip debug logs in production
@@ -171,15 +171,14 @@ class StructuredLogger {
 // Export singleton instance
 export const logger = new StructuredLogger();
 
-// Export individual functions for convenience
-export const {
-  request: logRequest,
-  auth: logAuth,
-  exam: logExam,
-  db: logDb,
-  externalApi: logExternalApi,
-  performance: logPerformance,
-  error: logError,
-  metric: logMetric,
-  queue: logQueue,
-} = logger;
+// Export individual functions for convenience (bind to preserve 'this' context)
+export const logRequest = logger.request.bind(logger);
+export const logAuth = logger.auth.bind(logger);
+export const logExam = logger.exam.bind(logger);
+export const logDb = logger.db.bind(logger);
+export const logExternalApi = logger.externalApi.bind(logger);
+export const logPerformance = logger.performance.bind(logger);
+export const logError = logger.error.bind(logger);
+export const logMetric = logger.metric.bind(logger);
+export const logQueue = logger.queue.bind(logger);
+
