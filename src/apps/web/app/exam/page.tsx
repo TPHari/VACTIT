@@ -57,7 +57,7 @@ export default function ExamTab() {
                     Thi thử <br /> V-ACT
                   </h1>
                 </div>
-                <p className="text-slate-500 text-sm max-w-xl">
+                <p className="text-slate-500 text-sm max-w-3/5">
                   Bản lĩnh không tự nhiên sinh ra, nó phải được tôi luyện.
                   Hãy để tiếng đồng hồ đếm ngược rèn cho tim bạn nhịp đập thép, tập làm quen với cảm giác căng thẳng ngay tại nhà. 
                   Chỉ khi bạn đổ mồ hôi trên 'sân tập' với cường độ của một trận đấu thật, 
