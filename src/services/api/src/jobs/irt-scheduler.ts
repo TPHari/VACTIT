@@ -42,12 +42,17 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
       
       console.log('🔒 Acquired scheduler lock, checking for exams...');
       
-      // Use UTC time to match database timezone (Supabase stores in UTC)
-      const now = new Date();
-      console.log('[Scheduler] Current time:', {
-        local: now.toLocaleString('en-US', { timeZone: 'Asia/Singapore' }),
-        utc: now.toISOString(),
-        timestamp: now.getTime()
+      // IMPORTANT: due_time in database is stored as Vietnam local time (GMT+7)
+      // But Prisma treats it as UTC. So we need to add 7 hours to current UTC time
+      // to match the timezone used when due_time was created.
+      const nowUTC = new Date();
+      const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000; // +7 hours in milliseconds
+      const nowVietnam = new Date(nowUTC.getTime() + VIETNAM_OFFSET_MS);
+      
+      console.log('[Scheduler] Time comparison:', {
+        nowUTC: nowUTC.toISOString(),
+        nowVietnam: nowVietnam.toISOString(),
+        'nowVietnam (display)': nowVietnam.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })
       });
       
       if (!prismaInstance) {
@@ -56,13 +61,13 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
       
       // Find all exams that:
       // 1. type = 'exam'
-      // 2. due_time has passed
+      // 2. due_time has passed (using Vietnam time +7)
       // 3. Has at least one trial with processed_score = null (IRT not calculated yet)
       const examsNeedingIRT = await prismaInstance.test.findMany({
         where: {
           type: 'exam',
           due_time: {
-            lte: now, // due_time <= now
+            lte: nowVietnam, // due_time <= nowVietnam (both in GMT+7 format)
           },
           trials: {
             some: {
@@ -83,10 +88,18 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
       });
 
       if (examsNeedingIRT.length === 0) {
+        console.log('[Scheduler] No exams need IRT calculation at this time');
         return; // No exams need IRT calculation
       }
 
-      console.log(`🔍 Found ${examsNeedingIRT.length} exam(s) past due time, checking for IRT results...`);
+      console.log(`🔍 Found ${examsNeedingIRT.length} exam(s) past due time:`, 
+        examsNeedingIRT.map(e => ({
+          id: e.test_id,
+          title: e.title,
+          due_time: e.due_time,
+          trials_pending: e.trials.length
+        }))
+      );
 
       const irtQueue = new Queue('irt-queue', {
         connection: {
