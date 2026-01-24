@@ -40,8 +40,15 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
         return;
       }
       
-      console.log(' Acquired scheduler lock, checking for exams...');
+      console.log('🔒 Acquired scheduler lock, checking for exams...');
+      
+      // Use UTC time to match database timezone (Supabase stores in UTC)
       const now = new Date();
+      console.log('[Scheduler] Current time:', {
+        local: now.toLocaleString('en-US', { timeZone: 'Asia/Singapore' }),
+        utc: now.toISOString(),
+        timestamp: now.getTime()
+      });
       
       if (!prismaInstance) {
         throw new Error('Prisma instance not initialized');

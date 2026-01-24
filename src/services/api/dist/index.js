@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const server_1 = __importDefault(require("./server"));
+const irt_scheduler_1 = require("./jobs/irt-scheduler");
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 const HOST = process.env.HOST || '0.0.0.0';
 const start = async () => {
@@ -12,10 +13,23 @@ const start = async () => {
         await server_1.default.listen({ port: PORT, host: HOST });
         console.log(`API server running on http://${HOST}:${PORT}`);
         console.log(`Health check: http://${HOST}:${PORT}/health`);
+        // Start IRT scheduler for automatic exam grading (pass shared Prisma & Redis)
+        (0, irt_scheduler_1.startIRTScheduler)(server_1.default.prisma, server_1.default.redis);
     }
     catch (err) {
         server_1.default.log.error(err);
         process.exit(1);
     }
 };
+// Graceful shutdown handler
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Shutting down gracefully...');
+    await (0, irt_scheduler_1.stopIRTScheduler)();
+    process.exit(0);
+});
+process.on('SIGTERM', async () => {
+    console.log('\n🛑 Shutting down gracefully...');
+    await (0, irt_scheduler_1.stopIRTScheduler)();
+    process.exit(0);
+});
 start();

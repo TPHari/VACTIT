@@ -15,6 +15,8 @@ const response_routes_1 = require("./routes/response.routes");
 const teacher_routes_1 = require("./routes/teacher.routes");
 const leaderboard_routes_1 = require("./routes/leaderboard.routes");
 const news_routes_1 = require("./routes/news.routes");
+const notification_routes_1 = require("./routes/notification.routes");
+const logger_1 = require("./utils/logger");
 // Initialize Prisma
 const prisma = new client_1.PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
@@ -45,14 +47,14 @@ const scoringQueue = redisConnection
 // Log Redis connection status
 if (redisConnection) {
     redisConnection.on('connect', () => {
-        console.log('Redis connected');
+        logger_1.logger.info('Redis connected');
     });
     redisConnection.on('error', (err) => {
-        console.error('Redis connection error:', err.message);
+        logger_1.logger.error('Redis connection error', { error: err.message });
     });
 }
 else {
-    console.warn('Redis not configured - queue features disabled');
+    logger_1.logger.warn('Redis not configured - queue features disabled');
 }
 // Decorate server with redis for caching in routes
 server.decorate('redis', redisConnection);
@@ -78,11 +80,13 @@ server.register(require('@fastify/cors'), {
 });
 // ============ Request Logging ============
 server.addHook('onRequest', async (request) => {
-    console.log(`[${new Date().toISOString()}] ${request.method} ${request.url}`);
+    // Store start time for duration calculation
+    request.startTime = Date.now();
 });
 server.addHook('onResponse', async (request, reply) => {
-    const responseTime = reply.elapsedTime || 0;
-    console.log(`[${new Date().toISOString()}] ${request.method} ${request.url} - ${reply.statusCode} (${responseTime.toFixed(2)}ms)`);
+    const duration = Date.now() - (request.startTime || Date.now());
+    const userId = request.user?.id || request.user?.user_id;
+    (0, logger_1.logRequest)(request.method, request.url, reply.statusCode, duration, userId);
 });
 // ============ Root & Health Endpoints ============
 server.get('/', async () => {
@@ -201,6 +205,7 @@ server.register(response_routes_1.responseRoutes);
 server.register(teacher_routes_1.teacherRoutes);
 server.register(leaderboard_routes_1.leaderboardRoutes);
 server.register(news_routes_1.newsRoutes);
+server.register(notification_routes_1.notificationRoutes);
 // ============ Job Queue Endpoints ============
 // Submit scoring job
 server.post('/api/jobs/score-test', async (request, reply) => {

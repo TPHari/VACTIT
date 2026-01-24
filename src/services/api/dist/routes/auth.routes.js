@@ -8,15 +8,21 @@ const zod_1 = require("zod");
 const node_crypto_1 = require("node:crypto");
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const password_1 = require("../utils/password");
+const logger_1 = require("../utils/logger");
 // ----- Gmail SMTP for sending OTP emails -----
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
 const transporter = EMAIL_USER && EMAIL_PASS
     ? nodemailer_1.default.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // true for 465, false for other ports
         auth: {
             user: EMAIL_USER,
             pass: EMAIL_PASS,
+        },
+        tls: {
+            rejectUnauthorized: false, // Accept self-signed certs (for some hosting)
         },
     })
     : null;
@@ -417,20 +423,33 @@ async function authRoutes(server) {
                 reply.status(captcha.error ? 500 : 403);
                 return { error: captcha.error || 'Invalid captcha' };
             }
+            console.log('[Login] Finding user with email:', email);
+            const startDbQuery = Date.now();
             const user = await server.prisma.user.findUnique({
                 where: { email },
             });
+            console.log('[Login] DB query took:', Date.now() - startDbQuery, 'ms');
+            console.log('[Login] User found:', !!user, 'Has password:', !!user?.hash_password);
+            if (user?.hash_password) {
+                console.log('[Login] Hash format check:', {
+                    length: user.hash_password.length,
+                    startsWith: user.hash_password.substring(0, 4),
+                    isBcrypt: user.hash_password.startsWith('$2a$') || user.hash_password.startsWith('$2b$')
+                });
+            }
             if (!user || !user.hash_password) {
                 reply.status(401);
                 return { error: 'Email hoặc mật khẩu không đúng' };
             }
+            console.log('[Login] Verifying password...');
             const isValid = await (0, password_1.verifyPassword)(password, user.hash_password);
+            console.log('[Login] Password valid:', isValid);
             if (!isValid) {
+                (0, logger_1.logAuth)('login', email, false, { reason: 'invalid_password' });
                 reply.status(401);
                 return { error: 'Email hoặc mật khẩu không đúng' };
             }
-            console.log('OK');
-            console.log('User logged in successfully:', user);
+            (0, logger_1.logAuth)('login', user.user_id, true, { email, role: user.role });
             return {
                 data: {
                     user: {
@@ -444,6 +463,7 @@ async function authRoutes(server) {
             };
         }
         catch (error) {
+            (0, logger_1.logError)(error, { context: 'login', email: request.body?.email });
             reply.status(500);
             return {
                 error: error instanceof Error ? error.message : 'Đăng nhập thất bại'
@@ -476,6 +496,7 @@ async function authRoutes(server) {
                 },
             });
             if (existing) {
+                (0, logger_1.logAuth)('oauth', existing.user_id, true, { email, provider: 'google', action: 'existing_user' });
                 return { data: { user: existing } };
             }
             // 2) If user does NOT exist: create
@@ -500,9 +521,11 @@ async function authRoutes(server) {
                     membership: true,
                 },
             });
+            (0, logger_1.logAuth)('oauth', created.user_id, true, { email, provider: 'google', action: 'new_user' });
             return { data: { user: created } };
         }
         catch (error) {
+            (0, logger_1.logError)(error, { context: 'oauth_google', email: request.body?.email });
             reply.status(500);
             return {
                 error: error instanceof Error ? error.message : 'OAuth create failed',
