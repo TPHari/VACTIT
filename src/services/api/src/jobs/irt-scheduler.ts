@@ -42,17 +42,12 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
       
       console.log('🔒 Acquired scheduler lock, checking for exams...');
       
-      // IMPORTANT: due_time in database is stored as Vietnam local time (GMT+7)
-      // But Prisma treats it as UTC. So we need to add 7 hours to current UTC time
-      // to match the timezone used when due_time was created.
-      const nowUTC = new Date();
-      const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000; // +7 hours in milliseconds
-      const nowVietnam = new Date(nowUTC.getTime() + VIETNAM_OFFSET_MS);
+      // Get current time for comparison
+      const now = new Date();
       
-      console.log('[Scheduler] Time comparison:', {
-        nowUTC: nowUTC.toISOString(),
-        nowVietnam: nowVietnam.toISOString(),
-        'nowVietnam (display)': nowVietnam.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' })
+      console.log('[Scheduler] Time check:', {
+        nowUTC: now.toISOString(),
+        nowVietnam: now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false })
       });
       
       if (!prismaInstance) {
@@ -61,13 +56,13 @@ export function startIRTScheduler(prisma: PrismaClient, redisClient?: IORedis) {
       
       // Find all exams that:
       // 1. type = 'exam'
-      // 2. due_time has passed (using Vietnam time +7)
+      // 2. due_time has passed (compared against UTC timestamp)
       // 3. Has at least one trial with processed_score = null (IRT not calculated yet)
       const examsNeedingIRT = await prismaInstance.test.findMany({
         where: {
           type: 'exam',
           due_time: {
-            lte: nowVietnam, // due_time <= nowVietnam (both in GMT+7 format)
+            lte: now, // due_time <= now (both UTC timestamps)
           },
           trials: {
             some: {
