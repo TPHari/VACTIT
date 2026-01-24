@@ -58,23 +58,22 @@ export default function Topbar() {
   };
 
   return (
-    <header className="sticky top-0 right-0 left-0 z-50 flex h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white/95 backdrop-blur-md px-6 shadow-sm">
+    <header className="sticky top-0 right-0 left-0 z-50 flex h-[4rem] items-center justify-between gap-[1rem] border-b border-slate-200 bg-white/95 backdrop-blur-md px-[1.5rem] shadow-sm">
       {/* Left: Logo + Brand Name + Search Bar */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-[1rem]">
         <Link href="/" className="flex flex-col items-center gap-0.5 cursor-pointer hover:opacity-80 transition-opacity">
           <Image
-            src="/assets/logos/logo.png"
+            src="/assets/logos/topbar_logo.svg"
             alt="BAI-LEARN logo"
-            width={32}
-            height={32}
-            className="object-contain"
+            width={48}
+            height={48}
+            className="object-contain w-[5rem] h-[5rem]"
           />
-          <span className="text-xs font-bold text-blue-600 tracking-wide">BAI·LEARN</span>
         </Link>
 
         {/* Search Bar */}
         {/* Search Bar */}
-        <div className="relative w-full max-w-lg group flex items-center">
+        <div className="relative w-full max-w-[32rem] group flex items-center">
           <input
             type="text"
             value={searchTerm}
@@ -85,25 +84,25 @@ export default function Topbar() {
               }
             }}
             placeholder="Tìm kiếm bài thi"
-            className="block w-full py-2 pl-4 pr-30 text-sm text-slate-800 border border-slate-200 rounded-l-full bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
+            className="block w-full py-[0.5rem] pl-[1rem] pr-[7.5rem] text-[0.875rem] text-slate-800 border border-slate-200 rounded-l-full bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400"
           />
           {searchTerm && (
             <button
               onClick={() => {
                 setSearchTerm("");
               }}
-              className="absolute right-17 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              className="absolute right-[4.25rem] flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-[1rem] h-[1rem]">
                 <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
               </svg>
             </button>
           )}
           <button
             onClick={handleSearch}
-            className="flex items-center justify-center px-5 py-2 bg-blue-600 hover:bg-blue-700 rounded-r-full border border-blue-600 transition-colors"
+            className="flex items-center justify-center px-[1.25rem] py-[0.5rem] bg-blue-600 hover:bg-blue-700 rounded-r-full border border-blue-600 transition-colors"
           >
-            <svg className="w-5 h-5 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+            <svg className="w-[1.25rem] h-[1.25rem] text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
               <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
             </svg>
           </button>
@@ -113,30 +112,30 @@ export default function Topbar() {
       {/* Right: Notifications + Profile */}
       <div className="relative flex items-center gap-4" ref={menuRef}>
         <NotificationBell />
-        <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
+        <div className="h-[2rem] w-px bg-slate-200 hidden sm:block"></div>
 
         {/* Profile Button */}
         <button
           type="button"
           onClick={() => setIsOpen((o) => !o)}
-          className="flex items-center gap-3 rounded-full py-1 pl-1 pr-3 hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
+          className="flex items-center gap-[0.75rem] rounded-full py-[0.25rem] pl-[0.25rem] pr-[0.75rem] hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100"
         >
-          <div className="h-9 w-9 overflow-hidden rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100">
+          <div className="h-[2.25rem] w-[2.25rem] overflow-hidden rounded-full border-[0.125rem] border-white shadow-sm ring-1 ring-slate-100">
             <Image
               src={user?.avatarUrl || "/assets/logos/avatar.png"}
               alt={user?.name || "User"}
               width={36}
               height={36}
-              className="object-cover"
+              className="object-cover w-[2rem] h-[2rem]"
             />
           </div>
-          <div className="hidden flex-col text-left text-xs sm:flex">
+          <div className="hidden flex-col text-left text-[0.75rem] sm:flex">
             <span className="font-bold text-slate-700">{user?.name || "..."}</span>
-            <span className="text-[10px] text-slate-400 font-medium">Học viên</span>
+            <span className="text-[0.625rem] text-slate-400 font-medium">Học viên</span>
           </div>
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            className={`h-[1rem] w-[1rem] text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
             viewBox="0 0 20 20"
             fill="currentColor"
           >

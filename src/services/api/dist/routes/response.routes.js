@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.responseRoutes = responseRoutes;
 const zod_1 = require("zod");
 const supabase_js_1 = require("@supabase/supabase-js");
+const logger_1 = require("../utils/logger");
 const createResponsesSchema = zod_1.z.object({
     trialId: zod_1.z.string().min(1),
     responses: zod_1.z.array(zod_1.z.object({
@@ -38,6 +39,7 @@ async function responseRoutes(server) {
     });
     // Create response
     server.post('/api/responses', async (request, reply) => {
+        const startTime = Date.now();
         try {
             const parsed = createResponsesSchema.safeParse(request.body);
             if (!parsed.success) {
@@ -45,7 +47,6 @@ async function responseRoutes(server) {
                 return { error: 'invalid_input', details: parsed.error.flatten() };
             }
             const { trialId, responses } = parsed.data;
-            console.log('Creating responses for trialId:', trialId, 'responses count:', responses);
             // ensure trial exists
             const trial = await server.prisma.trial.findUnique({
                 where: { trial_id: trialId },
@@ -54,6 +55,10 @@ async function responseRoutes(server) {
                 reply.status(404);
                 return { error: 'trial_not_found' };
             }
+            (0, logger_1.logExam)('submit', trial.test_id, trial.student_id, {
+                trialId,
+                responseCount: responses.length
+            });
             // prepare rows
             const rows = responses.map(r => ({
                 trial_id: trialId,
@@ -125,10 +130,20 @@ async function responseRoutes(server) {
                     }
                 })
             ]);
+            const duration = Date.now() - startTime;
+            (0, logger_1.logPerformance)('submit_exam', duration, 1000, {
+                trialId,
+                totalScore,
+                responseCount: rows.length
+            });
             reply.status(201);
             return { data: { count: rows.length, scores: tacticData, total: totalScore } };
         }
         catch (error) {
+            (0, logger_1.logError)(error, {
+                context: 'submit_exam',
+                trialId: request.body?.trialId
+            });
             reply.status(500);
             return {
                 error: error instanceof Error ? error.message : 'Failed to create responses'

@@ -7,6 +7,7 @@ const bullmq_1 = require("bullmq");
 const ioredis_1 = __importDefault(require("ioredis"));
 const client_1 = require("@prisma/client");
 const axios_1 = __importDefault(require("axios"));
+const logger_1 = require("./utils/logger");
 const prisma = new client_1.PrismaClient();
 const redisConnection = new ioredis_1.default(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null,
@@ -14,8 +15,11 @@ const redisConnection = new ioredis_1.default(process.env.REDIS_URL || 'redis://
     retryStrategy: (times) => Math.min(times * 50, 2000),
 });
 const irtWorker = new bullmq_1.Worker('irt-queue', async (job) => {
-    console.log(`Processing IRT job ${job.id} for test ${job.data.testId}`);
+    const startTime = Date.now();
     const { testId } = job.data;
+    (0, logger_1.logIRT)(job.id, 'processing', testId, undefined, {
+        attemptNumber: job.attemptsMade
+    });
     try {
         await job.updateProgress(10);
         // 1. Fetch Questions (to know correct answers and order)
@@ -118,11 +122,28 @@ const irtWorker = new bullmq_1.Worker('irt-queue', async (job) => {
         // Optionally mark test as processed
         // await prisma.test.update({ where: { test_id: testId }, data: { status: 'PROCESSED' } });
         await job.updateProgress(100);
-        console.log(`Successfully updated scores for test ${testId}`);
+        const duration = Date.now() - startTime;
+        (0, logger_1.logIRT)(job.id, 'completed', testId, duration, {
+            trialsProcessed: studentsScores.length,
+            totalQuestions: questions.length
+        });
+        (0, logger_1.logPerformance)('irt_processing', duration, 30000, {
+            testId,
+            trialsCount: studentsScores.length
+        });
         return { success: true, processed: studentsScores.length };
     }
     catch (error) {
-        console.error(`IRT Job ${job.id} failed:`, error.message);
+        const duration = Date.now() - startTime;
+        (0, logger_1.logIRT)(job.id, 'failed', testId, duration, {
+            error: error.message,
+            attemptNumber: job.attemptsMade
+        });
+        (0, logger_1.logError)(error, {
+            context: 'irt_processing',
+            testId,
+            jobId: job.id
+        });
         if (error.response) {
             console.error('IRT Service Response:', error.response.data);
         }

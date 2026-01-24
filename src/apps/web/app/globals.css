@@ -1,3 +1,5 @@
+/* Font được quản lý bởi next/font/local trong layout.tsx */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,11 +19,11 @@
   --color-text-main: #1c2250;
   --color-text-muted: #5E749B;
   --color-border-soft: #e1e5f6;
-  --radius-lg: 24px;
-  --radius-md: 18px;
-  --shadow-soft: 0 14px 40px rgba(15, 35, 95, 0.08);
-  --shadow-hover: 0 20px 40px rgba(15, 35, 95, 0.12);
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", sans-serif;
+  --radius-lg: 1.5rem;
+  --radius-md: 1.125rem;
+  --shadow-soft: 0 0.875rem 2.5rem rgba(15, 35, 95, 0.08);
+  --shadow-hover: 0 1.25rem 2.5rem rgba(15, 35, 95, 0.12);
+  --font-sans: var(--font-mona-sans), system-ui, sans-serif;
 }
 
 *,
@@ -30,13 +32,39 @@
   box-sizing: border-box;
 }
 
-html,
+/* =========================================
+   RESPONSIVE BASE SYSTEM
+   Tất cả scale theo chiều ngang (vw)
+   Khi màn hình thu hẹp, mọi thứ nhỏ lại tỉ lệ
+   ========================================= */
+html {
+  /* 
+   * Base font-size = 0.833vw (tức 16px tại 1920px width)
+   * Công thức: 16 / 1920 * 100 = 0.833vw
+   * 
+   * Scale examples:
+   * - 1920px → 16px
+   * - 1600px → 13.3px  
+   * - 1366px → 11.4px
+   * - 1280px → 10.7px
+   * - 1024px → 8.5px
+   * 
+   * Min 10px để đảm bảo đọc được trên mobile
+   * Max 18px để không quá to trên màn hình lớn
+   */
+  font-size: clamp(10px, 1vw, 18px); 
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   padding: 0;
   margin: 0;
   font-family: var(--font-sans);
+  font-size: 1rem;
   background: var(--color-bg);
   color: var(--color-text-main);
+  line-height: 1.5;
 }
 
 button {
@@ -54,16 +82,16 @@ button {
    ========================================= */
 
 .sidebar {
-  width: 260px;
-  padding: 24px 20px;
+  width: 16.25rem; /* 260px / 16 */
+  padding: 1.5rem 1.25rem;
   background: var(--color-sidebar-bg); /* Nền Trắng */
   border-right: 1px solid var(--color-border-soft); /* Viền mờ ngăn cách */
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 1.5rem;
   color: var(--color-text-main);
   /* Bóng đổ nhẹ cho nền trắng */
-  box-shadow: 4px 0 24px rgba(15, 35, 95, 0.03); 
+  box-shadow: 0.25rem 0 1.5rem rgba(15, 35, 95, 0.03); 
   
   /* [FIX]: Ẩn thanh cuộn ngang của khung chính */
   overflow-x: hidden; 
@@ -72,20 +100,20 @@ button {
 .sidebar__logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 6px;
+  gap: 0.625rem;
+  padding: 0.25rem 0.375rem;
 }
 
 .sidebar__logo-text {
   font-weight: 800;
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--color-primary); /* Logo màu Xanh */
 }
 
 .sidebar__nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.375rem;
   /* [FIX]: Ẩn thanh cuộn ngang của vùng menu */
   overflow-x: hidden; 
 }
@@ -94,9 +122,9 @@ button {
   border: none;
   outline: none;
   text-align: left;
-  padding: 10px 14px;
+  padding: 0.625rem 0.875rem;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 0.875rem;
   
   /* Màu chữ xám xanh (muted) khi chưa chọn */
   color: var(--color-text-muted);
@@ -130,11 +158,11 @@ button {
   margin-top: auto;
   background: #2864d2;
   border-radius: var(--radius-md);
-  padding: 18px 16px;
+  padding: 1.125rem 1rem;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
   border: 1px solid var(--color-primary-soft);
 }
 
@@ -144,15 +172,15 @@ button {
 }
 
 .sidebar__support-text h3 {
-  margin: 0 0 4px;
-  font-size: 15px;
+  margin: 0 0 0.25rem;
+  font-size: 0.9375rem;
   color: #ffffff;
   font-weight: 700;
 }
 
 .sidebar__support-text p {
   margin: 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #e0e7ff;
 }
 
@@ -170,7 +198,7 @@ button {
 /* Main */
 .main {
   flex: 1;
-  padding: 20px 32px 32px;
+  padding: 1.25rem 2rem 2rem;
   display: flex;
   flex-direction: column;
 }
@@ -182,7 +210,7 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 1.125rem;
 }
 
 .topbar__search {
@@ -190,18 +218,18 @@ button {
   align-items: center;
   background: #ffffff;
   border-radius: 999px;
-  box-shadow: 0 4px 18px rgba(42, 61, 131, 0.08);
+  box-shadow: 0 0.25rem 1.125rem rgba(42, 61, 131, 0.08);
   overflow: hidden;
-  max-width: 480px;
+  max-width: 30rem;
   flex: 1;
 }
 
 .topbar__search-input {
   border: none;
   outline: none;
-  padding: 10px 16px;
+  padding: 0.625rem 1rem;
   flex: 1;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-main);
 }
 
@@ -212,9 +240,9 @@ button {
 .topbar__search-button {
   border: none;
   outline: none;
-  width: 44px;
-  height: 40px;
-  margin-right: 4px;
+  width: 2.75rem;
+  height: 2.5rem;
+  margin-right: 0.25rem;
   border-radius: 999px;
   background: var(--color-primary);
   display: flex;
@@ -226,12 +254,12 @@ button {
 .topbar__profile {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 1.125rem;
 }
 
 .topbar__avatar {
-  width: 36px;
-  height: 36px;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   overflow: hidden;
   background: var(--color-primary-soft);
@@ -243,7 +271,7 @@ button {
 .topbar__profile-info {
   display: flex;
   flex-direction: column;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .topbar__profile-name {
@@ -258,12 +286,12 @@ button {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 1.125rem;
 }
 
 .page-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-text-main);
 }
@@ -273,7 +301,7 @@ button {
 .card {
   background: var(--color-card-bg);
   border-radius: var(--radius-lg);
-  padding: 18px 20px;
+  padding: 1.125rem 1.25rem;
   box-shadow: var(--shadow-soft);
   
   /* Animation Zoom */
@@ -318,11 +346,11 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 9px 20px;
+  padding: 0.5625rem 1.25rem;
   border-radius: 999px;
   border: none;
   outline: none;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.1s ease, filter 0.2s;
@@ -379,21 +407,21 @@ input, textarea, select, button {
 
 /* Modal/dialog tweaks */
 .modal-dialog {
-  width: 760px;
-  max-width: calc(100% - 48px);
-  border-radius: 12px;
-  padding: 20px;
+  width: 47.5rem;
+  max-width: calc(100% - 3rem);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
 }
 
 .modal-row {
   display: flex;
-  gap: 12px;
+  gap: 0.75rem;
   align-items: center;
 }
 
 .field-inline {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   align-items: center;
 }
 
@@ -410,11 +438,11 @@ input[type="date"], input[type="time"], input[type="number"] {
 
 /* specific sizes for date/time inputs inside modal */
 .date-input {
-  width: 180px;
+  width: 11.25rem;
 }
 
 .time-input {
-  width: 120px;
+  width: 7.5rem;
 }
 
 /* Small hint below date inputs to indicate desired format (native control still used) */
@@ -422,7 +450,7 @@ input[type="date"], input[type="time"], input[type="number"] {
 .modal-dialog input,
 .modal-dialog textarea,
 .modal-dialog select {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .link-button {
@@ -430,7 +458,7 @@ input[type="date"], input[type="time"], input[type="number"] {
   outline: none;
   background: transparent;
   color: var(--color-primary);
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -439,7 +467,7 @@ input[type="date"], input[type="time"], input[type="number"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 30px;
+  padding: 1.5rem 1.875rem;
   background: linear-gradient(90deg, #2864D2, #2864D2);
   color: #ffffff;
 }
@@ -448,18 +476,18 @@ input[type="date"], input[type="time"], input[type="number"] {
   max-width: 60%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .hero__subtitle {
   margin: 0;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
 }
 
 .hero__text {
   margin: 0;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .hero__button {
@@ -471,7 +499,7 @@ input[type="date"], input[type="time"], input[type="number"] {
 /* Grid layouts */
 .grid {
   display: grid;
-  gap: 18px;
+  gap: 1.125rem;
 }
 
 .grid--two-cols {
@@ -486,11 +514,11 @@ input[type="date"], input[type="time"], input[type="number"] {
 .card--exam-now {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .card__title {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
 }
 
@@ -498,38 +526,38 @@ input[type="date"], input[type="time"], input[type="number"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  margin-top: 6px;
+  gap: 0.875rem;
+  margin-top: 0.375rem;
 }
 
 .card--exam-now__text p {
   margin: 0;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
 }
 
 /* Daily quiz */
 .card--daily-quiz__header h2 {
-  margin: 0 0 10px;
-  font-size: 16px;
+  margin: 0 0 0.625rem;
+  font-size: 1rem;
 }
 
 .card--daily-quiz__question p {
-  margin: 0 0 12px;
-  font-size: 14px;
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
 }
 
 .card--daily-quiz__options {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .quiz-option {
   width: 100%;
   border-radius: 999px;
-  padding: 8px 14px;
-  font-size: 13px;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
   border: 1px solid var(--color-border-soft);
   background: #f8f9ff;
   color: var(--color-text-main);
@@ -558,34 +586,34 @@ input[type="date"], input[type="time"], input[type="number"] {
 
 .leaderboard-row:hover {
   background-color: #f0f7ff; /* Nền xanh rất nhạt */
-  transform: scale(1.01) translateX(4px); /* Phóng to nhẹ và trượt sang phải */
+  transform: scale(1.01) translateX(0.25rem); /* Phóng to nhẹ và trượt sang phải */
   border-left-color: var(--color-primary); /* Hiện vạch màu xanh bên trái */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
   z-index: 5;
-  border-radius: 8px;
+  border-radius: 0.5rem;
 }
 
 .card--leaderboard {
-  padding: 18px 20px;
+  padding: 1.125rem 1.25rem;
 }
 
 .card__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .table {
   width: 100%;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .table__row {
   display: grid;
-  grid-template-columns: 40px 1.6fr 0.9fr 1.2fr 1.3fr;
+  grid-template-columns: 2.5rem 1.6fr 0.9fr 1.2fr 1.3fr;
   align-items: center;
-  padding: 8px 0;
+  padding: 0.5rem 0;
   border-bottom: 1px solid #eef0fb;
 }
 
@@ -599,7 +627,7 @@ input[type="date"], input[type="time"], input[type="number"] {
 }
 
 .table__cell {
-  padding-right: 6px;
+  padding-right: 0.375rem;
 }
 
 .table__cell--small {
@@ -609,12 +637,12 @@ input[type="date"], input[type="time"], input[type="number"] {
 .table__cell--user {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .avatar-circle {
-  width: 26px;
-  height: 26px;
+  width: 1.625rem;
+  height: 1.625rem;
   border-radius: 50%;
   background: #fff4d6;
   display: flex;
@@ -626,7 +654,7 @@ input[type="date"], input[type="time"], input[type="number"] {
 .card--stats {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1rem;
 }
 
 .card__header--stats {
@@ -635,7 +663,7 @@ input[type="date"], input[type="time"], input[type="number"] {
 
 .stats__top {
   display: flex;
-  gap: 18px;
+  gap: 1.125rem;
   align-items: center;
 }
 
@@ -644,8 +672,8 @@ input[type="date"], input[type="time"], input[type="number"] {
 }
 
 .progress-ring {
-  width: 120px;
-  height: 120px;
+  width: 7.5rem;
+  height: 7.5rem;
   border-radius: 50%;
   background: conic-gradient(#ffc83a 0 130deg, #e6ebff 130deg 360deg);
   display: flex;
@@ -654,8 +682,8 @@ input[type="date"], input[type="time"], input[type="number"] {
 }
 
 .progress-ring__inner {
-  width: 80px;
-  height: 80px;
+  width: 5rem;
+  height: 5rem;
   border-radius: 50%;
   background: #ffffff;
   display: flex;
@@ -665,53 +693,53 @@ input[type="date"], input[type="time"], input[type="number"] {
 
 .progress-ring__value {
   font-weight: 700;
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 
 .stats__summary h3 {
-  margin: 0 0 6px;
-  font-size: 15px;
+  margin: 0 0 0.375rem;
+  font-size: 0.9375rem;
 }
 
 .stats__summary p {
-  margin: 2px 0;
-  font-size: 13px;
+  margin: 0.125rem 0;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
 /* Chart */
 .stats__chart {
-  margin-top: 4px;
-  padding: 14px 16px 16px;
-  border-radius: 18px;
+  margin-top: 0.25rem;
+  padding: 0.875rem 1rem 1rem;
+  border-radius: 1.125rem;
   background: #2864D2;
   color: #ffffff;
 }
 
 .stats__chart-header {
-  font-size: 13px;
-  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  margin-bottom: 0.5rem;
 }
 
 .stats__chart-body {
   background: rgba(3, 13, 74, 0.25);
-  border-radius: 14px;
-  padding: 12px 14px 10px;
+  border-radius: 0.875rem;
+  padding: 0.75rem 0.875rem 0.625rem;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .chart-bars {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
-  height: 120px;
+  gap: 0.625rem;
+  height: 7.5rem;
 }
 
 .chart-bar {
   flex: 1;
-  border-radius: 10px 10px 0 0;
+  border-radius: 0.625rem 0.625rem 0 0;
   background: #ffd86a;
 }
 
@@ -724,26 +752,26 @@ input[type="date"], input[type="time"], input[type="number"] {
 .chart-axis {
   display: flex;
   justify-content: flex-end;
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 
 /* Responsive tweaks */
-@media (max-width: 1100px) {
+@media (max-width: 68.75rem) {
   .grid--two-cols {
     grid-template-columns: 1fr;
   }
   .card--hero {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 1rem;
   }
   .card--hero__left {
     max-width: 100%;
   }
   .hero-illustration-wrapper {
     position: absolute;
-    right: -40px;
-    bottom: -20px;
+    right: -2.5rem;
+    bottom: -1.25rem;
   }
   .hero-illustration {
     position: relative;
@@ -759,12 +787,12 @@ input[type="date"], input[type="time"], input[type="number"] {
   }
 }
 
-@media (max-width: 820px) {
+@media (max-width: 51.25rem) {
   .sidebar {
     display: none;
   }
   .main {
-    padding: 16px;
+    padding: 1rem;
   }
 }
 

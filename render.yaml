@@ -39,3 +39,27 @@ services:
       - key: IRT_API_KEY
         sync: false
     autoDeploy: true
+
+  # Background Worker Service (BullMQ)
+  - type: worker
+    name: vactit-worker
+    runtime: node
+    region: singapore
+    plan: free
+    branch: dev
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm install && npm run -w src/services/worker build
+    startCommand: npm run -w src/services/worker start
+    envVars:
+      - key: REDIS_URL
+        sync: false  # Same Redis as API
+      - key: IRT_API_URL
+        value: https://vactit-irt-api.onrender.com
+      - key: IRT_API_KEY
+        sync: false  # Same as IRT API
+      - key: DATABASE_URL
+        sync: false  # Same as API (for Prisma)
+      - key: DIRECT_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true
