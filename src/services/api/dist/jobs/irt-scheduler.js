@@ -40,25 +40,24 @@ function startIRTScheduler(prisma, redisClient) {
                 return;
             }
             console.log('🔒 Acquired scheduler lock, checking for exams...');
-            // Use UTC time to match database timezone (Supabase stores in UTC)
+            // Get current time for comparison
             const now = new Date();
-            console.log('[Scheduler] Current time:', {
-                local: now.toLocaleString('en-US', { timeZone: 'Asia/Singapore' }),
-                utc: now.toISOString(),
-                timestamp: now.getTime()
+            console.log('[Scheduler] Time check:', {
+                nowUTC: now.toISOString(),
+                nowVietnam: now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour12: false })
             });
             if (!prismaInstance) {
                 throw new Error('Prisma instance not initialized');
             }
             // Find all exams that:
             // 1. type = 'exam'
-            // 2. due_time has passed
+            // 2. due_time has passed (compared against UTC timestamp)
             // 3. Has at least one trial with processed_score = null (IRT not calculated yet)
             const examsNeedingIRT = await prismaInstance.test.findMany({
                 where: {
                     type: 'exam',
                     due_time: {
-                        lte: now, // due_time <= now
+                        lte: now, // due_time <= now (both UTC timestamps)
                     },
                     trials: {
                         some: {
@@ -78,9 +77,15 @@ function startIRTScheduler(prisma, redisClient) {
                 },
             });
             if (examsNeedingIRT.length === 0) {
+                console.log('[Scheduler] No exams need IRT calculation at this time');
                 return; // No exams need IRT calculation
             }
-            console.log(`🔍 Found ${examsNeedingIRT.length} exam(s) past due time, checking for IRT results...`);
+            console.log(`🔍 Found ${examsNeedingIRT.length} exam(s) past due time:`, examsNeedingIRT.map(e => ({
+                id: e.test_id,
+                title: e.title,
+                due_time: e.due_time,
+                trials_pending: e.trials.length
+            })));
             const irtQueue = new bullmq_1.Queue('irt-queue', {
                 connection: {
                     host: process.env.REDIS_HOST || 'localhost',
