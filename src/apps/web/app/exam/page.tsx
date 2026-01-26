@@ -58,10 +58,8 @@ export default function ExamTab() {
                   </h1>
                 </div>
                 <p className="text-slate-500 text-sm max-w-3/5">
-                  Bản lĩnh không tự nhiên sinh ra, nó phải được tôi luyện.
-                  Hãy để tiếng đồng hồ đếm ngược rèn cho tim bạn nhịp đập thép, tập làm quen với cảm giác căng thẳng ngay tại nhà. 
-                  Chỉ khi bạn đổ mồ hôi trên 'sân tập' với cường độ của một trận đấu thật, 
-                  thì phòng thi chính thức mới không còn là nỗi ám ảnh, mà trở thành nơi để bạn tỏa sáng.
+                  Bản lĩnh sinh ra từ áp lực. Hãy tự rèn mình dưới tiếng đồng hồ đếm ngược như thi thật, 
+                  để phòng thi trở thành nơi bạn tỏa sáng chứ không phải nỗi sợ.
                 </p>
               </div>
 
