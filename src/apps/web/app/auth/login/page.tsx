@@ -413,7 +413,7 @@ export default function LoginPage() {
                 ref={recaptchaRef}
                 sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
                 onChange={(token) => setCaptchaToken(token)}
-              />;
+              />
             </div>
 
             {serverError && <div className="text-sm text-red-600 text-center">Email hoặc mật khẩu không đúng</div>}
