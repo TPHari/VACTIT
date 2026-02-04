@@ -65,7 +65,7 @@ export async function leaderboardRoutes(server: FastifyInstance) {
         },
         include: {
           student: {
-            select: { user_id: true, name: true , avatar_url: true} // Lấy thông tin sinh viên
+            select: { user_id: true, name: true, avatar_url: true } // Lấy thông tin sinh viên
           }
         }
       });
@@ -149,6 +149,23 @@ export async function leaderboardRoutes(server: FastifyInstance) {
   // 3. Lấy Leaderboard của bài thi gần nhất
   server.get('/api/leaderboard/latest', async (request, reply) => {
     try {
+      // ✅ OPTIMIZED: Check Redis cache first
+      const CACHE_TTL = 120; // 2 minutes
+      const cacheKey = 'leaderboard:latest';
+
+      if (server.redis) {
+        try {
+          const cached = await server.redis.get(cacheKey);
+          if (cached) {
+            console.log(`Cache HIT for ${cacheKey}`);
+            return JSON.parse(cached);
+          }
+          console.log(`Cache MISS for ${cacheKey}`);
+        } catch (cacheErr) {
+          console.error('Cache read error:', cacheErr);
+        }
+      }
+
       // Tìm bài thi gần nhất có type = 'exam'
       const latestExam = await server.prisma.test.findFirst({
         where: { type: 'exam' },
@@ -219,13 +236,25 @@ export async function leaderboardRoutes(server: FastifyInstance) {
           date: item.date
         }));
 
-      return {
+      const response = {
         data: leaderboard,
         testInfo: {
           testId: latestExam.test_id,
           title: latestExam.title
         }
       };
+
+      // ✅ OPTIMIZED: Cache the result
+      if (server.redis) {
+        try {
+          await server.redis.setex(cacheKey, CACHE_TTL, JSON.stringify(response));
+          console.log(`💾 Cached ${cacheKey} for ${CACHE_TTL}s`);
+        } catch (cacheErr) {
+          console.error('Cache write error:', cacheErr);
+        }
+      }
+
+      return response;
 
     } catch (error) {
       server.log.error(error);
