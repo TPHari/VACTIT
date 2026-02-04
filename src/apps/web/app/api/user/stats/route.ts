@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // ✅ OPTIMIZED: Run queries in parallel instead of sequential
+    //  OPTIMIZED: Run queries in parallel instead of sequential
     const [totalTests, allTrials] = await Promise.all([
       prisma.test.count(),
       prisma.trial.findMany({

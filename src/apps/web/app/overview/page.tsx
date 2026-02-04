@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useCurrentUser, useLeaderboard, useUserStats } from '@/lib/swr-hooks';
+import { useCurrentUser, useOverviewData } from '@/lib/swr-hooks';
 
 interface LeaderboardEntry {
   id: string;
@@ -23,11 +23,10 @@ interface UserStats {
 
 export default function OverviewTab() {
   const router = useRouter();
-  const { user } = useCurrentUser();
-  const { leaderboard, isLoading: loadingLeaderboard } = useLeaderboard();
-  const { stats, isLoading: loadingStats } = useUserStats();
+  const { user, userId } = useCurrentUser();
 
-  const loading = loadingLeaderboard || loadingStats;
+  // ✅ OPTIMIZED: Single API call instead of 3 separate calls
+  const { leaderboard, stats, isLoading: loading } = useOverviewData(userId);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -50,9 +49,9 @@ export default function OverviewTab() {
     <DashboardLayout>
       <div className="flex flex-row">
         <div className="flex flex-col flex-1 px-[1.5rem] pt-[1.5rem] pb-[1.5rem] overflow-auto custom-scrollbar">
-          
+
           <div className="relative mb-[1.5rem] overflow-hidden pt-[2rem] px-[0.25rem]">
-            
+
             {/* 1. Page Title */}
             <h1 className="page-title mb-[1.5rem] relative z-10">Tổng quan</h1>
 
@@ -79,13 +78,13 @@ export default function OverviewTab() {
             {/* 3. Logo (Nằm cùng cấp với Section, nhưng Absolute theo Parent Div) */}
             {/* Logic: bottom-0 sẽ căn theo đáy của Parent Div (tức là đáy của Blue Card) */}
             <div className="absolute right-[5rem] bottom-0 pointer-events-none md:pointer-events-auto z-20">
-               <div className="relative w-[12rem] h-[12rem] md:w-[20rem] md:h-[20rem] translate-x-[2.5rem] translate-y-[1.5rem] md:translate-x-0 md:translate-y-[2.5rem]">
-                  <img
-                    src="/assets/logos/hero-illustration.png"
-                    alt="Hero Illustration"
-                    className="w-full h-full object-contain transition-transform duration-500 ease-out hover:-rotate-15"
-                  />
-               </div>
+              <div className="relative w-[12rem] h-[12rem] md:w-[20rem] md:h-[20rem] translate-x-[2.5rem] translate-y-[1.5rem] md:translate-x-0 md:translate-y-[2.5rem]">
+                <img
+                  src="/assets/logos/hero-illustration.png"
+                  alt="Hero Illustration"
+                  className="w-full h-full object-contain transition-transform duration-500 ease-out hover:-rotate-15"
+                />
+              </div>
             </div>
 
           </div>
@@ -251,7 +250,7 @@ export default function OverviewTab() {
                               minHeight: day.count > 0 ? '20px' : '4px'
                             }}
                           >
-                             {/* Tooltip on Hover */}
+                            {/* Tooltip on Hover */}
                             {day.count > 0 && (
                               <div className="absolute -top-[2rem] left-1/2 -translate-x-1/2 bg-black/80 text-white text-[0.625rem] py-[0.25rem] px-[0.5rem] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                 {day.count} bài

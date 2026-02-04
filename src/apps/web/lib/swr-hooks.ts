@@ -145,3 +145,25 @@ export function useUserStats() {
         mutate,
     };
 }
+
+// ✅ NEW: Aggregated hook for Overview page
+// Fetches leaderboard + stats in ONE request instead of 3
+export function useOverviewData(userId: string | undefined) {
+    const url = userId ? `/api/overview-data?userId=${userId}` : null;
+
+    const { data, error, isLoading, mutate } = useSWR(url, {
+        ...swrConfig,
+        dedupingInterval: 60000, // 1 minute
+        revalidateOnFocus: false,
+    });
+
+    return {
+        leaderboard: data?.leaderboard || [],
+        testInfo: data?.testInfo || null,
+        stats: data?.stats || null,
+        isLoading,
+        isError: error,
+        mutate,
+    };
+}
+

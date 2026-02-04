@@ -11,6 +11,7 @@ import { teacherRoutes } from './routes/teacher.routes';
 import { leaderboardRoutes } from './routes/leaderboard.routes';
 import { newsRoutes } from './routes/news.routes';
 import { notificationRoutes } from './routes/notification.routes';
+import { overviewRoutes } from './routes/overview.routes';
 import { logger, logRequest } from './utils/logger';
 
 // Initialize Prisma
@@ -95,7 +96,7 @@ server.addHook('onRequest', async (request) => {
 server.addHook('onResponse', async (request, reply) => {
   const duration = Date.now() - ((request as any).startTime || Date.now());
   const userId = (request as any).user?.id || (request as any).user?.user_id;
-  
+
   logRequest(
     request.method,
     request.url,
@@ -230,6 +231,7 @@ server.register(teacherRoutes);
 server.register(leaderboardRoutes);
 server.register(newsRoutes);
 server.register(notificationRoutes);
+server.register(overviewRoutes);
 // ============ Job Queue Endpoints ============
 // Submit scoring job
 server.post('/api/jobs/score-test', async (request, reply) => {
