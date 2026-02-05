@@ -126,7 +126,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
         if (loading) return 'Đang xử lý...';
         if (isRealExamDone) return 'Đã hoàn thành';
         if (isPractice && isCompleted) return 'Thi lại';
-        
+
         if (!isExamOpen && !isPractice) {
             const now = new Date().getTime();
             const start = exam.startTime ? new Date(exam.startTime).getTime() : 0;
@@ -140,8 +140,7 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
 
     return (
         <>
-            <div className={`p-4 rounded-xl shadow-sm transition-all duration-200 flex flex-col justify-between h-full border group relative ${
-                isLockedVisual ? 'bg-gray-50/80 border-gray-200' :
+            <div className={`p-4 rounded-xl shadow-sm transition-all duration-200 flex flex-col justify-between h-full border group relative ${isLockedVisual ? 'bg-gray-50/80 border-gray-200' :
                     'bg-white border-blue-100 hover:border-blue-200'
                 }`}>
 
@@ -169,8 +168,8 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
                     />
                     <h3
                         className={`font-semibold text-sm mb-4 line-clamp-2 min-h-[40px] relative z-10 ${isLockedVisual
-                                ? 'text-gray-500 cursor-not-allowed'
-                                : 'text-gray-900 cursor-pointer'
+                            ? 'text-gray-500 cursor-not-allowed'
+                            : 'text-gray-900 cursor-pointer'
                             }`}
                         title={exam.title}
                         onClick={() => !isLockedVisual && onSelect(exam)}
@@ -202,18 +201,15 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
                         onClick={() => onSelect(exam)}
                         disabled={isLockedVisual}
                         className={`flex-1 py-2 text-xs font-medium rounded-lg cursor-pointer transition-colors border ${isLockedVisual
-                                ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed'
-                                : isCompleted
-                                    ? 'text-green-700 bg-white border-green-200 hover:bg-green-50'
-                                    : 'text-gray-600 bg-white hover:bg-gray-50 border-gray-200'
+                            ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed'
+                            : 'text-gray-600 bg-white hover:bg-gray-50 border-gray-200'
                             }`}
                     >
                         Chi tiết
                     </button>
 
                     {isLockedVisual ? (
-                        <button disabled className={`flex-1 py-2 text-white text-xs font-medium rounded-lg cursor-not-allowed shadow-sm ${
-                            timeLeft ? 'bg-orange-400' : 'bg-gray-400'
+                        <button disabled className={`flex-1 py-2 text-white text-xs font-medium rounded-lg cursor-not-allowed shadow-sm ${timeLeft ? 'bg-orange-400' : 'bg-gray-400'
                             }`}>
                             {timeLeft ? timeLeft : getButtonText()}
                         </button>
@@ -222,8 +218,8 @@ export default function ExamCard({ exam, onSelect, categoryContext, currentUserI
                             onClick={handleTakeTest}
                             disabled={loading}
                             className={`flex-1 py-2 text-white text-xs cursor-pointer font-medium rounded-full transition-all shadow-sm transform active:scale-95 ${isCompleted
-                                    ? 'bg-[#2864D2] hover:bg-[#255BBD] shadow-blue-200 hover:shadow-blue-300'
-                                    : 'bg-[#2864D2] hover:bg-[#255BBD] shadow-blue-200 hover:shadow-blue-300'
+                                ? 'bg-[#2864D2] hover:bg-[#255BBD] shadow-blue-200 hover:shadow-blue-300'
+                                : 'bg-[#2864D2] hover:bg-[#255BBD] shadow-blue-200 hover:shadow-blue-300'
                                 } ${loading ? 'opacity-70 cursor-wait' : ''}`}>
                             {getButtonText()}
                         </button>
