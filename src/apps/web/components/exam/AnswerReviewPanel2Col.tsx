@@ -38,9 +38,9 @@ export default function AnswerReviewPanel2Col({ totalQuestions, rows }: Props) {
   );
 
   return (
-    <aside className="flex h-full w-80 flex-col overflow-hidden rounded-md border bg-white shadow-sm">
+    <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       {/* Header */}
-      <div className="border-b px-4 py-2">
+      <div className="border-b border-slate-200 px-4 py-3">
         <h2 className="text-sm font-semibold text-slate-800">Đáp án</h2>
         <p className="mt-1 text-xs text-slate-500">
           Trái: bạn chọn (đúng xanh lá, sai đỏ). Phải: đáp án đúng.
