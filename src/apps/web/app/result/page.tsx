@@ -209,7 +209,7 @@ export default function ResultsPage() {
             {/* ========== TOP ROW: Tổng điểm (left) + Điểm từng phần (right) ========== */}
             <div className="flex gap-[1rem]">
               {/* Tổng điểm + Tổng điểm năng lực - Left side */}
-              <div className="w-[36.25rem] flex-shrink-0">
+              <div className="w-[33rem] flex-shrink-0">
                 <div className="rounded-2xl bg-white p-[1.25rem] shadow-sm h-full flex flex-col">
                   {/* Tổng điểm năng lực - Top row: Icon - Label - Score */}
                   <div className="flex items-center justify-center gap-[0.75rem] py-[1rem] mb-[1rem] border-b border-slate-100">
